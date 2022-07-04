@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+
 	//"encoding/json"
 	"path/filepath"
 	//"html/template"
-	"os"
 	"errors"
+	"os"
+
 	//"io/fs"
 	//"sort"
 
-	"github.com/spf13/viper"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/spf13/viper"
 )
 
 var _ = fmt.Sprintf("%v", "")
@@ -23,24 +25,24 @@ func Cfg() *config {
 }
 
 type libCfg struct {
-	Name string
-	Path string
-	Default bool
+	Name       string
+	Path       string
+	Default    bool
 	Audiobooks bool
-	WebOpts webOpts `mapstructure:"website_options"`
+	WebOpts    webOpts `mapstructure:"website_options"`
 }
 
 type webOpts struct {
-	Path string
-	URL string
+	Path  string
+	URL   string
 	Files string
 	Feeds map[string][]string
 }
 
 type config struct {
-	libs map[string]*Library
-	Opts map[string]string
-	list []string
+	libs   map[string]*Library
+	Opts   map[string]string
+	list   []string
 	libCfg map[string]*libCfg
 }
 
@@ -54,7 +56,7 @@ func (c *config) CatMin() int {
 
 var cfg = &config{
 	libCfg: make(map[string]*libCfg),
-	libs: make(map[string]*Library),
+	libs:   make(map[string]*Library),
 }
 
 func InitConfig(opts map[string]string) {
@@ -85,12 +87,13 @@ func InitLibraries(v *viper.Viper, libs map[string]string, web bool) {
 			log.Fatalf("%v does not exist or cannot be found at %v, check the path in the config", libcfg.Name, libPath)
 		}
 		newLib := NewLibrary(lib, libPath)
-		newLib.DefaultRequest = NewRequest(lib).
-			From("books").
-			Sort(Cfg().
-			Opts["sort"]).
-			Set("order", Cfg().Opts["order"])
+		newLib.DefaultRequest = NewRequest(lib).From("books")
+		if sort := Cfg().Opts["sort"]; sort != "" {
+			newLib.DefaultRequest.Sort(sort)
+		}
+		if order := Cfg().Opts["order"]; order != "" {
+			newLib.DefaultRequest.Set("order", order)
+		}
 		Cfg().libs[lib] = newLib
 	}
 }
-

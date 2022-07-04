@@ -6,11 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	//"strings"
-	//"encoding/json"
-	//"io"
-
-	//"github.com/ohzqq/urbooks/calibredb"
 	"github.com/ohzqq/urbooks-core/urbooks"
 
 	"github.com/integrii/flaggy"
@@ -73,12 +68,10 @@ func main() {
 	if start.Used {
 		urbooks.Cfg().Opts["serve"] = "false"
 		urbooks.InitLibraries(viper.Sub("libraries"), viper.GetStringMapString("libraries"), false)
+		//fmt.Printf("%+v\n", urbooks.Lib("test-library"))
 		//fmt.Printf("%V\n", urbooks.NewURL().String())
 		//fmt.Println(ui.TermHeight())
-		//tui()
 		someBooks()
-		//rss()
-		//feeds()
 		//url := "preferences?library=audiobooks"
 		//books := resp.Books()
 		//req := urbooks.ResponseToRequest(&books.Params).Page(10)
@@ -99,18 +92,18 @@ var url = "books?library=audiobooks&order=desc&sort=added"
 
 func someBooks() {
 	//u := "http://localhost:9932/tags/11?currentPage=2&itemsPerPage=50&library=audiobooks&order=desc&sort=added"
-	req := urbooks.NewRequest("audiobooks")
+	req := urbooks.NewRequest("test-library")
 	req.From("books")
-	req.ID("98")
+	//req.ID("98")
 	//req.Sort("formats")
 	//req.Desc()
 	//req.Limit("1")
 	//req.Page("6")
 	//req.Fields("added")
 	//req.Find("all")
-	req.Response()
-	//resp := req.Response()
-	fmt.Printf("%V\n\n", req.String())
+	//req.Response()
+	resp := req.Response()
+	//fmt.Printf("%V\n\n", req.String())
 
 	//resp, err := urbooks.Get(u)
 
@@ -137,7 +130,7 @@ func someBooks() {
 	//fmt.Printf("%+V\n",b.URL() )
 	//}
 	//return urbooks.ParseBooks(resp).Data[0]
-	//fmt.Printf("%V\n", string(resp))
+	fmt.Printf("%V\n", string(resp))
 
 }
 
@@ -153,7 +146,8 @@ func Config() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	viper.AddConfigPath(filepath.Join(home, ".config/urbooks"))
+	//viper.AddConfigPath(filepath.Join(home, ".config/urbooks"))
+	viper.AddConfigPath(filepath.Join(home, "Code/urbooks-core/tmp/"))
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {

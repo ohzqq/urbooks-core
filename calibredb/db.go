@@ -36,6 +36,7 @@ func NewLib(path string) *Lib {
 	lib.Name = filepath.Base(path)
 	lib.db = lib.connectDB()
 	lib.getPreferences()
+	lib.AllFields()
 	lib.bookTmpl = template.Must(template.New("book").Funcs(bookTmplFuncs).ParseGlob("calibredb/sql/*"))
 
 	//fmt.Println(lib.Categories())
@@ -445,7 +446,9 @@ func getJsonField(f string) string {
 func (lib Lib) AllFields() []string {
 	var fields []string
 	for key, _ := range lib.Preferences.FieldMeta {
-		fields = append(fields, key)
+		if !strings.Contains(key, "@") {
+			fields = append(fields, key)
+		}
 	}
 	return fields
 }

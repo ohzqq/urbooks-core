@@ -96,6 +96,7 @@ func (r *Request) Get(key string) string {
 }
 
 func (r *Request) Response() []byte {
+	fmt.Printf("%+v\n", r.lib)
 	return r.lib.DB.Get(r.String())
 }
 
