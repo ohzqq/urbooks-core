@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ohzqq/urbooks/calibredb"
+	"github.com/ohzqq/urbooks-core/calibredb"
 
 	"golang.org/x/exp/slices"
 )

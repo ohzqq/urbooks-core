@@ -4,12 +4,12 @@ import (
 	//"strings"
 	"log"
 	//"strconv"
-	"path"
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"net/url"
+	"path"
 
-	//"github.com/ohzqq/urbooks/calibredb"
+	//"github.com/ohzqq/urbooks-core/calibredb"
 
 	"golang.org/x/exp/slices"
 )
@@ -39,13 +39,13 @@ func Get(u string) ([]byte, error) {
 }
 
 type Request struct {
-	path []string
-	endpoint string
-	prefix string
+	path       []string
+	endpoint   string
+	prefix     string
 	resourceID string
-	file string
-	query url.Values
-	lib *Library
+	file       string
+	query      url.Values
+	lib        *Library
 }
 
 func NewRequest(lib string) *Request {
@@ -147,7 +147,7 @@ func (r *Request) Desc() *Request {
 type ResponseLinks map[string]string
 
 type ResponseLink struct {
-	Rel string
+	Rel  string
 	Href string
 }
 
@@ -156,15 +156,15 @@ type ResponseMeta map[string]string
 type ResponseErrors []map[string]string
 
 type Response struct {
-	Links ResponseLinks `json:"links"`
-	Meta ResponseMeta `json:"meta"`
+	Links  ResponseLinks  `json:"links"`
+	Meta   ResponseMeta   `json:"meta"`
 	Errors ResponseErrors `json:"errors"`
 }
 
 func ParseResponse(resp map[string]json.RawMessage) Response {
 	var (
 		response Response
-		err error
+		err      error
 	)
 
 	err = json.Unmarshal(resp["meta"], &response.Meta)
@@ -184,4 +184,3 @@ func ParseResponse(resp map[string]json.RawMessage) Response {
 
 	return response
 }
-

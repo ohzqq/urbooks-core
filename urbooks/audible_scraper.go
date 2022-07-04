@@ -6,11 +6,11 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ohzqq/urbooks/ui"
+	//"github.com/ohzqq/urbooks/ui"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/geziyor/geziyor"
 	"github.com/geziyor/geziyor/client"
-	"github.com/PuerkitoBio/goquery"
 	//tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -19,20 +19,20 @@ var _ = fmt.Sprintf("%v", "")
 const audible = "audible.ca"
 
 type AudibleScraper struct {
-	Scraper *geziyor.Geziyor
+	Scraper     *geziyor.Geziyor
 	ScraperOpts *geziyor.Options
-	URLs map[string]string
-	Books Books
-	URL *url.URL
-	AudibleURL string
-	Suffix string
-	IsList bool
-	IsSearch bool
-	IsSeries bool
+	URLs        map[string]string
+	Books       Books
+	URL         *url.URL
+	AudibleURL  string
+	Suffix      string
+	IsList      bool
+	IsSearch    bool
+	IsSeries    bool
 }
 
 type AudibleSearch struct {
-	url *url.URL
+	url   *url.URL
 	query url.Values
 }
 
@@ -40,8 +40,8 @@ func NewAudibleSearch() *AudibleSearch {
 	return &AudibleSearch{
 		url: &url.URL{
 			Scheme: "https",
-			Host: audible,
-			Path: "/search",
+			Host:   audible,
+			Path:   "/search",
 		},
 		query: make(url.Values),
 	}
@@ -83,7 +83,7 @@ func NewAudibleScraper() *AudibleScraper {
 	return &AudibleScraper{
 		ScraperOpts: &geziyor.Options{
 			ConcurrentRequests: 1,
-			LogDisabled: true,
+			LogDisabled:        true,
 		},
 		URLs: make(map[string]string),
 	}
@@ -121,9 +121,9 @@ func (a *AudibleScraper) Scrape() Books {
 		case 1:
 			break
 		default:
-			choice := ui.NewPrompt(a.URLs).Choose()
-			a.IsSearch = false
-			urls = map[string]string{"self": choice}
+			//choice := ui.NewPrompt(a.URLs).Choose()
+			//a.IsSearch = false
+			//urls = map[string]string{"self": choice}
 		}
 	}
 
@@ -150,8 +150,8 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 				}
 				linkURL := url.URL{
 					Scheme: a.URL.Scheme,
-					Host: a.URL.Host,
-					Path: pd.Path,
+					Host:   a.URL.Host,
+					Path:   pd.Path,
 				}
 				//a.URLs[link.Text()] = linkURL.String()
 				urls[link.Text()] = linkURL.String()
@@ -162,8 +162,8 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 	return urls
 }
 
-func (a *AudibleScraper) scrapeBook() (func (g *geziyor.Geziyor, r *client.Response)) {
-	return func (g *geziyor.Geziyor, r *client.Response) {
+func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
+	return func(g *geziyor.Geziyor, r *client.Response) {
 		//book := Book{Audiobook: true}
 		book := NewBook()
 
@@ -190,12 +190,12 @@ func (a *AudibleScraper) scrapeBook() (func (g *geziyor.Geziyor, r *client.Respo
 		splitSeries := strings.Split(strings.TrimPrefix(strings.TrimSpace(series), "Series:"), ",")
 		n := 0
 		p := 1
-		for i := 0; i < len(splitSeries) / 2; i++ {
+		for i := 0; i < len(splitSeries)/2; i++ {
 			s := NewCategoryItem()
 			s.Set("name", strings.TrimPrefix(strings.TrimSpace(splitSeries[n]), "Book "))
 			s.Set("position", strings.TrimPrefix(strings.TrimSpace(splitSeries[p]), "Book "))
-				n = n + 2
-				p = p + 2
+			n = n + 2
+			p = p + 2
 			book.Set("series", s)
 		}
 
@@ -214,4 +214,3 @@ func (a *AudibleScraper) scrapeBook() (func (g *geziyor.Geziyor, r *client.Respo
 		a.Books.Add(book)
 	}
 }
-

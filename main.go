@@ -10,14 +10,9 @@ import (
 	//"encoding/json"
 	//"io"
 
-	//"github.com/ohzqq/urbooks/web"
-	//"github.com/ohzqq/urbooks/bubbles"
-	//"github.com/ohzqq/urbooks/ui"
-	"github.com/ohzqq/urbooks/ui/utils"
 	//"github.com/ohzqq/urbooks/calibredb"
-	"github.com/ohzqq/urbooks/urbooks"
+	"github.com/ohzqq/urbooks-core/urbooks"
 
-	//tea "github.com/charmbracelet/bubbletea"
 	"github.com/integrii/flaggy"
 	"github.com/spf13/viper"
 )
@@ -27,16 +22,8 @@ func main() {
 	Config()
 	urbooks.InitConfig(viper.GetStringMapString("library_options"))
 
-	utils.Config(viper.Sub("tui"))
-	//bubbles.Config(viper.Sub("tui"))
-	//tquery()
-	//pref()
-
 	start := flaggy.NewSubcommand("start")
 	flaggy.AttachSubcommand(start, 1)
-
-	serve := flaggy.NewSubcommand("serve")
-	flaggy.AttachSubcommand(serve, 1)
 
 	scrape := flaggy.NewSubcommand("scrape")
 	var (
@@ -83,14 +70,6 @@ func main() {
 		fmt.Printf("%+V\n", books)
 	}
 
-	//if serve.Used {
-	//  //urbooks.InitLibraries(viper.Sub("libraries"), viper.GetStringMapString("libraries"), true)
-	//  urbooks.Cfg().Opts["serve"] = "true"
-	//  urbooks.InitLibraries(viper.Sub("libraries"), viper.GetStringMapString("libraries"), false)
-	//  web.InitServer(viper.Sub("website"))
-	//  web.Serve()
-	//}
-
 	if start.Used {
 		urbooks.Cfg().Opts["serve"] = "false"
 		urbooks.InitLibraries(viper.Sub("libraries"), viper.GetStringMapString("libraries"), false)
@@ -118,17 +97,6 @@ func main() {
 
 var url = "books?library=audiobooks&order=desc&sort=added"
 
-//func rss() {
-//  resp, err := urbooks.Get(url)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//  books := urbooks.ParseBooks(resp)
-//  feed := web.NewRSSFeed()
-//  feed.NewChannel(books)
-//  fmt.Printf("%v\n", string(feed.ToXML()))
-//}
-
 func someBooks() {
 	//u := "http://localhost:9932/tags/11?currentPage=2&itemsPerPage=50&library=audiobooks&order=desc&sort=added"
 	req := urbooks.NewRequest("audiobooks")
@@ -140,9 +108,9 @@ func someBooks() {
 	//req.Page("6")
 	//req.Fields("added")
 	//req.Find("all")
-	//req.Response()
-	resp := req.Response()
-	//fmt.Printf("%V\n\n", req.String())
+	req.Response()
+	//resp := req.Response()
+	fmt.Printf("%V\n\n", req.String())
 
 	//resp, err := urbooks.Get(u)
 
@@ -158,9 +126,9 @@ func someBooks() {
 	//log.Fatal(err)
 	//}
 
-	book := urbooks.ParseBooks(resp).Books()[0]
+	//book := urbooks.ParseBooks(resp).Books()[0]
 	//fmt.Printf("%+V\n", book.Get("formats").String())
-	fmt.Printf("%+V\n", book.Get("authors").String())
+	//fmt.Printf("%+V\n", book.Get("authors").String())
 	//fmt.Printf("%+V\n", book.Get("seriesAndTitle").String())
 	//fmt.Printf("%+V\n", book.Get("tags").String())
 	//fmt.Printf("%+V\n", book.Get("authors").String())
@@ -175,32 +143,6 @@ func someBooks() {
 
 func pref() {
 	//fmt.Printf("%v", db.LibCfg.Cur().EditableFields())
-}
-
-func tquery() {
-	//db.LibCfg.Cur().GetBooks()
-}
-
-func tui() {
-	//var prompt = map[string]string{"one": "one", "two": "two"}
-	//bubbles.NewPrompt("test", prompt).Choose()
-	//b := someBooks()
-	//bubbles.RenderMarkdown(b.ToPlain())
-	//bubbles.Simple()
-	//fmt.Printf("%+V\n", ui.Cfg)
-	//  ui.StylesConfig()
-	//p := tea.NewProgram(bubbles.NewMetaViewer().SetHeight(0).SetWidth(0).Book(b).Model())
-	//  //p := tea.NewProgram(ui.NewCategoryBrowser())
-	//p := tea.NewProgram(bubbles.NewPrompt(prompt))
-	//p.EnableMouseCellMotion()
-
-	//if err := p.Start(); err != nil {
-	//log.Fatal(err)
-	//}
-}
-
-func printResults[T any](r []T) {
-	fmt.Printf("Results: %v\n", r)
 }
 
 func Config() {
@@ -220,9 +162,4 @@ func Config() {
 			panic(fmt.Errorf("Fatal error config file: %w \n", err))
 		}
 	}
-}
-
-func TUIConfig() *viper.Viper {
-	//theme := viper.GetStringMapString("tui")
-	return viper.Sub("tui")
 }

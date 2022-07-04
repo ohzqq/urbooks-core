@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/ohzqq/urbooks/calibredb"
+	"github.com/ohzqq/urbooks-core/calibredb"
 )
 
 var _ = fmt.Sprintf("%v", "")
@@ -22,12 +22,12 @@ func DefaultLib() *Library {
 }
 
 type Library struct {
-	Cfg *libCfg
-	Name string
-	Path string
+	Cfg            *libCfg
+	Name           string
+	Path           string
 	DefaultRequest *Request
-	DB *calibredb.Lib
-	req *Request
+	DB             *calibredb.Lib
+	req            *Request
 }
 
 func NewLibrary(name, path string) *Library {
@@ -43,11 +43,10 @@ func (l *Library) IsAudiobooks() bool {
 	return l.Cfg.Audiobooks
 }
 
-func(l *Library) NewBook() *Book {
+func (l *Library) NewBook() *Book {
 	book := NewBook()
 	var q = make(url.Values)
 	q.Set("library", l.Name)
 	book.query = q
 	return book
 }
-
