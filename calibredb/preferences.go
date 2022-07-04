@@ -1,0 +1,200 @@
+package calibredb
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"strings"
+
+	"golang.org/x/exp/slices"
+)
+
+var _ = fmt.Sprintf("%v", "poot")
+
+type Preferences struct {
+	HiddenCategories []string          `json:"hiddenCategories"`
+	FieldMeta        Fields            `json:"fieldMetadata"`
+	SavedSearches    map[string]string `json:"savedSearches"`
+}
+
+type calibrePref struct {
+	library          string
+	HiddenCategories json.RawMessage `json:"tag_browser_hidden_categories"`
+	SavedSearches    json.RawMessage `json:"saved_searches"`
+	FieldMeta        json.RawMessage `json:"field_metadata"`
+	meta             Fields
+	DisplayFields    json.RawMessage `json:"book_display_fields"`
+	AllFields        []string
+}
+
+const prefSql = `
+SELECT
+JSON_GROUP_OBJECT(
+key, JSON(val)
+) as pref
+FROM preferences 
+WHERE key 
+IN (
+	'saved_searches', 
+	'field_metadata', 
+	'book_display_fields', 
+	'tag_browser_hidden_categories'
+)
+`
+
+func (lib *Lib) getPreferences() {
+	row := lib.db.QueryRowx(prefSql)
+	var dbPref []byte
+	row.Scan(&dbPref)
+
+	var pref calibrePref
+	err := json.Unmarshal(dbPref, &pref)
+	if err != nil {
+		log.Fatal(err)
+	}
+	pref.library = lib.Name
+
+	meta := pref.parseFieldMeta()
+	lib.Preferences = &Preferences{
+		HiddenCategories: pref.parseHiddenCategories(),
+		SavedSearches:    pref.parseSavedSearches(),
+		FieldMeta:        meta,
+	}
+}
+
+func (p Preferences) toJSON() []byte {
+	json, err := json.Marshal(p)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return json
+}
+
+func (p calibrePref) parseHiddenCategories() []string {
+	var hidden []string
+	err := json.Unmarshal(p.HiddenCategories, &hidden)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return hidden
+}
+
+func (p calibrePref) parseSavedSearches() map[string]string {
+	var searches map[string]string
+	err := json.Unmarshal(p.SavedSearches, &searches)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return searches
+}
+
+type Fields map[string]*Field
+
+type Field struct {
+	Library      string
+	CategorySort string `json:"category_sort"`
+	Column       string `json:"column"`
+	IsDisplayed  bool   `json:"is_displayed"`
+	IsNames      bool   `json:"is_names"`
+	IsCategory   bool   `json:"is_category"`
+	IsCustom     bool   `json:"is_custom"`
+	IsEditable   bool   `json:"is_editable"`
+	HasJoin      bool
+	IsMultiple   bool
+	TableColumns []string
+	LinkColumn   string            `json:"link_column"`
+	Multiple     map[string]string `json:"is_multiple"`
+	Label        string            `json:"label"`
+	Name         string            `json:"name"`
+	Table        string            `json:"table"`
+	CatID        string
+}
+
+func (p *calibrePref) parseFieldMeta() Fields {
+	var fields Fields
+	err := json.Unmarshal(p.FieldMeta, &fields)
+	if err != nil {
+		log.Fatal(err)
+	}
+	delete(fields, "au_map")
+	delete(fields, "size")
+	delete(fields, "marked")
+	delete(fields, "news")
+	delete(fields, "ondevice")
+	delete(fields, "search")
+	delete(fields, "series_sort")
+	delete(fields, "series_index")
+
+	for key, _ := range fields {
+		p.AllFields = append(p.AllFields, key)
+	}
+
+	var dFields [][]interface{}
+	err = json.Unmarshal(p.DisplayFields, &dFields)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range dFields {
+		name := f[0].(string)
+		if slices.Contains(p.AllFields, name) {
+			fields[name].IsDisplayed = f[1].(bool)
+		}
+	}
+
+	var fmeta = make(Fields)
+	for name, meta := range fields {
+		meta.Library = p.library
+
+		if strings.Contains(name, "#") {
+			name = strings.Replace(name, "#", "", 1)
+		}
+
+		if len(meta.Multiple) != 0 {
+			meta.IsMultiple = true
+			if del := meta.Multiple["ui_to_list"]; del == "&" {
+				meta.IsNames = true
+			}
+		}
+
+		switch name {
+		case "authors":
+			meta.TableColumns = []string{"name"}
+		case "languages":
+			meta.TableColumns = []string{"lang_code"}
+		case "tags":
+			meta.TableColumns = []string{"name"}
+		case "formats":
+			meta.TableColumns = []string{}
+			meta.CategorySort = "format"
+			meta.Table = "data"
+			meta.Column = "format"
+		case "identifiers":
+			meta.TableColumns = []string{"type", "val"}
+			meta.Column = "val"
+			meta.CategorySort = "type"
+			meta.Table = "identifiers"
+		case "comments":
+			meta.Table = "comments"
+		case "publisher":
+			meta.TableColumns = []string{"name"}
+		case "rating":
+			meta.TableColumns = []string{"rating"}
+		case "series":
+			meta.TableColumns = []string{"name"}
+		case "cover":
+			meta.IsMultiple = true
+			meta.Multiple["list_to_ui"] = ", "
+		}
+
+		fmeta[getJsonField(name)] = meta
+	}
+
+	fmeta["uri"] = &Field{
+		Column: "uri",
+		Name:   "uri",
+		Label:  "uri",
+	}
+
+	return fmeta
+}
