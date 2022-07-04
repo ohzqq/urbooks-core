@@ -168,6 +168,7 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 		book := NewBook()
 
 		book.Set("title", NewColumn(strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text())))
+		fmt.Printf("%+v\n", book.Get("title").Value())
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
 		book.Set("cover", NewCategoryItem().Set("url", coverURL))

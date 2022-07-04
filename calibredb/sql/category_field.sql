@@ -10,7 +10,7 @@ FROM comments
 WHERE book=books.id)
 ), "") {{$f}},
 
-{{- else if eq $f "rating" -}}
+{{- else if eq .Table "ratings" -}}
 
 JSON_QUOTE(IFNULL((
 SELECT lower(rating) 
@@ -24,6 +24,7 @@ IN (
 
 {{- else -}}
 
+{{- if ne .Table "ratings" -}}
 {{- if ne .Table "data" -}}
 IFNULL((
 SELECT 
@@ -35,10 +36,6 @@ JSON_GROUP_ARRAY(JSON_OBJECT(
 
 {{- if eq .Table "series" -}}
 	'position', lower(series_index),
-{{- end -}}
-
-{{- if eq .Table "rating" -}}
-	'rating', lower(rating)
 {{- end -}}
 
 	'uri', "{{$label}}/" || id,
@@ -62,5 +59,6 @@ WHERE book=books.id
 
 ), "[]") {{$f}}, 
 
+{{- end -}}
 {{- end}}
 {{end}}

@@ -80,10 +80,14 @@ func ParseBooks(r []byte) *BookResponse {
 			item := Item{field: field}
 			col := Column{field: field}
 			var err error
-			switch {
-			case key == "cover":
-				fallthrough
-			case field.Field.IsCategory:
+			switch key {
+			case "cover", "series", "publishers":
+				err = json.Unmarshal(val, &cat.items)
+				if len(cat.items) == 1 {
+					item.meta = cat.items[0].meta
+					b[key] = item
+				}
+			case "authors", "narrators", "identifiers", "formats", "languages", "tags":
 				err = json.Unmarshal(val, &cat.items)
 
 				for _, item := range cat.items {
@@ -103,6 +107,7 @@ func ParseBooks(r []byte) *BookResponse {
 
 				b[key] = cat
 			default:
+				fmt.Println(key)
 				err = json.Unmarshal(val, &col.meta)
 				b[key] = col
 			}
@@ -151,8 +156,9 @@ func (b Book) Get(f string) Book {
 	return b
 }
 
-func (b *Book) Set(k string, v Meta) {
+func (b *Book) Set(k string, v Meta) *Book {
 	b.meta[k] = v
+	return b
 }
 
 func (b Book) GetField(f string) Meta {

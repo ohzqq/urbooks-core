@@ -1,25 +1,25 @@
 package calibredb
 
 import (
-	"strings"
-	"strconv"
+	"encoding/json"
 	"fmt"
-	"path"
-	"sync"
 	"log"
 	"net/url"
-	"encoding/json"
+	"path"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 var _ = fmt.Sprintf("%v", "poot")
 
 type response struct {
-	Links map[string]string `json:"links"`
-	Data []map[string]field `json:"data"`
-	Errors []responseErr `json:"errors"`
-	Meta map[string]string `json:"meta"`
-	booksInCat string
-	mtx sync.Mutex
+	Links         map[string]string  `json:"links"`
+	Data          []map[string]field `json:"data"`
+	Errors        []responseErr      `json:"errors"`
+	Meta          map[string]string  `json:"meta"`
+	booksInCat    string
+	mtx           sync.Mutex
 	numberOfItems int
 }
 
@@ -37,7 +37,7 @@ func (lib *Lib) setResponseURL() {
 		}
 	}
 	url := url.URL{
-		Path: path.Join(lib.Request.path),
+		Path:     path.Join(lib.Request.path),
 		RawQuery: lib.Request.query.Encode(),
 	}
 	lib.response.addLink("self", url.String())
@@ -58,9 +58,9 @@ func (lib *Lib) setResponseMeta() {
 
 func (lib *Lib) calculatePagination() {
 	var (
-		prev int
-		next int
-		last int
+		prev  int
+		next  int
+		last  int
 		first = 1
 	)
 
@@ -147,8 +147,8 @@ func (f field) MarshalJSON() ([]byte, error) {
 func convertFields(book map[string]interface{}) map[string]field {
 	meta := make(map[string]field)
 	for key, val := range book {
+		fmt.Println(key)
 		meta[key] = field(val.(string))
 	}
 	return meta
 }
-
