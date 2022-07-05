@@ -1,10 +1,14 @@
 package urbooks
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/ohzqq/urbooks-core/calibredb"
+)
 
 type Item struct {
-	Field
-	meta map[string]string
+	Field *calibredb.Field
+	meta  map[string]string
 }
 
 func NewCategoryItem() *Item {
@@ -19,7 +23,7 @@ func (i Item) String() string {
 	return i.Get("value")
 }
 
-func (i Item) FieldMeta() Field {
+func (i Item) FieldMeta() *calibredb.Field {
 	return i.Field
 }
 

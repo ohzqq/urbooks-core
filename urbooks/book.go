@@ -73,37 +73,32 @@ func ParseBooks(r []byte) *BookResponse {
 	lib := Lib(response.GetMeta("library"))
 
 	for _, book := range books {
-		var b = make(BookMeta)
+		bb := NewBook(lib.Name)
 		for key, val := range book {
-			field := Field{Field: lib.DB.GetField(key), query: response.books.query}
-			cat := Category{Field: field}
-			item := Item{Field: field}
-			col := Column{Field: field}
 			var err error
 			switch key {
 			case "cover", "series", "publishers":
+				item := bb.meta.NewItem(key)
 				err = json.Unmarshal(val, &item.meta)
 				u := &url.URL{Path: item.Get("uri"), RawQuery: response.books.query.Encode()}
 				item.Set("url", u.String())
-				b[key] = item
 			case "authors", "narrators", "identifiers", "formats", "languages", "tags":
+				cat := bb.meta.NewCategory(key)
 				err = json.Unmarshal(val, &cat.items)
 
 				for _, item := range cat.items {
 					u := &url.URL{Path: item.Get("uri"), RawQuery: response.books.query.Encode()}
 					item.Set("url", u.String())
 				}
-
-				b[key] = cat
 			default:
+				col := bb.meta.NewColumn(key)
 				err = json.Unmarshal(val, &col.meta)
-				b[key] = col
 			}
 			if err != nil {
-				fmt.Println("error:", err)
+				fmt.Printf("%v: %v\n", key, err)
 			}
 		}
-		response.books.Add(&Book{meta: b, query: response.books.query})
+		response.books.Add(bb)
 	}
 	return &response
 }
@@ -123,15 +118,21 @@ func (b *Books) Add(book *Book) {
 type Book struct {
 	query url.Values
 	meta  BookMeta
-	field Field
+	field *calibredb.Field
 	label string
+}
+
+func NewBook(lib string) *Book {
+	book := Book{meta: make(BookMeta)}
+	book.meta["library"] = NewColumn().SetValue(lib)
+	return &book
 }
 
 type Meta interface {
 	Value() string
 	String() string
 	URL() string
-	FieldMeta() Field
+	FieldMeta() *calibredb.Field
 	//IsMultiple() bool
 	//IsCategory() bool
 	//IsCustom() bool
@@ -139,24 +140,6 @@ type Meta interface {
 }
 
 type BookMeta map[string]Meta
-
-type Field struct {
-	*calibredb.Field
-	query url.Values
-	null  bool
-}
-
-func (f Field) IsMultiple() bool {
-	return f.IsMultiple()
-}
-
-func (f Field) IsCategory() bool {
-	return f.IsCategory()
-}
-
-func (f Field) IsCustom() bool {
-	return f.IsCustom()
-}
 
 func (meta BookMeta) Get(k string) Meta {
 	return meta[k]
@@ -177,14 +160,14 @@ func (b Book) GetField(f string) Meta {
 }
 
 func (b Book) GetItem(f string) Item {
-	if field := b.GetField(f); field.FieldMeta().IsCategory() && !field.FieldMeta().IsMultiple() {
+	if field := b.GetField(f); field.FieldMeta().IsCategory && !field.FieldMeta().IsMultiple {
 		return field.(Item)
 	}
 	return Item{}
 }
 
 func (b Book) GetCategory(f string) Category {
-	if field := b.GetField(f); field.FieldMeta().IsCategory() && field.FieldMeta().IsMultiple() {
+	if field := b.GetField(f); field.FieldMeta().IsCategory && field.FieldMeta().IsMultiple {
 		return field.(Category)
 	}
 	return Category{}
@@ -196,7 +179,7 @@ func (b Book) SetCategory(f, val string) *Book {
 }
 
 func (b Book) GetColumn(f string) Column {
-	if field := b.GetField(f); !field.FieldMeta().IsCategory() {
+	if field := b.GetField(f); !field.FieldMeta().IsCategory {
 		return field.(Column)
 	}
 	return Column{}
@@ -213,7 +196,7 @@ func (b Book) URL() string {
 	var u string
 	switch b.label == "" {
 	case false:
-		if !b.field.IsMultiple() && b.field.IsCategory() {
+		if !b.field.IsMultiple && b.field.IsCategory {
 			u = b.meta[b.label].URL()
 		}
 	case true:
@@ -225,6 +208,10 @@ func (b Book) URL() string {
 
 func (b Book) Value() string {
 	return b.Get(b.label).String()
+}
+
+func (b Book) FieldMeta() *calibredb.Field {
+	return b.GetField(b.label).FieldMeta()
 }
 
 func (b Book) FilterValue() string {
@@ -258,7 +245,7 @@ func (b Book) String() string {
 		return title
 	}
 
-	if field.FieldMeta().IsCategory() && !field.FieldMeta().IsMultiple() && field.IsNull() {
+	if field.FieldMeta().IsCategory && !field.FieldMeta().IsMultiple && field.IsNull() {
 		f := field.(Item)
 		if b.label == "series" {
 			return f.Value() + ", Book " + f.Get("position")

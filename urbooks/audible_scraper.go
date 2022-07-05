@@ -165,9 +165,9 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 	return func(g *geziyor.Geziyor, r *client.Response) {
 		//book := Book{Audiobook: true}
-		book := NewBook()
+		book := NewBookMeta()
 
-		book.NewColumn("title").Set(strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text()))
+		book.NewColumn("title").SetValue(strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text()))
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
 		book.NewItem("cover").Set("url", coverURL)
@@ -205,7 +205,7 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 		if err != nil {
 			log.Fatal(err)
 		}
-		book.NewColumn("description").Set(desc)
+		book.NewColumn("description").SetValue(desc)
 
 		a.Books = append(a.Books, book)
 	}

@@ -1,8 +1,10 @@
 package urbooks
 
+import "github.com/ohzqq/urbooks-core/calibredb"
+
 type Column struct {
-	Field
-	meta string
+	Field *calibredb.Field
+	meta  string
 }
 
 func NewColumn() *Column {
@@ -21,12 +23,13 @@ func (c Column) String() string {
 	return c.meta
 }
 
-func (c Column) FieldMeta() Field {
+func (c Column) FieldMeta() *calibredb.Field {
 	return c.Field
 }
 
-func (c *Column) Set(v string) {
+func (c *Column) SetValue(v string) *Column {
 	c.meta = v
+	return c
 }
 
 func (c Column) IsNull() bool {

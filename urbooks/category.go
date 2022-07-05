@@ -3,21 +3,20 @@ package urbooks
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/ohzqq/urbooks-core/calibredb"
 )
 
 type Category struct {
-	Field
+	Field *calibredb.Field
 	items []*Item
 	value string
 	item  Item
 }
 
 func NewCategory(label string) *Category {
-	cat := &Category{Field: Field{Field: &calibredb.Field{}}}
+	cat := &Category{Field: &calibredb.Field{}}
 	cat.Field.Label = label
 	return cat
 }
@@ -40,7 +39,7 @@ func (c Category) Join(v string) string {
 	for _, field := range c.items {
 		meta = append(meta, field.Get(v))
 	}
-	switch c.IsNames {
+	switch c.Field.IsNames {
 	case true:
 		return strings.Join(meta, nameSep)
 	default:
@@ -50,7 +49,7 @@ func (c Category) Join(v string) string {
 
 func (c *Category) Split() {
 	sep := itemSep
-	if c.IsNames {
+	if c.Field.IsNames {
 		sep = nameSep
 	}
 	for _, val := range strings.Split(c.value, sep) {
@@ -62,7 +61,7 @@ func (c Category) IsNull() bool {
 	return len(c.Items()) == 0
 }
 
-func (c Category) FieldMeta() Field {
+func (c Category) FieldMeta() *calibredb.Field {
 	return c.Field
 }
 
@@ -75,14 +74,14 @@ func (c Category) Items() []*Item {
 }
 
 func (c Category) URL() string {
-	return c.Label + "/"
+	return c.Field.Label + "/"
 }
 
 func (c *Category) SetFieldMeta(k, v string) *Category {
 	switch k {
 	case "isNames":
 		if v == "true" {
-			c.IsNames = true
+			c.Field.IsNames = true
 		}
 	}
 	return c
@@ -107,16 +106,13 @@ func ParseCategory(r []byte) *CatResponse {
 
 	response.Response = ParseResponse(resp)
 
-	response.data.Field.query = url.Values{}
-	response.data.Field.query.Set("library", response.Meta["library"])
+	//response.data.Field.query = url.Values{}
+	//response.data.Field.query.Set("library", response.Meta["library"])
 
 	lib := Lib(response.Meta["library"])
 
 	cats := Category{
-		Field: Field{
-			Field: lib.DB.GetField(response.Meta["endpoint"]),
-			query: response.data.Field.query,
-		},
+		Field: lib.DB.GetField(response.Meta["endpoint"]),
 	}
 	err = json.Unmarshal(resp["data"], &cats.items)
 	if err != nil {

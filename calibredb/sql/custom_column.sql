@@ -17,6 +17,6 @@ IN (
 JSON_QUOTE(value)
 FROM {{.Table}}
 WHERE book=books.id
-), '{}') {{.Label}},
+), '""') {{.Label}},
 {{- end -}}
 {{end}}

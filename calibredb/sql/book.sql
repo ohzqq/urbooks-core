@@ -3,9 +3,7 @@
 {{- $lib := . -}}
 
 SELECT
-JSON_QUOTE("{{.Name}}") AS library,
-
-{{- range $f := .Request.Fields -}}
+{{range $f := .Request.Fields -}}
 	{{- $field := $lib.GetField $f}}
 
 
