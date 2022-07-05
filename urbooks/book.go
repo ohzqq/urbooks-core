@@ -3,7 +3,7 @@ package urbooks
 import (
 	"fmt"
 	//"log"
-	"encoding/json"
+
 	"net/url"
 
 	//"os"
@@ -20,95 +20,9 @@ import (
 
 var _ = fmt.Sprintf("%v", "poot")
 
-type BookResponse struct {
-	Response
-	books Books
-}
-
-func (b BookResponse) Books() []*Book {
-	return b.books.Books
-}
-
-func (b BookResponse) GetMeta(k string) string {
-	if m := b.Response.Meta[k]; m != "" {
-		return m
-	}
-	return ""
-}
-
-func (b BookResponse) GetLink(k string) string {
-	if m := b.Response.Links[k]; m != "" {
-		return m
-	}
-	return ""
-}
-
 type Books struct {
 	query url.Values
 	Books []*Book
-}
-
-func ParseBooks(r []byte) *BookResponse {
-	var (
-		response BookResponse
-		err      error
-	)
-
-	var resp map[string]json.RawMessage
-	err = json.Unmarshal(r, &resp)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	response.Response = ParseResponse(resp)
-
-	var books []map[string]json.RawMessage
-	err = json.Unmarshal(resp["data"], &books)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	response.books.query = url.Values{}
-	response.books.query.Set("library", response.GetMeta("library"))
-	lib := Lib(response.GetMeta("library"))
-
-	for _, book := range books {
-		bb := NewBook(lib.Name)
-		for key, val := range book {
-			var err error
-			switch key {
-			case "cover", "series", "publishers":
-				item := bb.NewItem(key)
-				err = json.Unmarshal(val, &item.meta)
-				u := &url.URL{Path: item.Get("uri"), RawQuery: response.books.query.Encode()}
-				item.Set("url", u.String())
-			case "authors", "narrators", "identifiers", "formats", "languages", "tags":
-				cat := bb.NewCategory(key)
-				err = json.Unmarshal(val, &cat.items)
-
-				for _, item := range cat.items {
-					u := &url.URL{Path: item.Get("uri"), RawQuery: response.books.query.Encode()}
-					item.Set("url", u.String())
-				}
-			default:
-				col := bb.NewColumn(key)
-				err = json.Unmarshal(val, &col.meta)
-			}
-			if err != nil {
-				fmt.Printf("%v: %v\n", key, err)
-			}
-		}
-		response.books.Add(bb)
-	}
-	return &response
-}
-
-func (i *Item) UnmarshalJSON(b []byte) error {
-	i.meta = make(map[string]string)
-	if err := json.Unmarshal(b, &i.meta); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (b *Books) Add(book *Book) {
@@ -203,23 +117,11 @@ func (b Book) GetCategory(f string) Category {
 	return Category{}
 }
 
-func (b Book) SetCategory(f, val string) *Book {
-	b.meta[f] = Category{}
-	return &b
-}
-
 func (b Book) GetColumn(f string) Column {
 	if field := b.GetField(f); !field.FieldMeta().IsCategory {
 		return field.(Column)
 	}
 	return Column{}
-}
-
-func (b Book) SetColumn(f, val string) *Book {
-	b.meta[f] = Column{
-		meta: val,
-	}
-	return &b
 }
 
 func (b Book) URL() string {
