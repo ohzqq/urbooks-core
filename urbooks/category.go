@@ -21,9 +21,11 @@ func NewCategory(label string) *Category {
 	return cat
 }
 
-//func (c *Category) AddItem(i *Item) {
-//  c.items = append(c.items, i)
-//}
+func (c *Category) AddItem() *Item {
+	item := NewCategoryItem()
+	c.items = append(c.items, item)
+	return item
+}
 
 func (c Category) String() string {
 	return c.Join("value")

@@ -78,12 +78,12 @@ func ParseBooks(r []byte) *BookResponse {
 			var err error
 			switch key {
 			case "cover", "series", "publishers":
-				item := bb.meta.NewItem(key)
+				item := bb.NewItem(key)
 				err = json.Unmarshal(val, &item.meta)
 				u := &url.URL{Path: item.Get("uri"), RawQuery: response.books.query.Encode()}
 				item.Set("url", u.String())
 			case "authors", "narrators", "identifiers", "formats", "languages", "tags":
-				cat := bb.meta.NewCategory(key)
+				cat := bb.NewCategory(key)
 				err = json.Unmarshal(val, &cat.items)
 
 				for _, item := range cat.items {
@@ -91,7 +91,7 @@ func ParseBooks(r []byte) *BookResponse {
 					item.Set("url", u.String())
 				}
 			default:
-				col := bb.meta.NewColumn(key)
+				col := bb.NewColumn(key)
 				err = json.Unmarshal(val, &col.meta)
 			}
 			if err != nil {

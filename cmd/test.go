@@ -55,7 +55,7 @@ func someBooks() {
 
 	book := urbooks.ParseBooks(resp).Books()[0]
 	//fmt.Printf("%+V\n", book.Get("formats").String())
-	fmt.Printf("%+V\n", book.Get("tags").FieldMeta())
+	fmt.Printf("%+V\n", book.Get("tags").Value())
 	//fmt.Printf("%+V\n", book.Get("tags").String())
 	//fmt.Printf("%+V\n", book.Get("description").String())
 	//fmt.Printf("%+V\n", book.Get("authors").String())
