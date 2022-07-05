@@ -170,6 +170,7 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 		book.Set("title", NewColumn(strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text())))
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
+		//cover := NewCategoryItem().Set("url", coverURL)
 		book.Set("cover", NewCategoryItem().Set("url", coverURL))
 
 		authors := NewCategory()
@@ -178,40 +179,40 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 			authors.AddItem(NewCategoryItem().Set("value", s.Text()))
 		})
 		book.Set("authors", authors)
+		fmt.Printf("%+v\n", book.Get("authors").Value())
 
-		narrators := NewCategory()
-		narrators.SetField("isNames", "true")
-		r.HTMLDoc.Find(".narratorLabel a").Each(func(_ int, s *goquery.Selection) {
-			narrators.AddItem(NewCategoryItem().Set("value", s.Text()))
-		})
-		book.Set("narrators", narrators)
+		//narrators := NewCategory()
+		//narrators.SetField("isNames", "true")
+		//r.HTMLDoc.Find(".narratorLabel a").Each(func(_ int, s *goquery.Selection) {
+		//  narrators.AddItem(NewCategoryItem().Set("value", s.Text()))
+		//})
+		//book.Set("narrators", narrators)
 
-		series := r.HTMLDoc.Find(".seriesLabel").Text()
-		splitSeries := strings.Split(strings.TrimPrefix(strings.TrimSpace(series), "Series:"), ",")
-		n := 0
-		p := 1
-		for i := 0; i < len(splitSeries)/2; i++ {
-			s := NewCategoryItem()
-			s.Set("name", strings.TrimPrefix(strings.TrimSpace(splitSeries[n]), "Book "))
-			s.Set("position", strings.TrimPrefix(strings.TrimSpace(splitSeries[p]), "Book "))
-			n = n + 2
-			p = p + 2
-			book.Set("series", s)
-		}
+		//series := r.HTMLDoc.Find(".seriesLabel").Text()
+		//splitSeries := strings.Split(strings.TrimPrefix(strings.TrimSpace(series), "Series:"), ",")
+		//n := 0
+		//p := 1
+		//for i := 0; i < len(splitSeries)/2; i++ {
+		//  s := NewCategoryItem()
+		//  s.Set("name", strings.TrimPrefix(strings.TrimSpace(splitSeries[n]), "Book "))
+		//  s.Set("position", strings.TrimPrefix(strings.TrimSpace(splitSeries[p]), "Book "))
+		//  n = n + 2
+		//  p = p + 2
+		//  book.Set("series", s)
+		//}
 
-		tags := NewCategory()
-		r.HTMLDoc.Find(".bc-chip-text").Each(func(_ int, s *goquery.Selection) {
-			tags.AddItem(NewCategoryItem().Set("value", strings.TrimSpace(s.Text())))
-		})
-		book.Set("tags", tags)
+		//tags := NewCategory()
+		//r.HTMLDoc.Find(".bc-chip-text").Each(func(_ int, s *goquery.Selection) {
+		//  tags.AddItem(NewCategoryItem().Set("value", strings.TrimSpace(s.Text())))
+		//})
+		//book.Set("tags", tags)
 
-		desc, err := r.HTMLDoc.Find(".productPublisherSummary span.bc-text").Html()
-		if err != nil {
-			log.Fatal(err)
-		}
-		book.Set("description", NewColumn(desc))
+		//desc, err := r.HTMLDoc.Find(".productPublisherSummary span.bc-text").Html()
+		//if err != nil {
+		//log.Fatal(err)
+		//}
+		//book.Set("description", NewColumn(desc))
 
-		fmt.Printf("%+v\n", book)
 		a.Books = append(a.Books, book)
 	}
 }

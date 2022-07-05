@@ -76,9 +76,9 @@ func ParseBooks(r []byte) *BookResponse {
 		var b = make(map[string]Meta)
 		for key, val := range book {
 			field := Field{Field: lib.DB.GetField(key), query: response.books.query}
-			cat := Category{field: field}
-			item := Item{field: field}
-			col := Column{field: field}
+			cat := Category{Field: field}
+			item := Item{Field: field}
+			col := Column{Field: field}
 			var err error
 			switch key {
 			case "cover", "series", "publishers":
@@ -135,6 +135,18 @@ type Field struct {
 	null  bool
 }
 
+func (f Field) IsMultiple() bool {
+	return f.IsMultiple()
+}
+
+func (f Field) IsCategory() bool {
+	return f.IsCategory()
+}
+
+func (f Field) IsCustom() bool {
+	return f.IsCustom()
+}
+
 func NewBook() BookMeta {
 	return make(BookMeta)
 }
@@ -143,8 +155,9 @@ func (meta BookMeta) Get(k string) Meta {
 	return meta[k]
 }
 
-func (meta BookMeta) Set(k string, v Meta) BookMeta {
-	meta[k] = v
+func (meta *BookMeta) Set(k string, v Meta) *BookMeta {
+	m := *meta
+	m[k] = v
 	return meta
 }
 
@@ -163,14 +176,14 @@ func (b Book) GetField(f string) Meta {
 }
 
 func (b Book) GetItem(f string) Item {
-	if field := b.GetField(f); field.IsCategory() && !field.IsMultiple() {
+	if field := b.GetField(f); field.FieldMeta().IsCategory() && !field.FieldMeta().IsMultiple() {
 		return field.(Item)
 	}
 	return Item{}
 }
 
 func (b Book) GetCategory(f string) Category {
-	if field := b.GetField(f); field.IsCategory() && field.IsMultiple() {
+	if field := b.GetField(f); field.FieldMeta().IsCategory() && field.FieldMeta().IsMultiple() {
 		return field.(Category)
 	}
 	return Category{}
@@ -182,7 +195,7 @@ func (b Book) SetCategory(f, val string) *Book {
 }
 
 func (b Book) GetColumn(f string) Column {
-	if field := b.GetField(f); !field.IsCategory() {
+	if field := b.GetField(f); !field.FieldMeta().IsCategory() {
 		return field.(Column)
 	}
 	return Column{}
@@ -199,7 +212,7 @@ func (b Book) URL() string {
 	var u string
 	switch b.label == "" {
 	case false:
-		if !b.field.IsMultiple && b.field.IsCategory {
+		if !b.field.IsMultiple() && b.field.IsCategory() {
 			u = b.meta[b.label].URL()
 		}
 	case true:
@@ -244,7 +257,7 @@ func (b Book) String() string {
 		return title
 	}
 
-	if field.IsCategory() && !field.IsMultiple() && field.IsNull() {
+	if field.FieldMeta().IsCategory() && !field.FieldMeta().IsMultiple() && field.IsNull() {
 		f := field.(Item)
 		if b.label == "series" {
 			return f.Value() + ", Book " + f.Get("position")
@@ -302,21 +315,24 @@ type Meta interface {
 	Value() string
 	String() string
 	URL() string
-	IsMultiple() bool
-	IsCategory() bool
-	IsCustom() bool
+	FieldMeta() Field
+	//IsMultiple() bool
+	//IsCategory() bool
+	//IsCustom() bool
 	IsNull() bool
 }
 
 type Category struct {
-	field Field
+	Field
 	items []*Item
 	value string
 	item  Item
 }
 
 func NewCategory() *Category {
-	return &Category{}
+	return &Category{
+		Field: Field{Field: &calibredb.Field{}},
+	}
 }
 
 func (c *Category) AddItem(i *Item) {
@@ -337,7 +353,7 @@ func (c Category) Join(v string) string {
 	for _, field := range c.items {
 		meta = append(meta, field.Get(v))
 	}
-	switch c.field.IsNames {
+	switch c.IsNames {
 	case true:
 		return strings.Join(meta, nameSep)
 	default:
@@ -347,7 +363,7 @@ func (c Category) Join(v string) string {
 
 func (c *Category) Split() {
 	sep := itemSep
-	if c.field.IsNames {
+	if c.IsNames {
 		sep = nameSep
 	}
 	for _, val := range strings.Split(c.value, sep) {
@@ -358,20 +374,12 @@ func (c *Category) Split() {
 	}
 }
 
-func (c Category) IsMultiple() bool {
-	return c.field.IsMultiple
-}
-
-func (c Category) IsCategory() bool {
-	return c.field.IsCategory
-}
-
-func (c Category) IsCustom() bool {
-	return c.field.IsCustom
-}
-
 func (c Category) IsNull() bool {
 	return len(c.Items()) == 0
+}
+
+func (c Category) FieldMeta() Field {
+	return c.Field
 }
 
 func (c Category) Value() string {
@@ -383,22 +391,22 @@ func (c Category) Items() []*Item {
 }
 
 func (c Category) URL() string {
-	return c.field.Label + "/"
+	return c.Label + "/"
 }
 
 func (c *Category) SetField(k, v string) *Category {
 	switch k {
 	case "isNames":
 		if v == "true" {
-			c.field.IsNames = true
+			c.IsNames = true
 		}
 	}
 	return c
 }
 
 type Item struct {
-	field Field
-	meta  map[string]string
+	Field
+	meta map[string]string
 }
 
 func NewCategoryItem() *Item {
@@ -413,17 +421,21 @@ func (i Item) String() string {
 	return i.Get("value")
 }
 
-func (i Item) IsMultiple() bool {
-	return i.field.IsMultiple
+func (i Item) FieldMeta() Field {
+	return i.Field
 }
 
-func (i Item) IsCustom() bool {
-	return i.field.IsCustom
-}
+//func (i Item) IsMultiple() bool {
+//  return i.field.IsMultiple
+//}
 
-func (i Item) IsCategory() bool {
-	return i.field.IsCategory
-}
+//func (i Item) IsCustom() bool {
+//  return i.field.IsCustom
+//}
+
+//func (i Item) IsCategory() bool {
+//  return i.field.IsCategory
+//}
 
 func (i Item) IsNull() bool {
 	return len(i.meta) == 0
@@ -462,8 +474,8 @@ func (i *Item) Set(k, v string) *Item {
 }
 
 type Column struct {
-	field Field
-	meta  string
+	Field
+	meta string
 }
 
 func NewColumn(v string) Column {
@@ -482,17 +494,21 @@ func (c Column) String() string {
 	return c.meta
 }
 
-func (c Column) IsMultiple() bool {
-	return c.field.IsMultiple
+func (c Column) FieldMeta() Field {
+	return c.Field
 }
 
-func (c Column) IsCustom() bool {
-	return c.field.IsCustom
-}
+//func (c Column) IsMultiple() bool {
+//  return c.field.IsMultiple
+//}
 
-func (c Column) IsCategory() bool {
-	return c.field.IsCategory
-}
+//func (c Column) IsCustom() bool {
+//  return c.field.IsCustom
+//}
+
+//func (c Column) IsCategory() bool {
+//  return c.field.IsCategory
+//}
 
 func (c Column) IsNull() bool {
 	return c.meta == ""
@@ -517,15 +533,15 @@ func ParseCategory(r []byte) *CatResponse {
 
 	response.Response = ParseResponse(resp)
 
-	response.data.field.query = url.Values{}
-	response.data.field.query.Set("library", response.Meta["library"])
+	response.data.Field.query = url.Values{}
+	response.data.Field.query.Set("library", response.Meta["library"])
 
 	lib := Lib(response.Meta["library"])
 
 	cats := Category{
-		field: Field{
+		Field: Field{
 			Field: lib.DB.GetField(response.Meta["endpoint"]),
-			query: response.data.field.query,
+			query: response.data.Field.query,
 		},
 	}
 	err = json.Unmarshal(resp["data"], &cats.items)
@@ -541,7 +557,7 @@ func (c CatResponse) Items() []*Item {
 }
 
 func (c CatResponse) Label() string {
-	return c.data.field.Label
+	return c.data.Field.Label
 }
 
 //func (b *Book) ToFFmeta() {
