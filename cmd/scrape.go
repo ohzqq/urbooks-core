@@ -46,7 +46,7 @@ var scrapeCmd = &cobra.Command{
 		if books == nil {
 			fmt.Println("no results")
 		}
-		fmt.Printf("%+V\n", books)
+		fmt.Printf("%+V\n", books[0].Get("narrators").Value())
 	},
 }
 

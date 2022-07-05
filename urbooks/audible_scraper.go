@@ -22,7 +22,7 @@ type AudibleScraper struct {
 	Scraper     *geziyor.Geziyor
 	ScraperOpts *geziyor.Options
 	URLs        map[string]string
-	Books       []BookMeta
+	Books       []*Book
 	URL         *url.URL
 	AudibleURL  string
 	Suffix      string
@@ -101,7 +101,7 @@ func (a *AudibleScraper) Get(audible string) *AudibleScraper {
 	return a
 }
 
-func (a *AudibleScraper) Scrape() []BookMeta {
+func (a *AudibleScraper) Scrape() []*Book {
 	var urls map[string]string
 	audible := a.AudibleURL
 
@@ -164,8 +164,7 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 
 func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 	return func(g *geziyor.Geziyor, r *client.Response) {
-		//book := Book{Audiobook: true}
-		book := NewBookMeta()
+		book := NewBook("")
 
 		book.NewColumn("title").SetValue(strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text()))
 

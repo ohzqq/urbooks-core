@@ -17,7 +17,11 @@ func Lib(l string) *Library {
 }
 
 func DefaultLib() *Library {
-	return Lib(Cfg().Opts["default"])
+	lib := Cfg().Opts["default"]
+	if lib == "" {
+		lib = Libraries()[0]
+	}
+	return Lib(lib)
 }
 
 type Library struct {

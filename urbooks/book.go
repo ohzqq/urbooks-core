@@ -124,8 +124,41 @@ type Book struct {
 
 func NewBook(lib string) *Book {
 	book := Book{meta: make(BookMeta)}
-	book.meta["library"] = NewColumn().SetValue(lib)
+	if lib == "" {
+		lib = DefaultLib().Name
+	}
+	book.Set("library", NewColumn().SetValue(lib))
 	return &book
+}
+
+func (b *Book) NewColumn(k string) *Column {
+	col := NewColumn()
+	book := *b
+	if lib := book.meta["library"]; !lib.IsNull() {
+		col.Field = Lib(lib.Value()).DB.GetField(k)
+	}
+	book.meta[k] = col
+	return col
+}
+
+func (b *Book) NewItem(k string) *Item {
+	item := NewCategoryItem()
+	book := *b
+	if lib := book.meta["library"]; !lib.IsNull() {
+		item.Field = Lib(lib.Value()).DB.GetField(k)
+	}
+	book.meta[k] = item
+	return item
+}
+
+func (b *Book) NewCategory(k string) *Category {
+	cat := NewCategory(k)
+	book := *b
+	if lib := book.meta["library"]; !lib.IsNull() {
+		cat.Field = Lib(lib.Value()).DB.GetField(k)
+	}
+	book.meta[k] = cat
+	return cat
 }
 
 type Meta interface {
@@ -133,9 +166,6 @@ type Meta interface {
 	String() string
 	URL() string
 	FieldMeta() *calibredb.Field
-	//IsMultiple() bool
-	//IsCategory() bool
-	//IsCustom() bool
 	IsNull() bool
 }
 
