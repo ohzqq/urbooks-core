@@ -8,11 +8,11 @@ IFNULL(JSON_QUOTE((
 SELECT text 
 FROM comments 
 WHERE book=books.id)
-), "") {{$f}},
+), '""') {{$f}},
 
 {{- else if eq .Table "ratings" -}}
 
-JSON_QUOTE(IFNULL((
+IFNULL((
 SELECT lower(rating) 
 FROM ratings 
 WHERE ratings.id 
@@ -20,29 +20,36 @@ IN (
 	SELECT rating 
 	FROM books_ratings_link 
 	WHERE book=books.id
-)), "")) {{$f}},
+)), '""') {{$f}},
 
 {{- else -}}
 
 {{- if ne .Table "ratings" -}}
+
 {{- if ne .Table "data" -}}
-IFNULL((
-SELECT 
-JSON_GROUP_ARRAY(JSON_OBJECT(
+	IFNULL((
+	SELECT 
+	{{if .IsMultiple -}}
+		JSON_GROUP_ARRAY(
+	{{- end -}}
+	JSON_OBJECT(
 
-{{- range $col := .TableColumns -}}
-	'value', {{$col}}, 
+	{{- range $col := .TableColumns -}}
+		'value', {{$col}}, 
+	{{- end -}}
+
+	{{- if eq .Table "series" -}}
+		'position', lower(series_index),
+	{{- end -}}
+
+		'uri', "{{$label}}/" || id,
+		'id', lower(id)
 {{- end -}}
 
-{{- if eq .Table "series" -}}
-	'position', lower(series_index),
-{{- end -}}
-
-	'uri', "{{$label}}/" || id,
-	'id', lower(id)
-{{- end -}}
-
-	))
+	{{if .IsMultiple -}}
+		)
+	{{- end -}}
+)
 FROM {{.Table}} 
 {{if ne .LinkColumn "" -}}
 WHERE {{.Table}}.id 
@@ -57,7 +64,11 @@ WHERE book=books.id
 	) 
 {{- end -}}
 
-), "[]") {{$f}}, 
+	{{- if .IsMultiple -}}
+		), "[]") {{$f}}, 
+	{{- else -}}
+		), "{}") {{$f}}, 
+	{{- end -}}
 
 {{- end -}}
 {{- end}}

@@ -11,16 +11,12 @@ IN (
 	SELECT value
 	FROM books_{{.Table}}_link 
 	WHERE book=books.id
-)
-), "[]") {{.Label}},
-
+)), '[]') {{.Label}},
 {{- else -}}
 
 JSON_QUOTE(value)
 FROM {{.Table}}
 WHERE book=books.id
-), '""') {{.Label}},
-
+), '{}') {{.Label}},
 {{- end -}}
-
 {{end}}

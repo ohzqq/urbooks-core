@@ -2,7 +2,6 @@ package urbooks
 
 import (
 	"fmt"
-	"net/url"
 
 	"github.com/ohzqq/urbooks-core/calibredb"
 )
@@ -27,6 +26,7 @@ type Library struct {
 	Path           string
 	DefaultRequest *Request
 	DB             *calibredb.Lib
+	pref           *calibredb.Preferences
 	req            *Request
 }
 
@@ -36,6 +36,7 @@ func NewLibrary(name, path string) *Library {
 	l.Name = name
 	l.Path = path
 	l.DB = calibredb.NewLib(path)
+	l.pref = l.DB.Preferences
 	return &l
 }
 
@@ -43,10 +44,10 @@ func (l *Library) IsAudiobooks() bool {
 	return l.Cfg.Audiobooks
 }
 
-func (l *Library) NewBook() *Book {
-	book := NewBook()
-	var q = make(url.Values)
-	q.Set("library", l.Name)
-	book.query = q
-	return book
-}
+//func (l *Library) NewBook() *Book {
+//  book := NewBook()
+//  var q = make(url.Values)
+//  q.Set("library", l.Name)
+//  book.query = q
+//  return book
+//}

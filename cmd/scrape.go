@@ -43,7 +43,7 @@ var scrapeCmd = &cobra.Command{
 			scraper = urbooks.NewAudibleScraper().Get(url)
 		}
 		books := scraper.Scrape()
-		if books.Books == nil {
+		if books == nil {
 			fmt.Println("no results")
 		}
 		fmt.Printf("%+V\n", books)

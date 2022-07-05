@@ -147,7 +147,6 @@ func (f field) MarshalJSON() ([]byte, error) {
 func convertFields(book map[string]interface{}) map[string]field {
 	meta := make(map[string]field)
 	for key, val := range book {
-		fmt.Println(key)
 		meta[key] = field(val.(string))
 	}
 	return meta

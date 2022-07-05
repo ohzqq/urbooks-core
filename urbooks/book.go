@@ -82,11 +82,10 @@ func ParseBooks(r []byte) *BookResponse {
 			var err error
 			switch key {
 			case "cover", "series", "publishers":
-				err = json.Unmarshal(val, &cat.items)
-				if len(cat.items) == 1 {
-					item.meta = cat.items[0].meta
-					b[key] = item
-				}
+				err = json.Unmarshal(val, &item.meta)
+				u := &url.URL{Path: item.Get("uri"), RawQuery: response.books.query.Encode()}
+				item.Set("url", u.String())
+				b[key] = item
 			case "authors", "narrators", "identifiers", "formats", "languages", "tags":
 				err = json.Unmarshal(val, &cat.items)
 
@@ -95,19 +94,8 @@ func ParseBooks(r []byte) *BookResponse {
 					item.Set("url", u.String())
 				}
 
-				if !field.Field.IsMultiple {
-					if len(cat.items) != 1 {
-						item.field.null = true
-					} else {
-						item.meta = cat.items[0].meta
-					}
-					b[key] = item
-					break
-				}
-
 				b[key] = cat
 			default:
-				fmt.Println(key)
 				err = json.Unmarshal(val, &col.meta)
 				b[key] = col
 			}
@@ -134,10 +122,12 @@ func (b *Books) Add(book *Book) {
 
 type Book struct {
 	query url.Values
-	meta  map[string]Meta
+	meta  BookMeta
 	field Field
 	label string
 }
+
+type BookMeta map[string]Meta
 
 type Field struct {
 	*calibredb.Field
@@ -145,10 +135,17 @@ type Field struct {
 	null  bool
 }
 
-func NewBook() *Book {
-	return &Book{
-		meta: make(map[string]Meta),
-	}
+func NewBook() BookMeta {
+	return make(BookMeta)
+}
+
+func (meta BookMeta) Get(k string) Meta {
+	return meta[k]
+}
+
+func (meta BookMeta) Set(k string, v Meta) BookMeta {
+	meta[k] = v
+	return meta
 }
 
 func (b Book) Get(f string) Book {
@@ -236,18 +233,18 @@ func (b Book) String() string {
 	case "formats":
 		return b.GetCategory(b.label).Join("extension")
 	case "position":
-		if series := b.GetItem("series"); !series.Null() {
+		if series := b.GetItem("series"); series.IsNull() {
 			return series.Get("position")
 		}
 	case "seriesAndTitle":
 		title := b.Get("title").Value()
-		if series := b.GetItem("series"); !series.Null() {
+		if series := b.GetItem("series"); series.IsNull() {
 			return title + " [" + b.Get("series").String() + "]"
 		}
 		return title
 	}
 
-	if field.IsCategory() && !field.IsMultiple() && !field.Null() {
+	if field.IsCategory() && !field.IsMultiple() && field.IsNull() {
 		f := field.(Item)
 		if b.label == "series" {
 			return f.Value() + ", Book " + f.Get("position")
@@ -308,7 +305,7 @@ type Meta interface {
 	IsMultiple() bool
 	IsCategory() bool
 	IsCustom() bool
-	Null() bool
+	IsNull() bool
 }
 
 type Category struct {
@@ -373,8 +370,8 @@ func (c Category) IsCustom() bool {
 	return c.field.IsCustom
 }
 
-func (c Category) Null() bool {
-	return c.field.null
+func (c Category) IsNull() bool {
+	return len(c.Items()) == 0
 }
 
 func (c Category) Value() string {
@@ -428,8 +425,8 @@ func (i Item) IsCategory() bool {
 	return i.field.IsCategory
 }
 
-func (i Item) Null() bool {
-	return i.field.null
+func (i Item) IsNull() bool {
+	return len(i.meta) == 0
 }
 
 func (i Item) ID() string {
@@ -497,8 +494,8 @@ func (c Column) IsCategory() bool {
 	return c.field.IsCategory
 }
 
-func (c Column) Null() bool {
-	return c.field.null
+func (c Column) IsNull() bool {
+	return c.meta == ""
 }
 
 type CatResponse struct {

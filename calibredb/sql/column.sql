@@ -2,9 +2,7 @@
 {{- $f := getJsonField .Label -}}
 {{- if ne $f "id"}}
 {{- if ne $f "url"}}
-
 {{- if ne $f "cover" -}}
-
 
 IFNULL(JSON_QUOTE(
 
@@ -16,7 +14,7 @@ IFNULL(JSON_QUOTE(
 	{{- .Label -}}
 {{- end -}}
 
-), "") {{$f}},
+), '""') {{$f}},
 
 {{- end -}}
 {{- end -}}

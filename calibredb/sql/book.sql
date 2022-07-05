@@ -15,7 +15,6 @@ JSON_QUOTE("{{.Name}}") AS library,
 		{{- if eq $field.Table "" -}}
 
 {{- if eq $field.Label "cover" -}}
-JSON_ARRAY(
 CASE has_cover
 WHEN true
 THEN JSON_OBJECT(
@@ -26,7 +25,7 @@ THEN JSON_OBJECT(
 	'value', 'cover.jpg'
 )
 ELSE JSON_QUOTE('{}')
-END) cover, 
+END cover, 
 {{end -}}
 
 			{{- template "column" $field}}
@@ -49,7 +48,7 @@ JSON_GROUP_ARRAY(JSON_OBJECT(
 	{{- end}}
 {{end -}}
 
-IFNULL(JSON_QUOTE(lower(id)), "") id
+IFNULL(JSON_QUOTE(lower(id)), '""') id
 
 FROM books
 {{end}}
