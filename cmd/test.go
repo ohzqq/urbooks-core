@@ -28,7 +28,7 @@ func someBooks() {
 	//u := "http://localhost:9932/tags/11?currentPage=2&itemsPerPage=50&library=audiobooks&order=desc&sort=added"
 	req := urbooks.NewRequest("test-library")
 	req.From("books")
-	req.ID("216")
+	req.ID("209")
 	//req.Sort("formats")
 	//req.Desc()
 	//req.Limit("1")
@@ -55,7 +55,7 @@ func someBooks() {
 
 	book := urbooks.ParseBooks(resp).Books()[0]
 	//fmt.Printf("%+V\n", book.Get("formats").String())
-	fmt.Printf("%+V\n", book.Get("tags").Value())
+	fmt.Printf("%+V\n", book.GetFile("cover"))
 	//fmt.Printf("%+V\n", book.Get("tags").String())
 	//fmt.Printf("%+V\n", book.Get("description").String())
 	//fmt.Printf("%+V\n", book.Get("authors").String())

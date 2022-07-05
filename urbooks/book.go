@@ -2,15 +2,7 @@ package urbooks
 
 import (
 	"fmt"
-	//"log"
-
 	"net/url"
-
-	//"os"
-	//"time"
-	//"path"
-	//"bytes"
-
 	"strings"
 
 	"github.com/ohzqq/urbooks-core/calibredb"
@@ -66,7 +58,7 @@ func (b *Book) NewItem(k string) *Item {
 }
 
 func (b *Book) NewCategory(k string) *Category {
-	cat := NewCategory(k)
+	cat := NewCategory()
 	book := *b
 	if lib := book.meta["library"]; !lib.IsNull() {
 		cat.Field = Lib(lib.Value()).DB.GetField(k)
@@ -110,11 +102,11 @@ func (b Book) GetItem(f string) Item {
 	return Item{}
 }
 
-func (b Book) GetCategory(f string) Category {
+func (b Book) GetCategory(f string) *Category {
 	if field := b.GetField(f); field.FieldMeta().IsCategory && field.FieldMeta().IsMultiple {
-		return field.(Category)
+		return field.(*Category)
 	}
-	return Category{}
+	return &Category{}
 }
 
 func (b Book) GetColumn(f string) Column {
@@ -194,8 +186,8 @@ func (b Book) GetFile(f string) BookFile {
 	var bfile *Item
 	switch f {
 	case "cover":
-		i := b.GetItem("cover")
-		bfile = &i
+		f = ".jpg"
+		fallthrough
 	case "audio":
 		for _, item := range b.Get("formats").Items() {
 			if slices.Contains(AudioFormats(), item.Get("extension")) {
@@ -230,4 +222,82 @@ func (f BookFile) Ext() string {
 
 func (f BookFile) URL() string {
 	return f.Get("url")
+}
+
+//func (b *Book) ToFFmeta() {
+//  err := MetaFmt.FFmeta.Execute(os.Stdout, b)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//}
+
+//func (b *Book) ToPlain() string {
+//  var buf bytes.Buffer
+//  err := MetaFmt.Plain.Execute(&buf, b)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//  return buf.String()
+//}
+
+//func (b *Book) ToMarkdown() string {
+//  var buf bytes.Buffer
+//  err := MetaFmt.MD.Execute(&buf, b)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//  //fmt.Println(markdown)
+//  return buf.String()
+//}
+
+func AudioFormats() []string {
+	return []string{"m4b", "m4a", "mp3", "opus", "ogg"}
+}
+
+func AudioMimeType(ext string) string {
+	switch ext {
+	case "m4b", "m4a":
+		return "audio/mp4"
+	case "mp3":
+		return "audio/mpeg"
+	case "ogg", "opus":
+		return "audio/ogg"
+	}
+	return ""
+}
+
+func BookSortFields() []string {
+	return []string{
+		"added",
+		"sortAs",
+	}
+}
+
+func BookSortTitle(idx int) string {
+	titles := []string{
+		"by Newest",
+		"by Title",
+	}
+	return titles[idx]
+}
+
+func BookCats() []string {
+	return []string{
+		"authors",
+		"tags",
+		"series",
+		"languages",
+		"rating",
+	}
+}
+
+func BookCatsTitle(idx int) string {
+	titles := []string{
+		"by Authors",
+		"by Tags",
+		"by Series",
+		"by Languages",
+		"by Rating",
+	}
+	return titles[idx]
 }

@@ -13,9 +13,8 @@ type Category struct {
 	item  Item
 }
 
-func NewCategory(label string) *Category {
-	cat := &Category{Field: &calibredb.Field{}}
-	cat.Field.Label = label
+func NewCategory() *Category {
+	cat := &Category{}
 	return cat
 }
 

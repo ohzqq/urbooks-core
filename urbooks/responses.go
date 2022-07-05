@@ -55,15 +55,22 @@ func ParseBooks(r []byte) *BookResponse {
 
 	for _, book := range books {
 		bb := NewBook(lib.Name)
+		bb.query = response.books.query
+		formats := bb.NewCategory("formats")
 		for key, val := range book {
 			var err error
 			switch key {
-			case "cover", "series", "publishers":
+			case "series", "publishers":
 				item := bb.NewItem(key)
-				err = json.Unmarshal(val, &item.meta)
+				err = json.Unmarshal(val, &item)
 				u := &url.URL{Path: item.Get("uri"), RawQuery: response.books.query.Encode()}
 				item.Set("url", u.String())
-			case "authors", "narrators", "identifiers", "formats", "languages", "tags":
+			case "cover":
+				item := formats.AddItem()
+				err = json.Unmarshal(val, &item)
+			case "formats":
+				err = json.Unmarshal(val, &formats.items)
+			case "authors", "narrators", "identifiers", "languages", "tags":
 				cat := bb.NewCategory(key)
 
 				err = json.Unmarshal(val, &cat.items)
@@ -134,82 +141,4 @@ func (c CatResponse) Items() []*Item {
 
 func (c CatResponse) Label() string {
 	return c.data.Field.Label
-}
-
-//func (b *Book) ToFFmeta() {
-//  err := MetaFmt.FFmeta.Execute(os.Stdout, b)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//}
-
-//func (b *Book) ToPlain() string {
-//  var buf bytes.Buffer
-//  err := MetaFmt.Plain.Execute(&buf, b)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//  return buf.String()
-//}
-
-//func (b *Book) ToMarkdown() string {
-//  var buf bytes.Buffer
-//  err := MetaFmt.MD.Execute(&buf, b)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//  //fmt.Println(markdown)
-//  return buf.String()
-//}
-
-func AudioFormats() []string {
-	return []string{"m4b", "m4a", "mp3", "opus", "ogg"}
-}
-
-func AudioMimeType(ext string) string {
-	switch ext {
-	case "m4b", "m4a":
-		return "audio/mp4"
-	case "mp3":
-		return "audio/mpeg"
-	case "ogg", "opus":
-		return "audio/ogg"
-	}
-	return ""
-}
-
-func BookSortFields() []string {
-	return []string{
-		"added",
-		"sortAs",
-	}
-}
-
-func BookSortTitle(idx int) string {
-	titles := []string{
-		"by Newest",
-		"by Title",
-	}
-	return titles[idx]
-}
-
-func BookCats() []string {
-	return []string{
-		"authors",
-		"tags",
-		"series",
-		"languages",
-		"rating",
-	}
-}
-
-func BookCatsTitle(idx int) string {
-	titles := []string{
-		"by Authors",
-		"by Tags",
-		"by Series",
-		"by Languages",
-		"by Rating",
-	}
-	return titles[idx]
 }
