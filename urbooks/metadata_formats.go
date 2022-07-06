@@ -34,13 +34,27 @@ var MetaFmt = metadataFormats{
 }
 
 const ffmetaTmpl = `;FFMETADATA
-title={{$title := .Get "titleAndSeries"}}{{$title.String}}
-album={{$title := .Get "titleAndSeries"}}{{$title.String}}
-artist={{with $authors := .Get "authors"}}{{$authors.String}}{{end}}
-composer={{with $narrators := .Get "narrators"}}{{$narrators.String}}{{end}}
-genre={{with $tags := .Get "tags"}}{{$tags.String}}{{end}}
-comment={{with $description := .Get "description"}}{{$description.String}}{{end}}
+{{$title := .Get "titleAndSeries" -}}
+title={{$title.String}}
+album={{$title.String}}
+artist=
+{{- with $authors := .Get "authors" -}}
+	{{- $authors.String -}}
+{{- end}}
+composer=
+{{- with $narrators := .Get "narrators" -}}
+	{{- $narrators.String -}}
+{{- end}}
+genre=
+{{- with $tags := .Get "tags" -}}
+	{{- $tags.String -}}
+{{- end}}
+comment=
+{{- with $description := .Get "description" -}}
+	{{- $description.String -}}
+{{- end -}}
 `
+
 const mdTmpl = `{{if .Title}}# {{.Title}}   
 {{end}}{{if .HasSeries}}**Series:** {{.SeriesString}}   
 {{end}}{{if .Authors}}**Authors:** {{.Authors.Join}}   
