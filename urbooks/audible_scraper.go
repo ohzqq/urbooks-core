@@ -2,10 +2,14 @@ package urbooks
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
+	"github.com/gosimple/slug"
 	"github.com/ohzqq/urbooks-core/bubbles"
 
 	"github.com/PuerkitoBio/goquery"
@@ -28,29 +32,39 @@ type AudibleScraper struct {
 	IsList      bool
 	IsSearch    bool
 	IsSingle    bool
+	NoCovers    bool
+	Keywords    string
+	Authors     string
+	Narrators   string
+	Title       string
 }
 
 func NewAudibleSearch() *AudibleScraper {
 	return &AudibleScraper{searchQuery: make(url.Values)}
 }
 
-func (s *AudibleScraper) Keywords(words string) *AudibleScraper {
-	s.searchQuery.Set("keywords", words)
+func (s *AudibleScraper) SetKeywords(words string) *AudibleScraper {
+	s.Keywords = words
 	return s
 }
 
-func (s *AudibleScraper) Authors(words string) *AudibleScraper {
-	s.searchQuery.Set("searchAuthor", words)
+func (s *AudibleScraper) SetAuthors(words string) *AudibleScraper {
+	s.Authors = words
 	return s
 }
 
-func (s *AudibleScraper) Narrators(words string) *AudibleScraper {
-	s.searchQuery.Set("searchNarrator", words)
+func (s *AudibleScraper) SetNarrators(words string) *AudibleScraper {
+	s.Narrators = words
 	return s
 }
 
-func (s *AudibleScraper) Title(words string) *AudibleScraper {
-	s.searchQuery.Set("title", words)
+func (s *AudibleScraper) SetTitle(words string) *AudibleScraper {
+	s.Title = words
+	return s
+}
+
+func (s *AudibleScraper) SetNoCovers() *AudibleScraper {
+	s.NoCovers = true
 	return s
 }
 
@@ -60,12 +74,27 @@ func (s *AudibleScraper) String() string {
 		Host:   audible,
 		Path:   "/search",
 	}
+	if s.Keywords != "" {
+		s.searchQuery.Set("keywords", s.Keywords)
+	}
+	if s.Authors != "" {
+		s.searchQuery.Set("searchAuthor", s.Authors)
+	}
+	if s.Narrators != "" {
+		s.searchQuery.Set("searchNarrator", s.Narrators)
+	}
+	if s.Title != "" {
+		s.searchQuery.Set("title", s.Title)
+	}
 	url.RawQuery = s.searchQuery.Encode()
 	return url.String()
 }
 
 func (s *AudibleScraper) Search() *AudibleScraper {
 	a := NewAudibleScraper().Get(s.String())
+	if s.NoCovers {
+		a.SetNoCovers()
+	}
 	a.IsSearch = true
 	a.URLs = a.getListURLs(a.AudibleURL)
 	return a
@@ -77,7 +106,8 @@ func NewAudibleScraper() *AudibleScraper {
 			ConcurrentRequests: 1,
 			LogDisabled:        true,
 		},
-		URLs: make(map[string]string),
+		URLs:        make(map[string]string),
+		searchQuery: make(url.Values),
 	}
 }
 
@@ -169,10 +199,14 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 	return func(g *geziyor.Geziyor, r *client.Response) {
 		book := NewBook("")
 
-		book.NewColumn("title").SetValue(strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text()))
+		title := strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text())
+		book.NewColumn("title").SetValue(title)
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
-		book.NewItem("cover").Set("url", coverURL)
+		if !a.NoCovers {
+			println(coverURL)
+			DownloadCover(slug.Make(title)+".jpg", coverURL)
+		}
 
 		authors := book.NewCategory("authors")
 		authors.SetFieldMeta("isNames", "true")
@@ -210,5 +244,28 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 		book.NewColumn("description").SetValue(desc)
 
 		a.Books = append(a.Books, book)
+	}
+}
+
+func DownloadCover(name, u string) {
+	response, err := http.Get(u)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		log.Fatal(response.StatusCode)
+	}
+
+	file, err := os.Create(name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, response.Body)
+	if err != nil {
+		log.Fatal(err)
 	}
 }

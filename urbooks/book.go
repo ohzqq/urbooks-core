@@ -2,11 +2,14 @@ package urbooks
 
 import (
 	"fmt"
+	"log"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/ohzqq/urbooks-core/calibredb"
 
+	"github.com/gosimple/slug"
 	"golang.org/x/exp/slices"
 )
 
@@ -95,11 +98,11 @@ func (b Book) GetField(f string) Meta {
 	return b.meta[f]
 }
 
-func (b Book) GetItem(f string) Item {
+func (b Book) GetItem(f string) *Item {
 	if field := b.GetField(f); field.FieldMeta().IsCategory && !field.FieldMeta().IsMultiple {
-		return field.(Item)
+		return field.(*Item)
 	}
-	return Item{}
+	return &Item{}
 }
 
 func (b Book) GetCategory(f string) *Category {
@@ -109,23 +112,27 @@ func (b Book) GetCategory(f string) *Category {
 	return &Category{}
 }
 
-func (b Book) GetColumn(f string) Column {
+func (b Book) GetColumn(f string) *Column {
 	if field := b.GetField(f); !field.FieldMeta().IsCategory {
-		return field.(Column)
+		return field.(*Column)
 	}
-	return Column{}
+	return &Column{}
 }
 
 func (b Book) URL() string {
 	var u string
-	switch b.label == "" {
-	case false:
+	switch {
+	case b.label == "cover":
+		if ur := b.meta[b.label].URL(); ur != "" {
+			u = ur
+		}
+	case b.label == "":
+		bu := &url.URL{Path: b.Get("uri").String(), RawQuery: b.query.Encode()}
+		u = bu.String()
+	default:
 		if !b.field.IsMultiple && b.field.IsCategory {
 			u = b.meta[b.label].URL()
 		}
-	case true:
-		bu := &url.URL{Path: b.Get("uri").String(), RawQuery: b.query.Encode()}
-		u = bu.String()
 	}
 	return u
 }
@@ -153,6 +160,9 @@ func (b Book) Items() []*Item {
 
 func (b Book) String() string {
 	field := b.GetField(b.label)
+	if b.label == "titleAndSeries" {
+		field = b.GetField("series")
+	}
 
 	switch b.label {
 	case "formats":
@@ -161,16 +171,16 @@ func (b Book) String() string {
 		if series := b.GetItem("series"); series.IsNull() {
 			return series.Get("position")
 		}
-	case "seriesAndTitle":
+	case "titleAndSeries":
 		title := b.Get("title").Value()
-		if series := b.GetItem("series"); series.IsNull() {
-			return title + " [" + b.Get("series").String() + "]"
+		if series := b.Get("series"); !field.IsNull() {
+			return title + " [" + series.String() + "]"
 		}
 		return title
 	}
 
-	if field.FieldMeta().IsCategory && !field.FieldMeta().IsMultiple && field.IsNull() {
-		f := field.(Item)
+	if field.FieldMeta().IsCategory && !field.FieldMeta().IsMultiple && !field.IsNull() {
+		f := field.(*Item)
 		if b.label == "series" {
 			return f.Value() + ", Book " + f.Get("position")
 		}
@@ -224,12 +234,18 @@ func (f BookFile) URL() string {
 	return f.Get("url")
 }
 
-//func (b *Book) ToFFmeta() {
-//  err := MetaFmt.FFmeta.Execute(os.Stdout, b)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//}
+func (b *Book) ToFFmeta() {
+	meta, err := os.Create(slug.Make(b.Get("title").String()) + ".ini")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer meta.Close()
+
+	err = MetaFmt.FFmeta.Execute(meta, b)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 //func (b *Book) ToPlain() string {
 //  var buf bytes.Buffer

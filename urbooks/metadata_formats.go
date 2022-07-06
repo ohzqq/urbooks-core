@@ -1,17 +1,17 @@
 package urbooks
 
 import (
-	"text/template"
 	"log"
+	"text/template"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 )
 
 type metadataFormats struct {
 	FFmeta *template.Template
-	MD *template.Template
-	Plain *template.Template
-	Cue *template.Template
+	MD     *template.Template
+	Plain  *template.Template
+	Cue    *template.Template
 }
 
 var funcMap = template.FuncMap{
@@ -29,19 +29,18 @@ func toMarkdown(str string) string {
 
 var MetaFmt = metadataFormats{
 	FFmeta: template.Must(template.New("ffmeta").Parse(ffmetaTmpl)),
-	MD: template.Must(template.New("html").Funcs(funcMap).Parse(mdTmpl)),
-	Plain: template.Must(template.New("plain").Funcs(funcMap).Parse(plainTmpl)),
+	MD:     template.Must(template.New("html").Funcs(funcMap).Parse(mdTmpl)),
+	Plain:  template.Must(template.New("plain").Funcs(funcMap).Parse(plainTmpl)),
 }
 
 const ffmetaTmpl = `;FFMETADATA
-title={{if .TitleAndSeries}}{{.TitleAndSeries}}{{end}}
-album={{if .TitleAndSeries}}{{.TitleAndSeries}}{{end}}
-artist={{if .Authors}}{{.Authors.Join}}{{end}}
-composer={{if .Narrators}}{{.Narrators.Join}}{{end}}
-genre={{if .Tags}}{{.Tags.Join}}{{end}}
-comment={{if .Description}}{{.Description}}{{end}}
+title={{$title := .Get "titleAndSeries"}}{{$title.String}}
+album={{$title := .Get "titleAndSeries"}}{{$title.String}}
+artist={{with $authors := .Get "authors"}}{{$authors.String}}{{end}}
+composer={{with $narrators := .Get "narrators"}}{{$narrators.String}}{{end}}
+genre={{with $tags := .Get "tags"}}{{$tags.String}}{{end}}
+comment={{with $description := .Get "description"}}{{$description.String}}{{end}}
 `
-
 const mdTmpl = `{{if .Title}}# {{.Title}}   
 {{end}}{{if .HasSeries}}**Series:** {{.SeriesString}}   
 {{end}}{{if .Authors}}**Authors:** {{.Authors.Join}}   

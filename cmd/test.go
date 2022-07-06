@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/ohzqq/urbooks-core/urbooks"
 
 	"github.com/spf13/cobra"
@@ -55,7 +53,8 @@ func someBooks() {
 
 	book := urbooks.ParseBooks(resp).Books()[0]
 	//fmt.Printf("%+V\n", book.Get("formats").String())
-	fmt.Printf("%+V\n", book.GetFile("cover"))
+	book.ToFFmeta()
+	//fmt.Printf("%+V\n", book.GetFile("cover"))
 	//fmt.Printf("%+V\n", book.Get("tags").String())
 	//fmt.Printf("%+V\n", book.Get("description").String())
 	//fmt.Printf("%+V\n", book.Get("authors").String())
