@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	//"github.com/ohzqq/urbooks/ui"
+	"github.com/ohzqq/urbooks-core/bubbles"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/geziyor/geziyor"
@@ -22,55 +22,49 @@ type AudibleScraper struct {
 	URLs        map[string]string
 	Books       []*Book
 	URL         *url.URL
+	searchQuery url.Values
 	AudibleURL  string
 	Suffix      string
 	IsList      bool
 	IsSearch    bool
-	IsSeries    bool
+	IsSingle    bool
 }
 
-type AudibleSearch struct {
-	url   *url.URL
-	query url.Values
+func NewAudibleSearch() *AudibleScraper {
+	return &AudibleScraper{searchQuery: make(url.Values)}
 }
 
-func NewAudibleSearch() *AudibleSearch {
-	return &AudibleSearch{
-		url: &url.URL{
-			Scheme: "https",
-			Host:   audible,
-			Path:   "/search",
-		},
-		query: make(url.Values),
+func (s *AudibleScraper) Keywords(words string) *AudibleScraper {
+	s.searchQuery.Set("keywords", words)
+	return s
+}
+
+func (s *AudibleScraper) Authors(words string) *AudibleScraper {
+	s.searchQuery.Set("searchAuthor", words)
+	return s
+}
+
+func (s *AudibleScraper) Narrators(words string) *AudibleScraper {
+	s.searchQuery.Set("searchNarrator", words)
+	return s
+}
+
+func (s *AudibleScraper) Title(words string) *AudibleScraper {
+	s.searchQuery.Set("title", words)
+	return s
+}
+
+func (s *AudibleScraper) String() string {
+	url := &url.URL{
+		Scheme: "https",
+		Host:   audible,
+		Path:   "/search",
 	}
+	url.RawQuery = s.searchQuery.Encode()
+	return url.String()
 }
 
-func (s *AudibleSearch) Keywords(words string) *AudibleSearch {
-	s.query.Set("keywords", words)
-	return s
-}
-
-func (s *AudibleSearch) Authors(words string) *AudibleSearch {
-	s.query.Set("searchAuthor", words)
-	return s
-}
-
-func (s *AudibleSearch) Narrators(words string) *AudibleSearch {
-	s.query.Set("searchNarrator", words)
-	return s
-}
-
-func (s *AudibleSearch) Title(words string) *AudibleSearch {
-	s.query.Set("title", words)
-	return s
-}
-
-func (s *AudibleSearch) String() string {
-	s.url.RawQuery = s.query.Encode()
-	return s.url.String()
-}
-
-func (s *AudibleSearch) Search() *AudibleScraper {
+func (s *AudibleScraper) Search() *AudibleScraper {
 	a := NewAudibleScraper().Get(s.String())
 	a.IsSearch = true
 	a.URLs = a.getListURLs(a.AudibleURL)
@@ -89,40 +83,47 @@ func NewAudibleScraper() *AudibleScraper {
 
 func (a *AudibleScraper) Get(audible string) *AudibleScraper {
 	a.AudibleURL = audible
+	a.IsSingle = true
+	a.ParseURL()
+	return a
+}
 
-	var err error
-	a.URL, err = url.Parse(a.AudibleURL)
+func (a *AudibleScraper) List(audible string) *AudibleScraper {
+	a.AudibleURL = audible
+	a.IsList = true
+	a.ParseURL()
+	return a
+}
+
+func (a *AudibleScraper) ParseURL() {
+	aUrl, err := url.Parse(a.AudibleURL)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	return a
+	a.URL = aUrl
 }
 
 func (a *AudibleScraper) Scrape() []*Book {
 	var urls map[string]string
-	audible := a.AudibleURL
-
-	switch strings.Contains(a.URL.Path, "/pd") {
-	case true:
-		urls = map[string]string{"self": audible}
-		a.URLs["self"] = a.AudibleURL
-	case false:
-		a.IsList = true
-		urls = a.getListURLs(audible)
-	}
-
-	if a.IsSearch {
+	switch {
+	case a.IsSearch:
 		switch len(a.URLs) {
 		case 0:
 			fmt.Println("No results")
 		case 1:
+			for _, u := range a.URLs {
+				urls = map[string]string{"self": u}
+			}
 			break
 		default:
-			//choice := ui.NewPrompt(a.URLs).Choose()
-			//a.IsSearch = false
-			//urls = map[string]string{"self": choice}
+			choice := bubbles.NewPrompt("search results: pick one", a.URLs).Choose()
+			a.IsSearch = false
+			urls = map[string]string{"self": choice}
 		}
+	case a.IsList:
+		urls = a.getListURLs(a.AudibleURL)
+	case a.IsSingle:
+		urls = map[string]string{"self": a.AudibleURL}
 	}
 
 	for _, u := range urls {
@@ -140,6 +141,10 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 		metaList := r.HTMLDoc.Find("li.productListItem")
 		metaList.Each(func(_ int, s *goquery.Selection) {
 			link := s.Find("li.bc-list-item h3.bc-heading a")
+			var authors []string
+			s.Find(".authorLabel a").Each(func(_ int, a *goquery.Selection) {
+				authors = append(authors, a.Text())
+			})
 			href, _ := link.Attr("href")
 			if href != "" {
 				pd, err := url.Parse(href)
@@ -151,8 +156,8 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 					Host:   a.URL.Host,
 					Path:   pd.Path,
 				}
-				//a.URLs[link.Text()] = linkURL.String()
-				urls[link.Text()] = linkURL.String()
+				text := fmt.Sprintf("%s by %s", link.Text(), strings.Join(authors, ", "))
+				urls[text] = linkURL.String()
 			}
 		})
 	}

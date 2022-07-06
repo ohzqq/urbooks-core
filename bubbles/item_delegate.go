@@ -1,4 +1,4 @@
-package urbooksTui
+package bubbles
 
 import (
 	"fmt"

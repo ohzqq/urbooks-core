@@ -1,4 +1,4 @@
-package urbooksTui
+package bubbles
 
 import (
 	"github.com/charmbracelet/bubbles/key"
