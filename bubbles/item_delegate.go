@@ -1,0 +1,131 @@
+package urbooksTui
+
+import (
+	"fmt"
+	"io"
+
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/list"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/muesli/reflow/padding"
+	"github.com/muesli/reflow/truncate"
+)
+
+type item struct {
+	title    string
+	id       string
+	selected bool
+}
+
+func (i item) Title() string       { return i.title }
+func (i item) Selected() bool      { return i.selected }
+func (i item) ID() string          { return i.id }
+func (i item) FilterValue() string { return i.title }
+func (i *item) ToggleSelected()    { i.selected = !i.selected }
+
+type itemDelegate struct {
+	MultiSelect bool
+	keys        KeyMap
+	styles      ItemStyle
+}
+
+func (d itemDelegate) Height() int {
+	return 1
+}
+
+func (d itemDelegate) Spacing() int {
+	return 0
+}
+
+func (d itemDelegate) ShortHelp() []key.Binding {
+	return d.keys.ShortHelp()
+}
+
+func (d itemDelegate) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{d.keys["Enter"], d.keys["FullScreen"]},
+	}
+}
+
+func (d itemDelegate) Update(msg tea.Msg, m *list.Model) tea.Cmd {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, d.keys["ToggleItem"]):
+			if d.MultiSelect {
+				switch i := m.SelectedItem().(type) {
+				case item:
+					i.ToggleSelected()
+					m.SetItem(m.Index(), i)
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	var (
+		title    string
+		selected bool
+		style    = &d.styles
+	)
+
+	switch i := listItem.(type) {
+	case item:
+		title = i.Title()
+		selected = i.Selected()
+	}
+
+	if m.Width() > 0 {
+		textwidth := uint(m.Width() - style.CurrentItem.GetPaddingLeft() - style.CurrentItem.GetPaddingRight())
+		title = padding.String(truncate.StringWithTail(title, textwidth, ellipsis), textwidth)
+	}
+
+	var (
+		isCurrent  = index == m.Index()
+		isSelected = selected
+		check      = "[x] "
+		uncheck    = "[ ] "
+		mark       = " >> "
+	)
+
+	fn := style.NormalItem.Render
+
+	switch d.MultiSelect {
+	case true:
+		mark = uncheck
+		if isSelected {
+			mark = check
+		}
+		if isCurrent {
+			fn = func(s string) string {
+				return style.CurrentItem.Render(mark + s)
+			}
+		} else if isSelected {
+			fn = func(s string) string {
+				return style.SelectedItem.Render(mark + s)
+			}
+		} else {
+			fn = func(s string) string {
+				return style.NormalItem.Render(mark + s)
+			}
+		}
+	case false:
+		if isCurrent {
+			fn = func(s string) string {
+				return style.CurrentItem.Render(s)
+			}
+		} else if isSelected {
+			fn = func(s string) string {
+				return style.SelectedItem.Render(s)
+			}
+		} else {
+			fn = func(s string) string {
+				return style.NormalItem.Render(s)
+			}
+		}
+	}
+
+	fmt.Fprintf(w, fn(title))
+}

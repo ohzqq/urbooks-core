@@ -14,8 +14,6 @@ import (
 	//tea "github.com/charmbracelet/bubbletea"
 )
 
-var _ = fmt.Sprintf("%v", "")
-
 const audible = "audible.ca"
 
 type AudibleScraper struct {

@@ -208,12 +208,12 @@ func (b Book) GetFile(f string) BookFile {
 	return BookFile(bfile.meta)
 }
 
-func (f BookFile) Path() string {
-	return f.Get("path")
-}
-
 func (f BookFile) Get(v string) string {
 	return f[v]
+}
+
+func (f BookFile) Path() string {
+	return f.Get("path")
 }
 
 func (f BookFile) Ext() string {
