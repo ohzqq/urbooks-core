@@ -1,6 +1,7 @@
 package urbooks
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -90,11 +91,51 @@ func (bm BookMeta) StringMap() map[string]string {
 	m := make(map[string]string)
 	for key, val := range bm {
 		m[key] = val.String()
+		if key == "series" {
+			series := m["series"]
+			fmt.Printf("series: %+V\n", series)
+			fmt.Printf("position: %+V\n", m.Get("position"))
+			//if pos := series["position"]; pos != "" {
+			//  m["position"] = pos
+			//}
+
+		}
 	}
 	return m
 }
 
-func (bm BookMeta) ToBook() *Book {
+func (bm BookMeta) StringMapToBook() *Book {
+	lib := DefaultLib()
+	if l := bm["library"].Value(); l == "" {
+		lib = Lib(l)
+	}
+	book := NewBook(lib.Name)
+	for key, val := range bm {
+		field := lib.DB.GetField(key)
+		switch {
+		case field.IsCategory:
+			switch field.IsMultiple {
+			case true:
+				cat := book.NewCategory(key)
+				switch {
+				case field.IsNames:
+					cat.Split(val.String(), true)
+				default:
+					cat.Split(val.String(), false)
+				}
+			case false:
+				item := book.NewItem(key).SetValue(val.String())
+				if key == "series" {
+					if pos := bm["position"].String(); pos != "" {
+						item.Set("position", pos)
+					}
+				}
+			}
+		default:
+			book.NewColumn(key).SetValue(val.String())
+		}
+	}
+	return book
 }
 
 type MetaString string

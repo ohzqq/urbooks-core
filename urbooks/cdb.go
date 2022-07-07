@@ -1,7 +1,6 @@
 package urbooks
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/url"
@@ -52,7 +51,7 @@ func (c *cdbCmd) Add(input string) *cdbCmd {
 }
 
 func (c *cdbCmd) MediaMetaToBook() *Book {
-	fmt.Printf("media meta: %T\n", NewBookMeta(c.media.Meta.Tags))
+	//fmt.Printf("media meta: %T\n", NewBookMeta(c.media.Meta.Tags))
 	book := NewBook(c.lib)
 	titleRegex := regexp.MustCompile(`(?P<title>.*) \[(?P<series>.*), Book (?P<position>.*)\]$`)
 	titleAndSeries := titleRegex.FindStringSubmatch(c.media.Meta.Tags["title"])

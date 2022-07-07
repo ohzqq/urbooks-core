@@ -18,9 +18,11 @@ var importCmd = &cobra.Command{
 			lib = urbooks.DefaultLib().Name
 		}
 		cdb := urbooks.NewCalibredbCmd().SetUser(calibreUser).SetLib(lib).Add(args[0])
-		fmt.Printf("%+v\n", cdb)
-		fmt.Printf("%+V\n", cdb.MediaMetaToBook())
-		fmt.Printf("%+V\n", cdb.MediaMetaToBook().StringMap())
+		fmt.Printf("%+V\n", cdb.MediaMetaToBook().Get("series"))
+		strmap := cdb.MediaMetaToBook().StringMap()
+		fmt.Printf("%+V\n", strmap)
+		newB := urbooks.NewBookMeta(strmap)
+		fmt.Printf("%+V\n", newB.StringMapToBook())
 	},
 }
 
