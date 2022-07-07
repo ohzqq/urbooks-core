@@ -1,12 +1,8 @@
 package urbooks
 
 import (
-	"fmt"
-
 	"github.com/ohzqq/urbooks-core/calibredb"
 )
-
-var _ = fmt.Sprintf("%v", "")
 
 func Libraries() []string {
 	return cfg.list

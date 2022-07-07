@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 
@@ -11,6 +12,8 @@ import (
 )
 
 var cfgFile string
+var lib string
+var calibreUser urbooks.CalibreUserCfg
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -36,10 +39,7 @@ func init() {
 	// will be global for your application.
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urbooks-core.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().StringVarP(&lib, "library", "l", "", "library by name")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -65,5 +65,9 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		urbooks.InitConfig(viper.GetStringMapString("library_options"))
 		urbooks.InitLibraries(viper.Sub("libraries"), viper.GetStringMapString("libraries"), false)
+		err := viper.Sub("calibre").Unmarshal(&calibreUser)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }

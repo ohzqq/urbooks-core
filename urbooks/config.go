@@ -1,18 +1,12 @@
 package urbooks
 
 import (
+	"errors"
 	"fmt"
 	"log"
-	"strconv"
-
-	//"encoding/json"
-	"path/filepath"
-	//"html/template"
-	"errors"
 	"os"
-
-	//"io/fs"
-	//"sort"
+	"path/filepath"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
@@ -86,14 +80,18 @@ func InitLibraries(v *viper.Viper, libs map[string]string, web bool) {
 		if _, err := os.Stat(libPath); errors.Is(err, os.ErrNotExist) {
 			log.Fatalf("%v does not exist or cannot be found at %v, check the path in the config", libcfg.Name, libPath)
 		}
+
 		newLib := NewLibrary(lib, libPath)
 		newLib.DefaultRequest = NewRequest(lib).From("books")
+
 		if sort := Cfg().Opts["sort"]; sort != "" {
 			newLib.DefaultRequest.Sort(sort)
 		}
+
 		if order := Cfg().Opts["order"]; order != "" {
 			newLib.DefaultRequest.Set("order", order)
 		}
+
 		Cfg().libs[lib] = newLib
 	}
 }

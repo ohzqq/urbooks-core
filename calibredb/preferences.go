@@ -110,23 +110,23 @@ type Field struct {
 	CatID        string
 }
 
-func (lib *Lib) GetFields(f string) *Field {
+func GetFields(f string) *Field {
 	switch f {
 	case "added":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "timestamp",
 			IsEditable: true,
 		}
 	case "authorSort":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			IsEditable: true,
 			Label:      "author_sort",
 		}
 	case "authors":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "authors",
 			IsCategory: true,
 			IsEditable: true,
@@ -137,19 +137,19 @@ func (lib *Lib) GetFields(f string) *Field {
 		}
 	case "description":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "comments",
 			IsEditable: true,
 		}
 	case "cover":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "cover",
 			IsEditable: true,
 		}
 	case "formats":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "formats",
 			IsCategory: true,
 			IsEditable: true,
@@ -158,12 +158,12 @@ func (lib *Lib) GetFields(f string) *Field {
 		}
 	case "id":
 		return &Field{
-			Library: lib.Name,
-			Label:   "id",
+			//Library: lib.Name,
+			Label: "id",
 		}
 	case "identifiers":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "identifiers",
 			IsCategory: true,
 			IsEditable: true,
@@ -172,7 +172,7 @@ func (lib *Lib) GetFields(f string) *Field {
 		}
 	case "languages":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "languages",
 			IsCategory: true,
 			IsEditable: true,
@@ -182,31 +182,31 @@ func (lib *Lib) GetFields(f string) *Field {
 		}
 	case "lastModified":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "last_modified",
 			IsEditable: true,
 		}
 	case "path":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "path",
 			IsEditable: true,
 		}
 	case "position":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			IsEditable: true,
 			Label:      "series_index",
 		}
 	case "published":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "pubdate",
 			IsEditable: true,
 		}
 	case "publisher":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "publisher",
 			IsCategory: true,
 			IsEditable: true,
@@ -215,7 +215,7 @@ func (lib *Lib) GetFields(f string) *Field {
 		}
 	case "rating":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "rating",
 			IsCategory: true,
 			IsEditable: true,
@@ -225,7 +225,7 @@ func (lib *Lib) GetFields(f string) *Field {
 		}
 	case "series":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "series",
 			IsCategory: true,
 			IsEditable: true,
@@ -234,19 +234,19 @@ func (lib *Lib) GetFields(f string) *Field {
 		}
 	case "seriesSort":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "series_sort",
 			IsEditable: true,
 		}
 	case "sort":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "cover",
 			IsEditable: true,
 		}
 	case "tags":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "tags",
 			IsCategory: true,
 			IsEditable: true,
@@ -256,13 +256,13 @@ func (lib *Lib) GetFields(f string) *Field {
 		}
 	case "title":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "title",
 			IsEditable: true,
 		}
 	case "uuid":
 		return &Field{
-			Library:    lib.Name,
+			//Library:    lib.Name,
 			Label:      "uuid",
 			IsEditable: true,
 		}

@@ -2,10 +2,44 @@ package urbooks
 
 import (
 	"log"
+	"os"
 	"text/template"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
+	"github.com/gosimple/slug"
 )
+
+func (b *Book) ToFFmeta() {
+	meta, err := os.Create(slug.Make(b.Get("title").String()) + ".ini")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer meta.Close()
+
+	err = MetaFmt.FFmeta.Execute(meta, b)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+//func (b *Book) ToPlain() string {
+//  var buf bytes.Buffer
+//  err := MetaFmt.Plain.Execute(&buf, b)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//  return buf.String()
+//}
+
+//func (b *Book) ToMarkdown() string {
+//  var buf bytes.Buffer
+//  err := MetaFmt.MD.Execute(&buf, b)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//  //fmt.Println(markdown)
+//  return buf.String()
+//}
 
 type metadataFormats struct {
 	FFmeta *template.Template

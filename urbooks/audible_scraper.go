@@ -15,7 +15,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/geziyor/geziyor"
 	"github.com/geziyor/geziyor/client"
-	//tea "github.com/charmbracelet/bubbletea"
 )
 
 const audible = "audible.ca"
@@ -209,7 +208,6 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 		}
 
 		authors := book.NewCategory("authors")
-		authors.SetFieldMeta("isNames", "true")
 		r.HTMLDoc.Find(".authorLabel a").Each(func(_ int, s *goquery.Selection) {
 			authors.AddItem().SetValue(s.Text())
 		})

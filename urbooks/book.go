@@ -1,19 +1,13 @@
 package urbooks
 
 import (
-	"fmt"
-	"log"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/ohzqq/urbooks-core/calibredb"
 
-	"github.com/gosimple/slug"
 	"golang.org/x/exp/slices"
 )
-
-var _ = fmt.Sprintf("%v", "poot")
 
 type Books struct {
 	query url.Values
@@ -38,6 +32,10 @@ func NewBook(lib string) *Book {
 	}
 	book.Set("library", NewColumn().SetValue(lib))
 	return &book
+}
+
+func (b *Book) StringMap() map[string]string {
+	return b.meta.StringMap()
 }
 
 func (b *Book) NewColumn(k string) *Column {
@@ -79,6 +77,46 @@ type Meta interface {
 }
 
 type BookMeta map[string]Meta
+
+func NewBookMeta(m map[string]string) BookMeta {
+	meta := make(BookMeta)
+	for key, val := range m {
+		meta[key] = MetaString(val)
+	}
+	return meta
+}
+
+func (bm BookMeta) StringMap() map[string]string {
+	m := make(map[string]string)
+	for key, val := range bm {
+		m[key] = val.String()
+	}
+	return m
+}
+
+func (bm BookMeta) ToBook() *Book {
+}
+
+type MetaString string
+
+func NewMetaString() *MetaString {
+	ms := MetaString("")
+	return &ms
+}
+
+func (ms *MetaString) SetValue(v string) *MetaString {
+	s := MetaString(v)
+	ms = &s
+	return ms
+}
+
+func (ms MetaString) URL() string                 { return "" }
+func (ms MetaString) IsNull() bool                { return ms == "" }
+func (ms MetaString) Value() string               { return string(ms) }
+func (ms MetaString) String() string              { return string(ms) }
+func (ms MetaString) FieldMeta() *calibredb.Field { return &calibredb.Field{} }
+
+type SimpleBook map[string]string
 
 func (meta BookMeta) Get(k string) Meta {
 	return meta[k]
@@ -233,38 +271,6 @@ func (f BookFile) Ext() string {
 func (f BookFile) URL() string {
 	return f.Get("url")
 }
-
-func (b *Book) ToFFmeta() {
-	meta, err := os.Create(slug.Make(b.Get("title").String()) + ".ini")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer meta.Close()
-
-	err = MetaFmt.FFmeta.Execute(meta, b)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-//func (b *Book) ToPlain() string {
-//  var buf bytes.Buffer
-//  err := MetaFmt.Plain.Execute(&buf, b)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//  return buf.String()
-//}
-
-//func (b *Book) ToMarkdown() string {
-//  var buf bytes.Buffer
-//  err := MetaFmt.MD.Execute(&buf, b)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//  //fmt.Println(markdown)
-//  return buf.String()
-//}
 
 func AudioFormats() []string {
 	return []string{"m4b", "m4a", "mp3", "opus", "ogg"}

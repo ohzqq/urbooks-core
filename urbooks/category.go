@@ -46,12 +46,12 @@ func (c Category) Join(v string) string {
 	}
 }
 
-func (c *Category) Split() {
+func (c *Category) Split(value string, names bool) {
 	sep := itemSep
-	if c.Field.IsNames {
+	if names {
 		sep = nameSep
 	}
-	for _, val := range strings.Split(c.value, sep) {
+	for _, val := range strings.Split(value, sep) {
 		c.AddItem().SetValue(val)
 	}
 }
