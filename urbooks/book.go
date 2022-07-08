@@ -1,7 +1,6 @@
 package urbooks
 
 import (
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -92,13 +91,9 @@ func (bm BookMeta) StringMap() map[string]string {
 	for key, val := range bm {
 		m[key] = val.String()
 		if key == "series" {
-			series := m["series"]
-			fmt.Printf("series: %+V\n", series)
-			fmt.Printf("position: %+V\n", m.Get("position"))
-			//if pos := series["position"]; pos != "" {
-			//  m["position"] = pos
-			//}
-
+			if pos := bm.Get("series").(*Item).Get("position"); pos != "" {
+				m["position"] = pos
+			}
 		}
 	}
 	return m
@@ -126,7 +121,7 @@ func (bm BookMeta) StringMapToBook() *Book {
 			case false:
 				item := book.NewItem(key).SetValue(val.String())
 				if key == "series" {
-					if pos := bm["position"].String(); pos != "" {
+					if pos := bm.Get("position").String(); pos != "" {
 						item.Set("position", pos)
 					}
 				}
@@ -156,8 +151,6 @@ func (ms MetaString) IsNull() bool                { return ms == "" }
 func (ms MetaString) Value() string               { return string(ms) }
 func (ms MetaString) String() string              { return string(ms) }
 func (ms MetaString) FieldMeta() *calibredb.Field { return &calibredb.Field{} }
-
-type SimpleBook map[string]string
 
 func (meta BookMeta) Get(k string) Meta {
 	return meta[k]

@@ -2,6 +2,7 @@ package calibredb
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"log"
 	"path/filepath"
@@ -15,8 +16,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-var _ = fmt.Sprintf("%v", "poot")
-
 type Lib struct {
 	Name        string
 	Path        string
@@ -29,6 +28,9 @@ type Lib struct {
 	bookTmpl    *template.Template
 }
 
+//go:embed sql/*
+var sqlTmpl embed.FS
+
 func NewLib(path string) *Lib {
 	lib := Lib{}
 	lib.Path = path
@@ -37,7 +39,7 @@ func NewLib(path string) *Lib {
 	lib.db = lib.connectDB()
 	lib.getPreferences()
 	lib.AllFields()
-	lib.bookTmpl = template.Must(template.New("book").Funcs(bookTmplFuncs).ParseGlob("calibredb/sql/*"))
+	lib.bookTmpl = template.Must(template.New("book").Funcs(bookTmplFuncs).ParseFS(sqlTmpl, "sql/*"))
 
 	//fmt.Println(lib.Categories())
 	return &lib
