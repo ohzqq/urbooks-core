@@ -14,15 +14,13 @@ type Books struct {
 	Books []*Book
 }
 
-func (b *Books) Add(book *Book) {
-	b.Books = append(b.Books, book)
+type Book struct {
+	meta  BookMeta
+	label string
 }
 
-type Book struct {
-	query url.Values
-	meta  BookMeta
-	field *calibredb.Field
-	label string
+func (b *Books) Add(book *Book) {
+	b.Books = append(b.Books, book)
 }
 
 func NewBook(lib string) *Book {
@@ -32,10 +30,6 @@ func NewBook(lib string) *Book {
 	}
 	book.Set("library", NewColumn().SetValue(lib))
 	return &book
-}
-
-func (b *Book) StringMap() map[string]string {
-	return b.meta.StringMap()
 }
 
 func (b *Book) NewColumn(k string) *Column {
@@ -68,94 +62,6 @@ func (b *Book) NewCategory(k string) *Category {
 	return cat
 }
 
-type Meta interface {
-	Value() string
-	String() string
-	URL() string
-	FieldMeta() *calibredb.Field
-	IsNull() bool
-}
-
-type BookMeta map[string]Meta
-
-func NewBookMeta(m map[string]string) BookMeta {
-	meta := make(BookMeta)
-	for key, val := range m {
-		meta[key] = MetaString(val)
-	}
-	return meta
-}
-
-func (meta BookMeta) Get(k string) Meta {
-	return meta[k]
-}
-
-func (bm BookMeta) StringMap() map[string]string {
-	m := make(map[string]string)
-	for key, val := range bm {
-		m[key] = val.String()
-		if key == "series" {
-			if pos := bm.Get("series").(*Item).Get("position"); pos != "" {
-				m["position"] = pos
-			}
-		}
-	}
-	return m
-}
-
-func (bm BookMeta) StringMapToBook() *Book {
-	lib := DefaultLib()
-	if l := bm["library"].Value(); l == "" {
-		lib = Lib(l)
-	}
-	book := NewBook(lib.Name)
-	for key, val := range bm {
-		field := lib.DB.GetField(key)
-		switch {
-		case field.IsCategory:
-			switch field.IsMultiple {
-			case true:
-				cat := book.NewCategory(key)
-				switch {
-				case field.IsNames:
-					cat.Split(val.String(), true)
-				default:
-					cat.Split(val.String(), false)
-				}
-			case false:
-				item := book.NewItem(key).SetValue(val.String())
-				if key == "series" {
-					if pos := bm.Get("position").String(); pos != "" {
-						item.Set("position", pos)
-					}
-				}
-			}
-		default:
-			book.NewColumn(key).SetValue(val.String())
-		}
-	}
-	return book
-}
-
-type MetaString string
-
-func NewMetaString() *MetaString {
-	ms := MetaString("")
-	return &ms
-}
-
-func (ms *MetaString) SetValue(v string) *MetaString {
-	s := MetaString(v)
-	ms = &s
-	return ms
-}
-
-func (ms MetaString) URL() string                 { return "" }
-func (ms MetaString) IsNull() bool                { return ms == "" }
-func (ms MetaString) Value() string               { return string(ms) }
-func (ms MetaString) String() string              { return string(ms) }
-func (ms MetaString) FieldMeta() *calibredb.Field { return &calibredb.Field{} }
-
 func (b Book) Get(f string) Book {
 	b.label = f
 	return b
@@ -166,43 +72,41 @@ func (b *Book) Set(k string, v Meta) *Book {
 	return b
 }
 
-func (b Book) GetField(f string) Meta {
-	return b.meta[f]
+func (b Book) GetMeta() Meta {
+	return b.meta[b.label]
 }
 
-func (b Book) GetItem(f string) *Item {
-	if field := b.GetField(f); field.FieldMeta().IsCategory && !field.FieldMeta().IsMultiple {
-		return field.(*Item)
-	}
-	return &Item{}
+func (b Book) FieldMeta() *calibredb.Field {
+	return b.meta.Get(b.label).FieldMeta()
 }
 
-func (b Book) GetCategory(f string) *Category {
-	if field := b.GetField(f); field.FieldMeta().IsCategory && field.FieldMeta().IsMultiple {
-		return field.(*Category)
-	}
-	return &Category{}
+func (b Book) GetItem() *Item {
+	return b.meta.GetItem(b.label)
 }
 
-func (b Book) GetColumn(f string) *Column {
-	if field := b.GetField(f); !field.FieldMeta().IsCategory {
-		return field.(*Column)
-	}
-	return &Column{}
+func (b Book) GetCategory() *Category {
+	return b.meta.GetCategory(b.label)
+}
+
+func (b Book) GetColumn() *Column {
+	return b.meta.GetColumn(b.label)
 }
 
 func (b Book) URL() string {
 	var u string
+	field := b.GetMeta()
 	switch {
 	case b.label == "cover":
 		if ur := b.meta[b.label].URL(); ur != "" {
 			u = ur
 		}
 	case b.label == "":
-		bu := &url.URL{Path: b.Get("uri").String(), RawQuery: b.query.Encode()}
+		q := url.Values{}
+		q.Set("library", b.Get("library").String())
+		bu := &url.URL{Path: b.Get("uri").String(), RawQuery: q.Encode()}
 		u = bu.String()
 	default:
-		if !b.field.IsMultiple && b.field.IsCategory {
+		if field.FieldMeta().Type() == "item" {
 			u = b.meta[b.label].URL()
 		}
 	}
@@ -210,100 +114,54 @@ func (b Book) URL() string {
 }
 
 func (b Book) Value() string {
-	return b.Get(b.label).String()
+	return b.meta.Get(b.label).String()
 }
 
-func (b Book) FieldMeta() *calibredb.Field {
-	return b.GetField(b.label).FieldMeta()
+func (b Book) String() string {
+	return b.meta.String(b.label)
+}
+
+func (b *Book) StringMap() map[string]string {
+	return b.meta.StringMap()
 }
 
 func (b Book) FilterValue() string {
 	var filter []string
 	for _, field := range []string{"title", "authors", "series"} {
-		filter = append(filter, b.Get(field).String())
+		filter = append(filter, b.meta.Get(field).String())
 	}
 	return strings.Join(filter, " ")
 }
 
 func (b Book) Items() []*Item {
-	col := b.GetCategory(b.label)
-	return col.items
+	return b.GetCategory().Items()
 }
 
-func (b Book) String() string {
-	field := b.GetField(b.label)
-	if b.label == "titleAndSeries" {
-		field = b.GetField("series")
-	}
-
-	switch b.label {
-	case "formats":
-		return b.GetCategory(b.label).Join("extension")
-	case "position":
-		if series := b.GetItem("series"); series.IsNull() {
-			return series.Get("position")
-		}
-	case "titleAndSeries":
-		title := b.Get("title").Value()
-		if series := b.Get("series"); !field.IsNull() {
-			return title + " [" + series.String() + "]"
-		}
-		return title
-	}
-
-	if field.FieldMeta().IsCategory && !field.FieldMeta().IsMultiple && !field.IsNull() {
-		f := field.(*Item)
-		if b.label == "series" {
-			return f.Value() + ", Book " + f.Get("position")
-		}
-		return f.Value()
-	}
-
-	return field.Value()
-}
-
-type BookFile map[string]string
-
-func (b Book) GetFile(f string) BookFile {
+func (b Book) GetFile(f string) *Item {
 	var bfile *Item
+	formats := b.Get("formats").GetCategory()
 	switch f {
 	case "cover":
 		f = ".jpg"
 		fallthrough
 	case "audio":
-		for _, item := range b.Get("formats").Items() {
+		for _, item := range formats.Items() {
 			if slices.Contains(AudioFormats(), item.Get("extension")) {
-				b.query.Set("format", item.Get("extension"))
-				u := url.URL{Path: item.Get("uri"), RawQuery: b.query.Encode()}
+				formats.query.Set("format", item.Get("extension"))
+				u := url.URL{Path: item.Get("uri"), RawQuery: formats.query.Encode()}
 				item.Set("url", u.String())
 				bfile = item
 				break
 			}
 		}
 	default:
-		for _, item := range b.Get("formats").Items() {
+		for _, item := range formats.Items() {
 			if item.Get("extension") == f {
 				bfile = item
 			}
 		}
 	}
-	return BookFile(bfile.meta)
-}
-
-func (f BookFile) Get(v string) string {
-	return f[v]
-}
-
-func (f BookFile) Path() string {
-	return f.Get("path")
-}
-
-func (f BookFile) Ext() string {
-	return f.Get("extension")
-}
-
-func (f BookFile) URL() string {
-	return f.Get("url")
+	return bfile
 }
 
 func AudioFormats() []string {

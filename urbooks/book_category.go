@@ -1,6 +1,7 @@
 package urbooks
 
 import (
+	"net/url"
 	"strings"
 
 	"github.com/ohzqq/urbooks-core/calibredb"
@@ -8,6 +9,7 @@ import (
 
 type Category struct {
 	Field *calibredb.Field
+	query url.Values
 	items []*Item
 	value string
 	item  Item

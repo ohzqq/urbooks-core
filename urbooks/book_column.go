@@ -1,9 +1,14 @@
 package urbooks
 
-import "github.com/ohzqq/urbooks-core/calibredb"
+import (
+	"net/url"
+
+	"github.com/ohzqq/urbooks-core/calibredb"
+)
 
 type Column struct {
 	Field *calibredb.Field
+	query url.Values
 	meta  string
 }
 

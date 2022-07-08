@@ -1,6 +1,7 @@
 package urbooks
 
 import (
+	"net/url"
 	"strconv"
 
 	"github.com/ohzqq/urbooks-core/calibredb"
@@ -8,6 +9,7 @@ import (
 
 type Item struct {
 	Field *calibredb.Field
+	query url.Values
 	meta  map[string]string
 }
 

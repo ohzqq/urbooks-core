@@ -110,6 +110,17 @@ type Field struct {
 	CatID        string
 }
 
+func (f Field) Type() string {
+	switch {
+	case f.IsCategory && !f.IsMultiple:
+		return "item"
+	case f.IsCategory && f.IsMultiple:
+		return "category"
+	default:
+		return "column"
+	}
+}
+
 func GetFields(f string) *Field {
 	switch f {
 	case "added":

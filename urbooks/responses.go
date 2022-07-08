@@ -55,23 +55,27 @@ func ParseBooks(r []byte) *BookResponse {
 
 	for _, book := range books {
 		bb := NewBook(lib.Name)
-		bb.query = response.books.query
 		formats := bb.NewCategory("formats")
+		formats.query = response.books.query
 		for key, val := range book {
+			field := lib.DB.GetField(key)
 			var err error
-			switch key {
-			case "series", "publishers":
+			switch {
+			case key == "cover":
+				item := formats.AddItem()
+				item.query = response.books.query
+				err = json.Unmarshal(val, &item)
+			case key == "formats":
+				err = json.Unmarshal(val, &formats.items)
+			case field.Type() == "item":
 				item := bb.NewItem(key)
+				item.query = response.books.query
 				err = json.Unmarshal(val, &item)
 				u := &url.URL{Path: item.Get("uri"), RawQuery: response.books.query.Encode()}
 				item.Set("url", u.String())
-			case "cover":
-				item := formats.AddItem()
-				err = json.Unmarshal(val, &item)
-			case "formats":
-				err = json.Unmarshal(val, &formats.items)
-			case "authors", "narrators", "identifiers", "languages", "tags":
+			case field.Type() == "category":
 				cat := bb.NewCategory(key)
+				cat.query = response.books.query
 
 				err = json.Unmarshal(val, &cat.items)
 
@@ -81,6 +85,7 @@ func ParseBooks(r []byte) *BookResponse {
 				}
 			default:
 				col := bb.NewColumn(key)
+				col.query = response.books.query
 				err = json.Unmarshal(val, &col.meta)
 			}
 			if err != nil {
