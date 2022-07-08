@@ -58,22 +58,21 @@ func ParseBooks(r []byte) *BookResponse {
 		formats := bb.NewCategory("formats")
 		formats.query = response.books.query
 		for key, val := range book {
-			field := lib.DB.GetField(key)
 			var err error
-			switch {
-			case key == "cover":
+			switch key {
+			case "cover":
 				item := formats.AddItem()
 				item.query = response.books.query
 				err = json.Unmarshal(val, &item)
-			case key == "formats":
+			case "formats":
 				err = json.Unmarshal(val, &formats.items)
-			case field.Type() == "item":
+			case "series", "publishers":
 				item := bb.NewItem(key)
 				item.query = response.books.query
 				err = json.Unmarshal(val, &item)
 				u := &url.URL{Path: item.Get("uri"), RawQuery: response.books.query.Encode()}
 				item.Set("url", u.String())
-			case field.Type() == "category":
+			case "authors", "narrators", "identifiers", "languages", "tags":
 				cat := bb.NewCategory(key)
 				cat.query = response.books.query
 

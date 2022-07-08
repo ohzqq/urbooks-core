@@ -37,7 +37,7 @@ var scrapeCmd = &cobra.Command{
 		}
 
 		for _, book := range books {
-			book.ToFFmeta()
+			book.ConvertTo("ffmeta").Write()
 		}
 	},
 }

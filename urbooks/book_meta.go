@@ -1,6 +1,9 @@
 package urbooks
 
 import (
+	"bytes"
+	"fmt"
+	"io"
 	"log"
 	"os"
 	"text/template"
@@ -59,9 +62,6 @@ func (bm BookMeta) GetColumn(f string) *Column {
 
 func (bm BookMeta) String(meta string) string {
 	field := bm.Get(meta)
-	if meta == "titleAndSeries" {
-		field = bm.Get("series")
-	}
 
 	switch meta {
 	case "formats":
@@ -70,19 +70,10 @@ func (bm BookMeta) String(meta string) string {
 		if series := bm.GetItem("series"); series.IsNull() {
 			return series.Get("position")
 		}
-	case "titleAndSeries":
-		title := bm.Get("title").Value()
-		if series := bm.Get("series"); !field.IsNull() {
-			return title + " [" + series.String() + "]"
-		}
-		return title
 	}
 
 	if field.FieldMeta().Type() == "category" && !field.IsNull() {
 		f := field.(*Item)
-		if meta == "series" {
-			return f.Value() + ", Book " + f.Get("position")
-		}
 		return f.Value()
 	}
 
@@ -136,37 +127,98 @@ func (bm BookMeta) StringMapToBook() *Book {
 	return book
 }
 
-type MetaString string
-
-func NewMetaString() *MetaString {
-	ms := MetaString("")
-	return &ms
+type metaFmt struct {
+	tmpl   *template.Template
+	ext    string
+	name   string
+	save   bool
+	buffer bytes.Buffer
 }
 
-func (ms *MetaString) SetValue(v string) *MetaString {
-	s := MetaString(v)
-	ms = &s
-	return ms
+var funcMap = template.FuncMap{
+	"toMarkdown": toMarkdown,
 }
 
-func (ms MetaString) URL() string                 { return "" }
-func (ms MetaString) IsNull() bool                { return ms == "" }
-func (ms MetaString) Value() string               { return string(ms) }
-func (ms MetaString) String() string              { return string(ms) }
-func (ms MetaString) FieldMeta() *calibredb.Field { return &calibredb.Field{} }
+var MetaFmt = []metaFmt{
+	metaFmt{
+		name: "ffmeta",
+		ext:  ".ini",
+		tmpl: template.Must(template.New("ffmeta").Parse(ffmetaTmpl)),
+	},
+	metaFmt{
+		name: "markdown",
+		ext:  ".md",
+		tmpl: template.Must(template.New("md").Funcs(funcMap).Parse(mdTmpl)),
+	},
+	metaFmt{
+		name: "plain",
+		ext:  ".txt",
+		tmpl: template.Must(template.New("plain").Funcs(funcMap).Parse(plainTmpl)),
+	},
+}
 
-func (b *Book) ToFFmeta() {
-	meta, err := os.Create(slug.Make(b.Get("title").String()) + ".ini")
+func toMarkdown(str string) string {
+	converter := md.NewConverter("", true, nil)
+	markdown, err := converter.ConvertString(str)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer meta.Close()
+	return markdown
+}
 
-	err = MetaFmt.FFmeta.Execute(meta, b)
+func ListFormats() []string {
+	var fmts []string
+	for _, f := range MetaFmt {
+		fmts = append(fmts, f.name)
+	}
+	return fmts
+}
+
+func getFmt(n string) (metaFmt, error) {
+	return metaFmt{}, fmt.Errorf("Not a format")
+}
+
+func (b *Book) ConvertTo(f string) *Book {
+	for _, fmt := range MetaFmt {
+		if fmt.name == f {
+			b.tmpl = fmt
+		}
+	}
+	return b
+}
+
+func (b *Book) Print() {
+	b.tmpl.Render(os.Stdout, b)
+}
+
+func (b *Book) Write() {
+	file, err := os.Create(slug.Make(b.Get("title").String()) + b.tmpl.ext)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	b.tmpl.Render(file, b)
+}
+
+func (m metaFmt) Render(wr io.Writer, b *Book) {
+	err := m.tmpl.Execute(wr, b.StringMap())
 	if err != nil {
 		log.Fatal(err)
 	}
 }
+
+//func (b *Book) ToFFmeta() {
+//  meta, err := os.Create(slug.Make(b.Get("title").String()) + ".ini")
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//  defer meta.Close()
+
+//  err = MetaFmt.FFmeta.Execute(meta, b)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//}
 
 //func (b *Book) ToPlain() string {
 //  var buf bytes.Buffer
@@ -186,32 +238,6 @@ func (b *Book) ToFFmeta() {
 //  //fmt.Println(markdown)
 //  return buf.String()
 //}
-
-type metadataFormats struct {
-	FFmeta *template.Template
-	MD     *template.Template
-	Plain  *template.Template
-	Cue    *template.Template
-}
-
-var funcMap = template.FuncMap{
-	"toMarkdown": toMarkdown,
-}
-
-func toMarkdown(str string) string {
-	converter := md.NewConverter("", true, nil)
-	markdown, err := converter.ConvertString(str)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return markdown
-}
-
-var MetaFmt = metadataFormats{
-	FFmeta: template.Must(template.New("ffmeta").Parse(ffmetaTmpl)),
-	MD:     template.Must(template.New("html").Funcs(funcMap).Parse(mdTmpl)),
-	Plain:  template.Must(template.New("plain").Funcs(funcMap).Parse(plainTmpl)),
-}
 
 const ffmetaTmpl = `;FFMETADATA
 {{$title := .Get "titleAndSeries" -}}

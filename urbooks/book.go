@@ -17,6 +17,7 @@ type Books struct {
 type Book struct {
 	meta  BookMeta
 	label string
+	tmpl  metaFmt
 }
 
 func (b *Books) Add(book *Book) {
@@ -163,6 +164,25 @@ func (b Book) GetFile(f string) *Item {
 	}
 	return bfile
 }
+
+type MetaString string
+
+func NewMetaString() *MetaString {
+	ms := MetaString("")
+	return &ms
+}
+
+func (ms *MetaString) SetValue(v string) *MetaString {
+	s := MetaString(v)
+	ms = &s
+	return ms
+}
+
+func (ms MetaString) URL() string                 { return "" }
+func (ms MetaString) IsNull() bool                { return ms == "" }
+func (ms MetaString) Value() string               { return string(ms) }
+func (ms MetaString) String() string              { return string(ms) }
+func (ms MetaString) FieldMeta() *calibredb.Field { return &calibredb.Field{} }
 
 func AudioFormats() []string {
 	return []string{"m4b", "m4a", "mp3", "opus", "ogg"}
