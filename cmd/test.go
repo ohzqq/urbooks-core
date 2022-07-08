@@ -54,7 +54,7 @@ func someBooks() {
 	//}
 
 	book := urbooks.ParseBooks(resp).Books()[0]
-	//fmt.Printf("title and series: %+V\n", book.Get("titleAndSeries").Value())
+	fmt.Printf("title and series: %+V\n", book.Get("position").Value())
 	fmt.Printf("%+V\n", book.StringMap())
 	//book.ConvertTo("ffmeta").Print()
 	//fmt.Printf("%+V\n", book.GetFile("cover"))

@@ -30,6 +30,8 @@ IFNULL(JSON_QUOTE(
 	strftime('%Y-%m-%d', {{- .Label -}})
 {{- else if eq $f "uri" -}}
 	"books/" || id
+{{- else if eq $f "position" -}}
+	lower({{.Label}})
 {{- else -}}
 	{{- .Label -}}
 {{- end -}}

@@ -66,10 +66,10 @@ func (bm BookMeta) String(meta string) string {
 	switch meta {
 	case "formats":
 		return bm.GetCategory(meta).Join("extension")
-	case "position":
-		if series := bm.GetItem("series"); series.IsNull() {
-			return series.Get("position")
-		}
+		//case "position":
+		//  if series := bm.GetItem("series"); series.IsNull() {
+		//    return series.Get("position")
+		//  }
 	}
 
 	if field.FieldMeta().Type() == "category" && !field.IsNull() {
