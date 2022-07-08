@@ -86,6 +86,10 @@ func NewBookMeta(m map[string]string) BookMeta {
 	return meta
 }
 
+func (meta BookMeta) Get(k string) Meta {
+	return meta[k]
+}
+
 func (bm BookMeta) StringMap() map[string]string {
 	m := make(map[string]string)
 	for key, val := range bm {
@@ -151,10 +155,6 @@ func (ms MetaString) IsNull() bool                { return ms == "" }
 func (ms MetaString) Value() string               { return string(ms) }
 func (ms MetaString) String() string              { return string(ms) }
 func (ms MetaString) FieldMeta() *calibredb.Field { return &calibredb.Field{} }
-
-func (meta BookMeta) Get(k string) Meta {
-	return meta[k]
-}
 
 func (b Book) Get(f string) Book {
 	b.label = f
