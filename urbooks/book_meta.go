@@ -60,16 +60,28 @@ func (bm BookMeta) GetColumn(f string) *Column {
 	return &Column{}
 }
 
+func (bm BookMeta) series() string {
+	position := "1.0"
+	series := bm.GetItem("series")
+	if series.Value() != "" {
+		if pos := bm.Get("position").String(); pos != "" {
+			position = pos
+		}
+		if pos := series.Get("position"); pos != "" {
+			position = pos
+		}
+	}
+	return series.Value() + `, Book ` + position
+}
+
 func (bm BookMeta) String(meta string) string {
 	field := bm.Get(meta)
 
 	switch meta {
 	case "formats":
 		return bm.GetCategory(meta).Join("extension")
-		//case "position":
-		//  if series := bm.GetItem("series"); series.IsNull() {
-		//    return series.Get("position")
-		//  }
+	case "series":
+		return bm.series()
 	}
 
 	if field.FieldMeta().Type() == "category" && !field.IsNull() {
@@ -207,72 +219,29 @@ func (m metaFmt) Render(wr io.Writer, b *Book) {
 	}
 }
 
-//func (b *Book) ToFFmeta() {
-//  meta, err := os.Create(slug.Make(b.Get("title").String()) + ".ini")
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//  defer meta.Close()
-
-//  err = MetaFmt.FFmeta.Execute(meta, b)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//}
-
-//func (b *Book) ToPlain() string {
-//  var buf bytes.Buffer
-//  err := MetaFmt.Plain.Execute(&buf, b)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//  return buf.String()
-//}
-
-//func (b *Book) ToMarkdown() string {
-//  var buf bytes.Buffer
-//  err := MetaFmt.MD.Execute(&buf, b)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//  //fmt.Println(markdown)
-//  return buf.String()
-//}
-
 const ffmetaTmpl = `;FFMETADATA
-{{$title := .Get "titleAndSeries" -}}
-title={{$title.String}}
-album={{$title.String}}
-artist=
-{{- with $authors := .Get "authors" -}}
-	{{- $authors.String -}}
-{{- end}}
-composer=
-{{- with $narrators := .Get "narrators" -}}
-	{{- $narrators.String -}}
-{{- end}}
-genre=
-{{- with $tags := .Get "tags" -}}
-	{{- $tags.String -}}
-{{- end}}
-comment=
-{{- with $description := .Get "description" -}}
-	{{- $description.String -}}
-{{- end -}}
+title={{.titleAndSeries}}
+album={{.titleAndSeries}}
+artist={{.authors}}
+composer={{.narrators}}
+genre={{.tags}}
+comment={{.description}}
 `
 
-const mdTmpl = `{{if .Title}}# {{.Title}}   
-{{end}}{{if .HasSeries}}**Series:** {{.SeriesString}}   
-{{end}}{{if .Authors}}**Authors:** {{.Authors.Join}}   
-{{end}}{{if .Narrators}}**Narrators:** {{.Narrators.Join}}   
-{{end}}{{if .Tags}}**Tags:** {{.Tags.Join}}   
-{{end}}{{if .Rating}}**Rating:** {{.Rating}}   
-{{end}}{{if .Description}}**Description:** {{toMarkdown .Description}}{{end}}`
+const mdTmpl = `
+{{- with .title}}# {{.}}{{end}}
+**Series:** {{with .series}}{{.}}{{end}}
+**Authors:** {{with .authors}}{{.}}{{end}}
+**Narrators:** {{with .narrators}}{{.}}{{end}}
+**Tags:** {{with .tags}}{{.}}{{end}}
+**Rating:** {{with .rating}}{{.}}{{end}}
+**Description:** {{with .description}}{{toMarkdown .}}{{end}}`
 
-const plainTmpl = `{{if .Title}}{{.Title}}   
-{{end}}{{if .HasSeries}}Series: {{.SeriesString}}   
-{{end}}{{if .Authors}}Authors: {{.Authors.Join}}   
-{{end}}{{if .Narrators}}Narrators: {{.Narrators.Join}}   
-{{end}}{{if .Tags}}Tags: {{.Tags.Join}}   
-{{end}}{{if .Rating}}Rating: {{.Rating}}   
-{{end}}{{if .Description}}Description: {{.Description}}{{end}}`
+const plainTmpl = `
+{{- with .title}}{{.}}{{end}}
+Series: {{with .series}}{{.}}{{end}}
+Authors: {{with .authors}}{{.}}{{end}}
+Narrators: {{with .narrators}}{{.}}{{end}}
+Tags: {{with .tags}}{{.}}{{end}}
+Rating: {{with .rating}}{{.}}{{end}}
+Description: {{with .description}}{{toMarkdown .}}{{end}}`
