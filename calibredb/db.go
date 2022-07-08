@@ -465,24 +465,3 @@ SELECT
 	IFNULL(JSON_QUOTE(JSON_EXTRACT(display, "$.is_names")), 0) is_names,
 	IFNULL(JSON_QUOTE(JSON_EXTRACT(display, "$.description")), "") description
 FROM custom_columns; `
-
-const titleAndSeries = `
-JSON_QUOTE(
-title || 
-IFNULL(
-	" [" || (
-		SELECT name 
-		FROM series 
-		WHERE series.id 
-		IN (
-			SELECT series 
-			FROM books_series_link 
-			WHERE book=books.id
-		)
-	) ||
-	", Book " || 
-	(series_index) ||
-	"]"
-	, "") 
-)
-titleAndSeries, `

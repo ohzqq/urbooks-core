@@ -294,7 +294,6 @@ func (p *calibrePref) parseFieldMeta() Fields {
 	delete(fields, "ondevice")
 	delete(fields, "search")
 	delete(fields, "series_sort")
-	delete(fields, "series_index")
 
 	for key, _ := range fields {
 		p.AllFields = append(p.AllFields, key)
