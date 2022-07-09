@@ -13,7 +13,8 @@ import (
 
 var cfgFile string
 var lib string
-var calibreUser urbooks.CalibreUserCfg
+var verbose bool
+var calibreServer urbooks.CalibreServerCfg
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -40,6 +41,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urbooks-core.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&lib, "library", "l", "", "library by name")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "library by name")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -66,7 +68,7 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		urbooks.InitConfig(viper.GetStringMapString("library_options"))
 		urbooks.InitLibraries(viper.Sub("libraries"), viper.GetStringMapString("libraries"), false)
-		err := viper.Sub("calibre").Unmarshal(&calibreUser)
+		err := viper.Sub("calibre").Unmarshal(&calibreServer)
 		if err != nil {
 			log.Fatal(err)
 		}

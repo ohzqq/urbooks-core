@@ -17,7 +17,7 @@ var importCmd = &cobra.Command{
 		if lib == "" {
 			lib = urbooks.DefaultLib().Name
 		}
-		cdb := urbooks.NewCalibredbCmd().SetUser(calibreUser).SetLib(lib).Add(args[0])
+		cdb := urbooks.NewCalibredbCmd().SetServer(calibreServer).Add(args[0])
 		strmap := cdb.MediaMetaToBook().StringMap()
 		fmt.Printf("string map: %+V\n", strmap)
 	},

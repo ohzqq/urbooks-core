@@ -125,12 +125,7 @@ func (bm BookMeta) StringMapToBook() *Book {
 					cat.Split(val.String(), false)
 				}
 			case false:
-				item := book.NewItem(key).SetValue(val.String())
-				if key == "series" {
-					if pos := bm.Get("position").String(); pos != "" {
-						item.Set("position", pos)
-					}
-				}
+				book.NewItem(key).SetValue(val.String())
 			}
 		default:
 			book.NewColumn(key).SetValue(val.String())
