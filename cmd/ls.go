@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/ohzqq/urbooks-core/urbooks"
 	"github.com/spf13/cobra"
 )
 
@@ -12,15 +9,9 @@ var lsCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "A brief description of your command",
 	Long:  ``,
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		c := urbooks.NewCalibredbCmd().
-			SetServer(calibreServer).
-			SetLib(lib).
-			Verbose(verbose).
-			List(args[0])
-		fmt.Println(c.Run())
-	},
+	//Args:  cobra.ExactArgs(1),
+	//Run: func(cmd *cobra.Command, args []string) {
+	//},
 }
 
 func init() {
