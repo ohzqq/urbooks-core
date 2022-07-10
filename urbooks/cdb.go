@@ -148,11 +148,26 @@ func (c *cdbCmd) List(arg string) *cdbCmd {
 	return c
 }
 
-func (c *cdbCmd) Add(input string) *cdbCmd {
-	c.cdbCmd = "add"
-	c.input = input
-	c.media = avtools.NewMedia(input).JsonMeta().Unmarshal()
+func (c *cdbCmd) Add(input, cover string) *cdbCmd {
+	id, err := c.addBook(input, cover)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(id)
 	return c
+}
+
+func (c *cdbCmd) addBook(input, cover string) (string, error) {
+	c.media = avtools.NewMedia(input).JsonMeta().Unmarshal()
+	c.cdbCmd = "add"
+	if cover != "" {
+		c.appendArgs("-c", cover)
+	}
+	c.appendArgs(input)
+	if id := strings.Split(c.Run(), ": "); len(id) > 0 {
+		return id[1], nil
+	}
+	return "", fmt.Errorf("import unsucessful")
 }
 
 func (c *cdbCmd) setMetadataCmd() *cdbCmd {

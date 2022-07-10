@@ -1,11 +1,11 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/ohzqq/urbooks-core/urbooks"
 	"github.com/spf13/cobra"
 )
+
+var cover string
 
 // importCmd represents the import command
 var importCmd = &cobra.Command{
@@ -17,12 +17,18 @@ var importCmd = &cobra.Command{
 		if lib == "" {
 			lib = urbooks.DefaultLib().Name
 		}
-		cdb := urbooks.NewCalibredbCmd().SetServer(calibreServer).Add(args[0])
-		strmap := cdb.MediaMetaToBook().StringMap()
-		fmt.Printf("string map: %+V\n", strmap)
+		if cover == "" {
+			cover = urbooks.FindCover()
+		}
+		urbooks.NewCalibredbCmd().
+			SetServer(calibreServer).
+			SetLib(lib).
+			Verbose(verbose).
+			Add(args[0], cover)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(importCmd)
+	rootCmd.Flags().StringVarP(&cover, "cover", "c", "", "specify cover")
 }
