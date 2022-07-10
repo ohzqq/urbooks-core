@@ -47,8 +47,8 @@ func NewLib(path string) *Lib {
 
 var (
 	bookTmplFuncs = map[string]any{
-		"getCalibreField": getCalibreField,
-		"getJsonField":    getJsonField,
+		"GetCalibreField": GetCalibreField,
+		"GetJsonField":    GetJsonField,
 	}
 )
 
@@ -329,7 +329,7 @@ func (lib *Lib) filterQuery(q string) (string, []interface{}) {
 	stmt.WriteString(" ORDER BY ")
 	if lib.Request.isSorted {
 		if lib.Request.bookQuery {
-			stmt.WriteString(bookSortField(lib.Request.sort))
+			stmt.WriteString(BookSortField(lib.Request.sort))
 		} else {
 			stmt.WriteString(lib.Request.sort)
 		}
@@ -385,7 +385,7 @@ func (lib *Lib) filterQuery(q string) (string, []interface{}) {
 	return query, args
 }
 
-func bookSortField(f string) string {
+func BookSortField(f string) string {
 	var bookSortField = map[string]string{
 		"authorSort":  "author_sort",
 		"sortAs":      "sort",
@@ -403,7 +403,7 @@ func bookSortField(f string) string {
 	}
 }
 
-func getCalibreField(f string) string {
+func GetCalibreField(f string) string {
 	var jsonFieldToCalibre = map[string]string{
 		"authorSort":  "author_sort",
 		"ratings":     "rating",
@@ -423,7 +423,7 @@ func getCalibreField(f string) string {
 	}
 }
 
-func getJsonField(f string) string {
+func GetJsonField(f string) string {
 	var calibreFieldToJson = map[string]string{
 		"authors":       "authors",
 		"author_sort":   "authorSort",

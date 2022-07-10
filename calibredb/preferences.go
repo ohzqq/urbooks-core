@@ -355,7 +355,7 @@ func (p *calibrePref) parseFieldMeta() Fields {
 		case "cover":
 		}
 
-		fmeta[getJsonField(name)] = meta
+		fmeta[GetJsonField(name)] = meta
 	}
 
 	fmeta["uri"] = &Field{

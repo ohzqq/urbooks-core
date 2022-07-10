@@ -94,7 +94,16 @@ func (bm BookMeta) String(meta string) string {
 
 func (bm BookMeta) StringMap() map[string]string {
 	m := make(map[string]string)
-	for key, val := range bm {
+	lib := Lib(bm.Get("library").String())
+	for k, val := range bm {
+		field := lib.DB.GetField(k)
+		var key string
+		switch {
+		case field.IsCustom:
+			key = "#" + k
+		default:
+			key = k
+		}
 		m[key] = val.String()
 		if key == "series" {
 			if pos := bm.Get("series").(*Item).Get("position"); pos != "" {

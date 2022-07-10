@@ -1,6 +1,6 @@
 {{define "categoryField"}}
 {{- $label := .Label -}}
-{{- $f := getJsonField .Label -}}
+{{- $f := GetJsonField .Label -}}
 
 {{- if eq $f "description" -}}
 

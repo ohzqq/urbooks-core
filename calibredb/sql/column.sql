@@ -1,5 +1,5 @@
 {{define "column"}}
-{{- $f := getJsonField .Label -}}
+{{- $f := GetJsonField .Label -}}
 {{- if ne $f "id"}}
 {{- if ne $f "url"}}
 {{- if ne $f "cover" -}}

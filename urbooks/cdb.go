@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/ohzqq/avtools/avtools"
+	"github.com/ohzqq/urbooks-core/calibredb"
 	"golang.org/x/exp/slices"
 )
 
@@ -29,7 +30,7 @@ type cdbCmd struct {
 	input    string
 	verbose  bool
 	media    *avtools.Media
-	meta     BookMeta
+	book     *Book
 	cdbCmd   string
 	localCmd string
 	tmp      *os.File
@@ -153,7 +154,14 @@ func (c *cdbCmd) Add(input, cover string) *cdbCmd {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(id)
+	metaCmd := &cdbCmd{
+		media:   c.media,
+		lib:     c.lib,
+		verbose: c.verbose,
+		server:  c.server,
+		book:    c.MediaMetaToBook(),
+	}
+	metaCmd.setMetadataCmd(id).Run()
 	return c
 }
 
@@ -164,14 +172,25 @@ func (c *cdbCmd) addBook(input, cover string) (string, error) {
 		c.appendArgs("-c", cover)
 	}
 	c.appendArgs(input)
-	if id := strings.Split(c.Run(), ": "); len(id) > 0 {
+	if id := strings.Split(c.Run(), ": "); len(id) == 2 {
 		return id[1], nil
 	}
 	return "", fmt.Errorf("import unsucessful")
 }
 
-func (c *cdbCmd) setMetadataCmd() *cdbCmd {
+func (c *cdbCmd) setMetadataCmd(id string) *cdbCmd {
 	c.cdbCmd = "set_metadata"
+	c.appendArgs(id)
+	for field, value := range c.book.StringMap() {
+		f := calibredb.GetCalibreField(field) + ":"
+		switch {
+		case field == "library":
+		case field == "position":
+			c.appendArgs("-f", f+value)
+		default:
+			c.appendArgs("-f", f+`'`+value+`'`)
+		}
+	}
 	return c
 }
 
