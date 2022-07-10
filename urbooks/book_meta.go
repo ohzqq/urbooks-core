@@ -249,23 +249,3 @@ Narrators: {{with .narrators}}{{.}}{{end}}
 Tags: {{with .tags}}{{.}}{{end}}
 Rating: {{with .rating}}{{.}}{{end}}
 Description: {{with .description}}{{toMarkdown .}}{{end}}`
-
-const opfTmpl = `
-xmlns="http://www.idpf.org/2007/opf" unique-identifier="uuid_id" version="2.0">
-<metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
-<dc:title>'A Very Genre Christmas'</dc:title>
-<dc:creator opf:file-as="" opf:role="aut"></dc:creator>
-<dc:creator opf:file-as="" opf:role="aut"></dc:creator>
-<dc:date></dc:date>
-<dc:description></dc:description>
-<dc:language></dc:language>
-<dc:subject></dc:subject>
-<dc:subject></dc:subject>
-<dc:subject></dc:subject>
-<meta name="calibre:series" content=""/>
-<meta name="calibre:series_index" content=""/>
-<meta name="calibre:user_metadata:#duration" content=""/>
-<meta name="calibre:user_metadata:#narrators" content=""/>
-</metadata>
-</package>
-`
