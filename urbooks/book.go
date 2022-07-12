@@ -1,6 +1,7 @@
 package urbooks
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -77,8 +78,12 @@ func (b Book) GetMeta() Meta {
 	return b.meta[b.label]
 }
 
-func (b Book) FieldMeta() *calibredb.Field {
-	return b.meta.Get(b.label).FieldMeta()
+func (b Book) FieldMeta() (*calibredb.Field, error) {
+	f := b.meta.Get(b.label)
+	if f.IsNull() {
+		return &calibredb.Field{}, fmt.Errorf("field is null")
+	}
+	return f.FieldMeta(), nil
 }
 
 func (b Book) GetItem() *Item {

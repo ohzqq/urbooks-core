@@ -31,8 +31,10 @@ func (c Category) String() string {
 }
 
 const (
-	nameSep = " & "
-	itemSep = ", "
+	nameSep    = " & "
+	itemSep    = ", "
+	cliItemSep = `,`
+	cliNameSep = `&`
 )
 
 func (c Category) Join(v string) string {
@@ -45,6 +47,19 @@ func (c Category) Join(v string) string {
 		return strings.Join(meta, nameSep)
 	default:
 		return strings.Join(meta, itemSep)
+	}
+}
+
+func (c Category) Cli(v string) string {
+	var meta []string
+	for _, field := range c.items {
+		meta = append(meta, field.Get(v))
+	}
+	switch c.Field.IsNames {
+	case true:
+		return strings.Join(meta, cliNameSep)
+	default:
+		return strings.Join(meta, cliItemSep)
 	}
 }
 

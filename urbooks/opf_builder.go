@@ -13,11 +13,11 @@ type Package struct {
 type Metadata struct {
 	DC          string        `xml:"xmlns:dc,attr"`
 	OPF         string        `xml:"xmlns:opf,attr"`
-	Creator     []Creator     `xml:"dc:creator"`
+	Creator     []Creator     `xml:"dc:creator,omitempty"`
 	Description string        `xml:"dc:description,omitempty"`
-	Identifier  []Identifier  `xml:"dc:identifier"`
-	Language    []string      `xml:"dc:languages"`
-	Date        string        `xml:"dc:date"`
+	Identifier  []Identifier  `xml:"dc:identifier,omitempty"`
+	Language    []string      `xml:"dc:languages,omitempty"`
+	Date        string        `xml:"dc:date,omitempty"`
 	Publisher   string        `xml:"dc:publisher,omitempty"`
 	Subject     []string      `xml:"dc:subject,omitempty"`
 	Title       string        `xml:"dc:title"`
@@ -56,8 +56,8 @@ func (m *Metadata) SetPublisher(publisher string) *Metadata {
 	return m
 }
 
-func (m *Metadata) AddMeta(name, content string) *Metadata {
-	m.Meta = append(m.Meta, CalibreMeta{Name: name, Content: content})
+func (m *Metadata) AddMeta(name string, content any) *Metadata {
+	m.Meta = append(m.Meta, CalibreMeta{Name: "calibre:" + name, Content: content})
 	return m
 }
 
@@ -66,13 +66,18 @@ func (m *Metadata) SetSeries(name string) *Metadata {
 	return m
 }
 
+func (m *Metadata) SetRating(rating string) *Metadata {
+	m.AddMeta("calibre:rating", rating)
+	return m
+}
+
 func (m *Metadata) SetSeriesIndex(pos string) *Metadata {
 	m.AddMeta("calibre:series_index", pos)
 	return m
 }
 
-func (m *Metadata) AddCustomColumn(name, val string) *Metadata {
-	m.AddMeta("calibre:#"+name, val)
+func (m *Metadata) AddCustomColumn(name string, val any) *Metadata {
+	m.AddMeta("user_metadata:#"+name, val)
 	return m
 }
 

@@ -8,12 +8,12 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/ohzqq/avtools/avtools"
-	"github.com/ohzqq/urbooks-core/calibredb"
 	"golang.org/x/exp/slices"
 )
 
@@ -181,16 +181,25 @@ func (c *cdbCmd) addBook(input, cover string) (string, error) {
 func (c *cdbCmd) setMetadataCmd(id string) *cdbCmd {
 	c.cdbCmd = "set_metadata"
 	c.appendArgs(id)
-	for field, value := range c.book.StringMap() {
-		f := calibredb.GetCalibreField(field) + ":"
-		switch {
-		case field == "library":
-		case field == "position":
-			c.appendArgs("-f", f+value)
-		default:
-			c.appendArgs("-f", f+`'`+value+`'`)
-		}
+	tmp := c.book.ConvertTo("opf").Tmp()
+	defer tmp.Close()
+
+	path, err := filepath.Abs(tmp.Name())
+	if err != nil {
+		log.Fatal(err)
 	}
+	c.appendArgs(path)
+	//for field, value := range c.book.StringMap() {
+	//  f := calibredb.GetCalibreField(field) + ":"
+	//  switch {
+	//  case field == "library":
+	//  case field == "position":
+	//    c.appendArgs("-f", f+value)
+	//  default:
+	//    c.appendArgs("-f", f+`'`+value+`'`)
+	//  }
+	//}
+
 	return c
 }
 

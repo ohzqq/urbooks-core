@@ -161,51 +161,52 @@ func (b *Book) ToOpf() []byte {
 	opf := NewOpfMetadata()
 	for _, f := range b.opfFields() {
 		meta := b.Get(f)
-		field := meta.FieldMeta()
-		switch {
-		case field.IsCustom:
-			cField := field
-			var val interface{}
-			if cField.IsMultiple {
-				val = meta.GetCategory().ItemStringSlice()
-			} else {
-				val = meta.String()
-			}
-			cField.Value = val
-			opf.AddMeta("#"+f, string(cField.ToJson()))
-		case field.IsCat():
-			if cat := meta.GetCategory(); !cat.IsNull() {
-				for _, item := range cat.Items() {
-					switch f {
-					case "authors":
-						opf.AddAuthor(item.String())
-					case "tags":
-						opf.AddSubject(item.String())
-					case "languages":
-						opf.AddLanguage(item.String())
-					case "identifiers":
-						fmt.Printf("%+v\n", item)
-						opf.AddIdentifier(item.Get("value"), item.Get("type"))
+		field, err := meta.FieldMeta()
+		if err == nil {
+			switch {
+			case field.IsCustom:
+				cField := field
+				if cField.IsMultiple {
+					cField.Value = meta.GetCategory().ItemStringSlice()
+				} else {
+					cField.Value = meta.String()
+				}
+				opf.AddCustomColumn(f, string(cField.ToJson()))
+			case field.IsCat():
+				if cat := meta.GetCategory(); !cat.IsNull() {
+					for _, item := range cat.Items() {
+						switch f {
+						case "authors":
+							opf.AddAuthor(item.String())
+						case "tags":
+							opf.AddSubject(item.String())
+						case "languages":
+							opf.AddLanguage(item.String())
+						case "identifiers":
+							opf.AddIdentifier(item.Get("value"), item.Get("type"))
+						}
 					}
 				}
-			}
-		case field.IsItem():
-			if i := meta.GetItem(); !i.IsNull() {
-				switch f {
-				case "series":
-					opf.SetSeries(i.Get("value"))
-					opf.SetSeriesIndex(i.Get("position"))
+			case field.IsItem():
+				if i := meta.GetItem(); !i.IsNull() {
+					switch f {
+					case "series":
+						opf.AddMeta("series", i.Get("value"))
+						opf.AddMeta("series_index", i.Get("position"))
+					}
 				}
-			}
-		case field.IsCol():
-			if col := meta.GetColumn(); !col.IsNull() {
-				switch f {
-				case "title":
-					opf.SetTitle(col.String())
-				case "published":
-					opf.SetDate(col.String())
-				case "description":
-					opf.SetDescription(col.String())
+			case field.IsCol():
+				if col := meta.GetColumn(); !col.IsNull() {
+					switch f {
+					case "title":
+						opf.SetTitle(col.String())
+					case "rating":
+						opf.AddMeta("rating", col.String())
+					case "published":
+						opf.SetDate(col.String())
+					case "description":
+						opf.SetDescription(col.String())
+					}
 				}
 			}
 		}
@@ -288,6 +289,20 @@ func (b *Book) ConvertTo(f string) *Book {
 
 func (b *Book) Print() {
 	fmt.Println(string(b.fmt.Render(b)))
+}
+
+func (b *Book) Tmp() *os.File {
+	file, err := os.CreateTemp("", b.fmt.ext)
+	if err != nil {
+		log.Fatal(err)
+	}
+	m := b.fmt.Render(b)
+	fmt.Println(string(m))
+	_, err = file.Write(m)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return file
 }
 
 func (b *Book) Write() {
