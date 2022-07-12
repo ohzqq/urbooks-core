@@ -17,7 +17,7 @@ type Books struct {
 type Book struct {
 	meta  BookMeta
 	label string
-	tmpl  metaFmt
+	fmt   metaFmt
 }
 
 func (b *Books) Add(book *Book) {

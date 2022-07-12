@@ -2,8 +2,8 @@ package urbooks
 
 import (
 	"bytes"
+	"encoding/xml"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"text/template"
@@ -32,7 +32,10 @@ func NewBookMeta(m map[string]string) BookMeta {
 }
 
 func (bm BookMeta) Get(k string) Meta {
-	return bm[k]
+	if _, ok := bm[k]; ok {
+		return bm[k]
+	}
+	return NewColumn()
 }
 
 func (bm BookMeta) FieldMeta(f string) *calibredb.Field {
@@ -76,6 +79,9 @@ func (bm BookMeta) series() string {
 
 func (bm BookMeta) String(meta string) string {
 	field := bm.Get(meta)
+	if field.IsNull() {
+		return ""
+	}
 
 	switch meta {
 	case "formats":
@@ -143,12 +149,67 @@ func (bm BookMeta) StringMapToBook() *Book {
 	return book
 }
 
+func (b *Book) ToOpf() []byte {
+	opf := NewOpfMetadata()
+	opfFields := []string{"authors", "tags", "languages", "identifiers", "title", "published", "description", "series"}
+	for _, f := range opfFields {
+		meta := b.Get(f)
+		field := meta.FieldMeta()
+		switch {
+		case field.IsCat():
+			if cat := meta.GetCategory(); !cat.IsNull() {
+				for _, item := range cat.Items() {
+					switch f {
+					case "authors":
+						opf.AddAuthor(item.String())
+					case "tags":
+						opf.AddSubject(item.String())
+					case "languages":
+						opf.AddLanguage(item.String())
+					case "identifiers":
+						opf.AddIdentifier(item.Get("value"), item.Get("type"))
+					}
+				}
+			}
+		case field.IsItem():
+			if i := meta.GetItem(); !i.IsNull() {
+				switch f {
+				case "series":
+					opf.SetSeries(i.Get("value"))
+					opf.SetSeriesIndex(i.Get("position"))
+				}
+			}
+		case field.IsCol():
+			if col := meta.GetColumn(); !col.IsNull() {
+				switch f {
+				case "title":
+					opf.SetTitle(col.String())
+				case "published":
+					opf.SetDate(col.String())
+				case "description":
+					opf.SetDescription(col.String())
+				}
+			}
+		}
+	}
+
+	pkg := bytes.NewBufferString(xml.Header)
+	enc := xml.NewEncoder(pkg)
+	enc.Indent("", "  ")
+	err := enc.Encode(opf.BuildPackage())
+	if err != nil {
+		log.Fatal(err)
+	}
+	return pkg.Bytes()
+}
+
 type metaFmt struct {
 	tmpl   *template.Template
 	ext    string
 	name   string
 	save   bool
-	buffer bytes.Buffer
+	data   []byte
+	buffer *bytes.Buffer
 }
 
 var funcMap = template.FuncMap{
@@ -170,6 +231,10 @@ var MetaFmt = []metaFmt{
 		name: "plain",
 		ext:  ".txt",
 		tmpl: template.Must(template.New("plain").Funcs(funcMap).Parse(plainTmpl)),
+	},
+	metaFmt{
+		name: "opf",
+		ext:  ".opf",
 	},
 }
 
@@ -197,30 +262,42 @@ func getFmt(n string) (metaFmt, error) {
 func (b *Book) ConvertTo(f string) *Book {
 	for _, fmt := range MetaFmt {
 		if fmt.name == f {
-			b.tmpl = fmt
+			b.fmt = fmt
 		}
 	}
 	return b
 }
 
 func (b *Book) Print() {
-	b.tmpl.Render(os.Stdout, b)
+	meta := b.fmt.Render(b)
+	fmt.Println(string(meta))
 }
 
 func (b *Book) Write() {
-	file, err := os.Create(slug.Make(b.Get("title").String()) + b.tmpl.ext)
+	file, err := os.Create(slug.Make(b.Get("title").String()) + b.fmt.ext)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	b.tmpl.Render(file, b)
-}
-
-func (m metaFmt) Render(wr io.Writer, b *Book) {
-	err := m.tmpl.Execute(wr, b.StringMap())
+	meta := b.fmt.Render(b)
+	_, err = file.Write(meta)
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (m metaFmt) Render(b *Book) []byte {
+	var buf bytes.Buffer
+	switch m.name {
+	case "opf":
+		return b.ToOpf()
+	default:
+		err := m.tmpl.Execute(&buf, b.StringMap())
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	return buf.Bytes()
 }
 
 const ffmetaTmpl = `;FFMETADATA

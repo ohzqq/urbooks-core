@@ -13,7 +13,7 @@ WHERE book=books.id)
 {{- else if eq .Table "ratings" -}}
 
 IFNULL((
-SELECT lower(rating) 
+SELECT JSON_QUOTE(lower(rating))
 FROM ratings 
 WHERE ratings.id 
 IN (

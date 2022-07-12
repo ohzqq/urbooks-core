@@ -2,106 +2,113 @@ package urbooks
 
 import (
 	"encoding/xml"
-	"time"
-
-	"github.com/lann/builder"
 )
 
 type Package struct {
-	XMLName  xml.Name `xml:"http://www.idpf.org/2007/opf package"`
-	Version  string   `attr,`
-	Metadata Metadata
+	XMLName  xml.Name  `xml:"http://www.idpf.org/2007/opf package"`
+	Version  string    `xml:"version,attr"`
+	Metadata *Metadata `xml:"metadata"`
 }
 
 type Metadata struct {
-	DC          string `xml:"xmlns:dc,attr"`
-	OPF         string `xml:"xmlns:opf,attr"`
-	Author      []Author
-	Description string `xml:"description"`
-	Identifier  []*Identifier
-	Language    []string `xml:"languages"`
-	Date        string   `xml:"date"`
-	Publisher   string
-	Subject     []string `xml:"subject"`
-	Title       string
-	Meta        []*CalibreMeta
+	DC          string        `xml:"xmlns:dc,attr"`
+	OPF         string        `xml:"xmlns:opf,attr"`
+	Creator     []Creator     `xml:"dc:creator"`
+	Description string        `xml:"dc:description,omitempty"`
+	Identifier  []Identifier  `xml:"dc:identifier"`
+	Language    []string      `xml:"dc:languages"`
+	Date        string        `xml:"dc:date"`
+	Publisher   string        `xml:"dc:publisher,omitempty"`
+	Subject     []string      `xml:"dc:subject,omitempty"`
+	Title       string        `xml:"dc:title"`
+	Meta        []CalibreMeta `xml:"meta"`
 }
 
-type Author struct {
-	Creator string `xml:"creator"`
+type Creator struct {
+	Creator string `xml:",chardata"`
 	Role    string `xml:"opf:role,attr"`
 }
 
 type Identifier struct {
-	XMLName xml.Name `xml:"identifier"`
-	Id      string   `xml:"id,attr"`
-	Scheme  string   `xml:"opf:scheme,attr"`
+	Id     string `xml:",chardata"`
+	Scheme string `xml:"opf:scheme,attr"`
 }
 
 type CalibreMeta struct {
-	XMLName xml.Name `xml:"meta"`
-	Name    string   `xml:"name"`
-	Content string   `xml:"content"`
+	Name    string `xml:"name,attr"`
+	Content string `xml:"content,attr"`
 }
 
-type opfBuilder builder.Builder
-
-func NewOpfPackage() opfBuilder {
-	return OpfBuilder
-}
-
-func (e opfBuilder) Title(title string) opfBuilder {
-	return builder.Set(e, "Title", title).(opfBuilder)
-}
-
-func (e opfBuilder) Series(name string) opfBuilder {
-	return builder.Append(e, "Meta", CalibreMeta{Name: "calibre:series", Content: name}).(opfBuilder)
-}
-
-func (e opfBuilder) SeriesIndex(pos string) opfBuilder {
-	return builder.Append(e, "Meta", CalibreMeta{Name: "calibre:series_index", Content: pos}).(opfBuilder)
-}
-
-func (e opfBuilder) AddCustomColumn(name, val string) opfBuilder {
-	return builder.Append(e, "Meta", CalibreMeta{Name: "calibre:#" + name, Content: val}).(opfBuilder)
-}
-
-func (e opfBuilder) AddLanguage(lang string) opfBuilder {
-	return builder.Append(e, "Language", lang).(opfBuilder)
-}
-
-func (e opfBuilder) AddAuthor(author string) opfBuilder {
-	return builder.Append(e, "Author", Author{Creator: author, Role: "aut"}).(opfBuilder)
-}
-
-func (e opfBuilder) AddSubject(subject string) opfBuilder {
-	return builder.Append(e, "Subject", subject).(opfBuilder)
-}
-
-func (e opfBuilder) AddIdentifier(id, scheme string) opfBuilder {
-	return builder.Append(e, "Identifier", Identifier{Id: id, Scheme: scheme}).(opfBuilder)
-}
-
-func (e opfBuilder) Date(published time.Time) opfBuilder {
-	return builder.Set(e, "Date", Time(published)).(opfBuilder)
-}
-
-func (e opfBuilder) Description(summary string) opfBuilder {
-	return builder.Set(e, "Description", summary).(opfBuilder)
-}
-
-func (e opfBuilder) BuildPackage() Package {
-	return Package{
-		Version:  "2.0",
-		Metadata: builder.GetStruct(e).(Metadata),
+func NewOpfMetadata() *Metadata {
+	return &Metadata{
+		DC:  "http://purl.org/dc/terms/",
+		OPF: "http://www.idpf.org/2007/opf",
 	}
 }
 
-// OpfBuilder is a fluent immutable builder to build OPDS entries
-var OpfBuilder = builder.Register(opfBuilder{}, Metadata{}).(opfBuilder)
+func (m *Metadata) SetTitle(title string) *Metadata {
+	m.Title = title
+	return m
+}
 
-type TimeStr string
+func (m *Metadata) SetPublisher(publisher string) *Metadata {
+	m.Publisher = publisher
+	return m
+}
 
-func Time(t time.Time) TimeStr {
-	return TimeStr(t.Format("Monday, 02 January 2006 15:04:05 MST"))
+func (m *Metadata) AddMeta(name, content string) *Metadata {
+	m.Meta = append(m.Meta, CalibreMeta{Name: name, Content: content})
+	return m
+}
+
+func (m *Metadata) SetSeries(name string) *Metadata {
+	m.AddMeta("calibre:series", name)
+	return m
+}
+
+func (m *Metadata) SetSeriesIndex(pos string) *Metadata {
+	m.AddMeta("calibre:series_index", pos)
+	return m
+}
+
+func (m *Metadata) AddCustomColumn(name, val string) *Metadata {
+	m.AddMeta("calibre:#"+name, val)
+	return m
+}
+
+func (m *Metadata) AddLanguage(lang string) *Metadata {
+	m.Language = append(m.Language, lang)
+	return m
+}
+
+func (m *Metadata) AddAuthor(author string) *Metadata {
+	m.Creator = append(m.Creator, Creator{Creator: author, Role: "aut"})
+	return m
+}
+
+func (m *Metadata) AddSubject(subject string) *Metadata {
+	m.Subject = append(m.Subject, subject)
+	return m
+}
+
+func (m *Metadata) AddIdentifier(id, scheme string) *Metadata {
+	m.Identifier = append(m.Identifier, Identifier{Id: id, Scheme: scheme})
+	return m
+}
+
+func (m *Metadata) SetDate(published string) *Metadata {
+	m.Date = published
+	return m
+}
+
+func (m *Metadata) SetDescription(summary string) *Metadata {
+	m.Description = summary
+	return m
+}
+
+func (m *Metadata) BuildPackage() Package {
+	return Package{
+		Version:  "2.0",
+		Metadata: m,
+	}
 }

@@ -121,6 +121,18 @@ func (f Field) Type() string {
 	}
 }
 
+func (f Field) IsCat() bool {
+	return f.IsCategory && f.IsMultiple
+}
+
+func (f Field) IsItem() bool {
+	return f.IsCategory && !f.IsMultiple
+}
+
+func (f Field) IsCol() bool {
+	return !f.IsCategory && !f.IsMultiple
+}
+
 func GetFields(f string) *Field {
 	switch f {
 	case "added":

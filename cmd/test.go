@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/ohzqq/urbooks-core/urbooks"
 
 	"github.com/spf13/cobra"
@@ -28,10 +26,10 @@ func someBooks() {
 	//u := "http://localhost:9932/tags/11?currentPage=2&itemsPerPage=50&library=audiobooks&order=desc&sort=added"
 	req := urbooks.NewRequest("test-library")
 	req.From("books")
-	//req.ID("209")
+	req.ID("272")
 	//req.Sort("formats")
 	//req.Desc()
-	req.Limit("1")
+	//req.Limit("1")
 	//req.Page("6")
 	//req.Fields("added")
 	//req.Find("all")
@@ -54,8 +52,8 @@ func someBooks() {
 	//}
 
 	book := urbooks.ParseBooks(resp).Books()[0]
-	fmt.Printf("%+V\n", book.StringMap())
-	book.ConvertTo("markdown").Print()
+	//fmt.Printf("%+V\n", book.StringMap())
+	book.ConvertTo("opf").Write()
 	//fmt.Printf("%+V\n", book.GetFile("cover"))
 	//fmt.Printf("%+V\n", book.Get("tags").String())
 	//fmt.Printf("%+V\n", book.Get("description").String())
