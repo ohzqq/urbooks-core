@@ -36,7 +36,7 @@ type Identifier struct {
 
 type CalibreMeta struct {
 	Name    string `xml:"name,attr"`
-	Content string `xml:"content,attr"`
+	Content any    `xml:"content,attr"`
 }
 
 func NewOpfMetadata() *Metadata {

@@ -92,7 +92,7 @@ type Fields map[string]*Field
 
 type Field struct {
 	Library      string            `json:"-"`
-	TableColumns []string          `json:"-"`
+	TableColumns map[string]string `json:"-"`
 	IsDisplayed  bool              `json:"-"`
 	IsNames      bool              `json:"-"`
 	HasJoin      bool              `json:"-"`
@@ -102,19 +102,34 @@ type Field struct {
 	Colnum       int               `json:"colnum"`
 	Column       string            `json:"column"`
 	Datatype     string            `json:"datatype"`
-	Display      map[string]string `json:"display"`
+	Display      Display           `json:"display"`
 	IsCategory   bool              `json:"is_category"`
 	IsCustom     bool              `json:"is_custom"`
 	IsCsp        bool              `json:"is_csp"`
 	IsEditable   bool              `json:"is_editable"`
-	Multiple     map[string]string `json:"is_multiple"`
+	Multiple     Multiple          `json:"is_multiple"`
 	Kind         string            `json:"kind"`
 	Label        string            `json:"label"`
 	LinkColumn   string            `json:"link_column"`
 	Name         string            `json:"name"`
-	RecIndex     string            `json:"rec_index"`
+	RecIndex     int               `json:"rec_index"`
 	SearchTerms  []string          `json:"search_terms"`
 	Table        string            `json:"table"`
+	Value        any               `json:"#value#"`
+	Extra        any               `json:"#extra#"`
+}
+
+type Display struct {
+	Description     string `json:"description"`
+	HeadingPosition string `json:"heading_position"`
+	InterpretAs     string `json:"long-text"`
+	IsNames         bool   `json:"is_names"`
+}
+
+type Multiple struct {
+	CacheToList string `json:"cache_to_list"`
+	ListToUi    string `json:"list_to_ui"`
+	UiToList    string `json:"ui_to_list"`
 }
 
 func (f Field) Type() string {
@@ -128,6 +143,14 @@ func (f Field) Type() string {
 	}
 }
 
+func (f Field) ToJson() []byte {
+	js, err := json.Marshal(f)
+	if err != nil {
+		log.Fatalf("json failed to marshal a calibred.Field, %v", err)
+	}
+	return js
+}
+
 func (f Field) IsCat() bool {
 	return f.IsCategory && f.IsMultiple
 }
@@ -138,6 +161,120 @@ func (f Field) IsItem() bool {
 
 func (f Field) IsCol() bool {
 	return !f.IsCategory && !f.IsMultiple
+}
+
+func (p *calibrePref) parseFieldMeta() Fields {
+	var fields Fields
+	err := json.Unmarshal(p.FieldMeta, &fields)
+	if err != nil {
+		log.Fatal(err)
+	}
+	delete(fields, "au_map")
+	delete(fields, "size")
+	delete(fields, "marked")
+	delete(fields, "news")
+	delete(fields, "ondevice")
+	delete(fields, "search")
+	delete(fields, "series_sort")
+
+	for key, _ := range fields {
+		p.AllFields = append(p.AllFields, key)
+	}
+
+	var dFields [][]interface{}
+	err = json.Unmarshal(p.DisplayFields, &dFields)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range dFields {
+		name := f[0].(string)
+		if slices.Contains(p.AllFields, name) {
+			fields[name].IsDisplayed = f[1].(bool)
+		}
+	}
+
+	var fmeta = make(Fields)
+	for name, meta := range fields {
+		meta.Library = p.library
+
+		if strings.Contains(name, "#") {
+			name = strings.Replace(name, "#", "", 1)
+		}
+
+		if meta.Multiple != (Multiple{}) {
+			meta.IsMultiple = true
+			if del := meta.Multiple.UiToList; del == "&" {
+				meta.IsNames = true
+			}
+		}
+
+		switch name {
+		case "authors":
+			meta.TableColumns = map[string]string{
+				"value": "name",
+				"uri":   `"` + GetJsonField(name) + `/"` + " || id",
+			}
+		case "languages":
+			meta.TableColumns = map[string]string{
+				"value": "lang_code",
+				"uri":   `"` + GetJsonField(name) + `/"` + " || id",
+			}
+		case "tags":
+			meta.TableColumns = map[string]string{
+				"value": "name",
+				"uri":   `"` + GetJsonField(name) + `/"` + " || id",
+			}
+		case "formats":
+			meta.TableColumns = map[string]string{
+				"basename":  "name",
+				"extension": "lower(format)",
+				"value":     `name || '.' || lower(format)`,
+				"size":      "lower(uncompressed_size)",
+				"uri":       `"books/" || books.id`,
+				"path":      `"` + p.library + `" || "/" || path || "/" || name || '.' || lower(format)`,
+			}
+			meta.CategorySort = "format"
+			meta.Table = "data"
+			meta.Column = "format"
+		case "identifiers":
+			meta.TableColumns = map[string]string{
+				"value": "val",
+				"type":  "type",
+			}
+			meta.Column = "val"
+			meta.CategorySort = "type"
+			meta.Table = "identifiers"
+		case "comments":
+			meta.Table = "comments"
+		case "publisher":
+			meta.TableColumns = map[string]string{
+				"value": "name",
+				"uri":   `"` + GetJsonField(name) + `/"` + " || id",
+			}
+		case "rating":
+			meta.TableColumns = map[string]string{
+				"value": "rating",
+			}
+		case "series":
+			meta.TableColumns = map[string]string{
+				"value":    "name",
+				"position": "lower(series_index)",
+				"uri":      `"` + GetJsonField(name) + `/"` + " || id",
+			}
+		case "cover":
+		}
+
+		fmeta[GetJsonField(name)] = meta
+	}
+
+	fmeta["uri"] = &Field{
+		Column: "uri",
+		Name:   "uri",
+		Label:  "uri",
+	}
+
+	return fmeta
 }
 
 func GetFields(f string) *Field {
@@ -298,90 +435,4 @@ func GetFields(f string) *Field {
 		}
 	}
 	return nil
-}
-
-func (p *calibrePref) parseFieldMeta() Fields {
-	var fields Fields
-	err := json.Unmarshal(p.FieldMeta, &fields)
-	if err != nil {
-		log.Fatal(err)
-	}
-	delete(fields, "au_map")
-	delete(fields, "size")
-	delete(fields, "marked")
-	delete(fields, "news")
-	delete(fields, "ondevice")
-	delete(fields, "search")
-	delete(fields, "series_sort")
-
-	for key, _ := range fields {
-		p.AllFields = append(p.AllFields, key)
-	}
-
-	var dFields [][]interface{}
-	err = json.Unmarshal(p.DisplayFields, &dFields)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, f := range dFields {
-		name := f[0].(string)
-		if slices.Contains(p.AllFields, name) {
-			fields[name].IsDisplayed = f[1].(bool)
-		}
-	}
-
-	var fmeta = make(Fields)
-	for name, meta := range fields {
-		meta.Library = p.library
-
-		if strings.Contains(name, "#") {
-			name = strings.Replace(name, "#", "", 1)
-		}
-
-		if len(meta.Multiple) != 0 {
-			meta.IsMultiple = true
-			if del := meta.Multiple["ui_to_list"]; del == "&" {
-				meta.IsNames = true
-			}
-		}
-
-		switch name {
-		case "authors":
-			meta.TableColumns = []string{"name"}
-		case "languages":
-			meta.TableColumns = []string{"lang_code"}
-		case "tags":
-			meta.TableColumns = []string{"name"}
-		case "formats":
-			meta.TableColumns = []string{}
-			meta.CategorySort = "format"
-			meta.Table = "data"
-			meta.Column = "format"
-		case "identifiers":
-			meta.TableColumns = []string{"type", "val"}
-			meta.Column = "val"
-			meta.CategorySort = "type"
-			meta.Table = "identifiers"
-		case "comments":
-			meta.Table = "comments"
-		case "publisher":
-			meta.TableColumns = []string{"name"}
-		case "rating":
-			meta.TableColumns = []string{"rating"}
-		case "series":
-			meta.TableColumns = []string{"name"}
-		case "cover":
-		}
-
-		fmeta[GetJsonField(name)] = meta
-	}
-
-	fmeta["uri"] = &Field{
-		Column: "uri",
-		Name:   "uri",
-		Label:  "uri",
-	}
-
-	return fmeta
 }

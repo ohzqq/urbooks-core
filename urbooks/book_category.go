@@ -74,6 +74,14 @@ func (c Category) Items() []*Item {
 	return c.items
 }
 
+func (c Category) ItemStringSlice() []string {
+	var i []string
+	for _, item := range c.Items() {
+		i = append(i, item.String())
+	}
+	return i
+}
+
 func (c Category) URL() string {
 	return c.Field.Label + "/"
 }

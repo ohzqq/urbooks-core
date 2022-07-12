@@ -24,39 +24,34 @@ IN (
 
 {{- else -}}
 
-{{- if ne .Table "ratings" -}}
+	{{- if ne .Table "ratings" -}}
 
-{{- if ne .Table "data" -}}
-	IFNULL((
-	SELECT 
-	{{if .IsMultiple -}}
-		JSON_GROUP_ARRAY(
+IFNULL((
+SELECT 
+		{{if .IsMultiple -}}
+			JSON_GROUP_ARRAY(
+		{{- end -}}
+
+			JSON_OBJECT(
+
+		{{- range $key, $col := .TableColumns -}}
+			'{{$key}}', {{$col}}, 
+		{{- end -}}
+
+			'id', lower(id)
 	{{- end -}}
-	JSON_OBJECT(
-
-	{{- range $col := .TableColumns -}}
-		'value', {{$col}}, 
-	{{- end -}}
-
-	{{- if eq .Table "series" -}}
-		'position', lower(series_index),
-	{{- end -}}
-
-		'uri', "{{$label}}/" || id,
-		'id', lower(id)
-{{- end -}}
 
 	{{if .IsMultiple -}}
 		)
 	{{- end -}}
 )
 FROM {{.Table}} 
-{{if ne .LinkColumn "" -}}
+	{{if ne .LinkColumn "" -}}
 WHERE {{.Table}}.id 
 IN (
 	SELECT {{.LinkColumn}}
 	FROM books_{{.Table}}_link 
-{{end -}}
+	{{end -}}
 
 WHERE book=books.id
 
@@ -70,6 +65,5 @@ WHERE book=books.id
 		), "{}") {{$f}}, 
 	{{- end -}}
 
-{{- end -}}
-{{- end}}
+	{{- end}}
 {{end}}

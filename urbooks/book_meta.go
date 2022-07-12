@@ -149,13 +149,30 @@ func (bm BookMeta) StringMapToBook() *Book {
 	return book
 }
 
+func (b *Book) opfFields() []string {
+	fields := []string{"authors", "tags", "languages", "identifiers", "title", "published", "description", "series"}
+	for _, f := range Lib(b.Get("library").Value()).DB.CustomColumns() {
+		fields = append(fields, f)
+	}
+	return fields
+}
+
 func (b *Book) ToOpf() []byte {
 	opf := NewOpfMetadata()
-	opfFields := []string{"authors", "tags", "languages", "identifiers", "title", "published", "description", "series"}
-	for _, f := range opfFields {
+	for _, f := range b.opfFields() {
 		meta := b.Get(f)
 		field := meta.FieldMeta()
 		switch {
+		case field.IsCustom:
+			cField := field
+			var val interface{}
+			if cField.IsMultiple {
+				val = meta.GetCategory().ItemStringSlice()
+			} else {
+				val = meta.String()
+			}
+			cField.Value = val
+			opf.AddMeta("#"+f, string(cField.ToJson()))
 		case field.IsCat():
 			if cat := meta.GetCategory(); !cat.IsNull() {
 				for _, item := range cat.Items() {
@@ -167,6 +184,7 @@ func (b *Book) ToOpf() []byte {
 					case "languages":
 						opf.AddLanguage(item.String())
 					case "identifiers":
+						fmt.Printf("%+v\n", item)
 						opf.AddIdentifier(item.Get("value"), item.Get("type"))
 					}
 				}

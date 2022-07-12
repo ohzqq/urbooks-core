@@ -6,13 +6,11 @@ SELECT
 {{range $f := .Request.Fields -}}
 	{{- $field := $lib.GetField $f}}
 
-
-	{{- if $field.IsCustom -}}
-		{{- template "customColumn" $field}}
-	{{- else -}}
-		{{- if eq $field.Table "" -}}
-
-{{- if eq $field.Label "cover" -}}
+		{{- if $field.IsCustom -}}
+			{{- template "customColumn" $field}}
+		{{- else -}}
+			{{- if eq $field.Table "" -}}
+				{{- if eq $field.Label "cover" -}}
 CASE has_cover
 WHEN true
 THEN JSON_OBJECT(
@@ -24,26 +22,12 @@ THEN JSON_OBJECT(
 )
 ELSE JSON_QUOTE('{}')
 END cover, 
-{{end -}}
-
-			{{- template "column" $field}}
-		{{- else -}}
-
-{{- if eq $field.Table "data" -}}
-IFNULL((
-SELECT 
-JSON_GROUP_ARRAY(JSON_OBJECT(
-	'basename', name,
-	'extension', lower(format),
-	'path', "{{$lib.Path}}" || "/" || path || "/" || name || '.' || lower(format),
-	'size', lower(uncompressed_size),
-	'uri', "books/" || books.id,
-	'value', name || '.' || lower(format)
-{{- end -}}
-
-			{{- template "categoryField" $field}}
+				{{end -}}
+				{{- template "column" $field}}
+			{{- else -}}
+				{{- template "categoryField" $field}}
+			{{- end}}
 		{{- end}}
-	{{- end}}
 {{end -}}
 
 IFNULL(JSON_QUOTE(lower(id)), '""') id
