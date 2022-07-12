@@ -53,7 +53,7 @@ func someBooks() {
 
 	book := urbooks.ParseBooks(resp).Books()[0]
 	//fmt.Printf("%+V\n", book.StringMap())
-	book.ConvertTo("opf").Write()
+	book.ConvertTo("opf").Print()
 	//fmt.Printf("%+V\n", book.GetFile("cover"))
 	//fmt.Printf("%+V\n", book.Get("tags").String())
 	//fmt.Printf("%+V\n", book.Get("description").String())

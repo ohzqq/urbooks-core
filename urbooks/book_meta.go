@@ -269,8 +269,7 @@ func (b *Book) ConvertTo(f string) *Book {
 }
 
 func (b *Book) Print() {
-	meta := b.fmt.Render(b)
-	fmt.Println(string(meta))
+	fmt.Println(string(b.fmt.Render(b)))
 }
 
 func (b *Book) Write() {
@@ -279,8 +278,8 @@ func (b *Book) Write() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-	meta := b.fmt.Render(b)
-	_, err = file.Write(meta)
+
+	_, err = file.Write(b.fmt.Render(b))
 	if err != nil {
 		log.Fatal(err)
 	}

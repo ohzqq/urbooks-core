@@ -91,23 +91,30 @@ func (p calibrePref) parseSavedSearches() map[string]string {
 type Fields map[string]*Field
 
 type Field struct {
-	Library      string
-	CategorySort string `json:"category_sort"`
-	Column       string `json:"column"`
-	IsDisplayed  bool   `json:"is_displayed"`
-	IsNames      bool   `json:"is_names"`
-	IsCategory   bool   `json:"is_category"`
-	IsCustom     bool   `json:"is_custom"`
-	IsEditable   bool   `json:"is_editable"`
-	HasJoin      bool
-	IsMultiple   bool
-	TableColumns []string
-	LinkColumn   string            `json:"link_column"`
+	Library      string            `json:"-"`
+	TableColumns []string          `json:"-"`
+	IsDisplayed  bool              `json:"-"`
+	IsNames      bool              `json:"-"`
+	HasJoin      bool              `json:"-"`
+	IsMultiple   bool              `json:"-"`
+	CatID        string            `json:"-"`
+	CategorySort string            `json:"category_sort"`
+	Colnum       int               `json:"colnum"`
+	Column       string            `json:"column"`
+	Datatype     string            `json:"datatype"`
+	Display      map[string]string `json:"display"`
+	IsCategory   bool              `json:"is_category"`
+	IsCustom     bool              `json:"is_custom"`
+	IsCsp        bool              `json:"is_csp"`
+	IsEditable   bool              `json:"is_editable"`
 	Multiple     map[string]string `json:"is_multiple"`
+	Kind         string            `json:"kind"`
 	Label        string            `json:"label"`
+	LinkColumn   string            `json:"link_column"`
 	Name         string            `json:"name"`
+	RecIndex     string            `json:"rec_index"`
+	SearchTerms  []string          `json:"search_terms"`
 	Table        string            `json:"table"`
-	CatID        string
 }
 
 func (f Field) Type() string {
