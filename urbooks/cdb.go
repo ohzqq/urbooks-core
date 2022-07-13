@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 
@@ -53,25 +52,25 @@ func (c *cdbCmd) Verbose(v bool) *cdbCmd {
 	return c
 }
 
-func (c *cdbCmd) Run() string {
+func (c *cdbCmd) Run() (string, error) {
 	switch {
 	case c.cdbCmd != "":
-		return c.runExec()
+		return c.runCdb()
 	default:
 		if c.verbose {
 			fmt.Printf("local command: %v\n", c.localCmd)
 		}
 		switch c.localCmd {
 		case "list libraries":
-			return strings.Join(Libraries(), ", ")
+			return strings.Join(Libraries(), ", "), nil
 		case "list fields":
-			return strings.Join(c.lib.DB.AllFields(), ", ")
+			return strings.Join(c.lib.DB.AllFields(), ", "), nil
 		}
 	}
-	return ""
+	return "", nil
 }
 
-func (c *cdbCmd) runExec() string {
+func (c *cdbCmd) runCdb() (string, error) {
 	c.buildCmd()
 
 	if c.tmp != nil {
@@ -90,17 +89,18 @@ func (c *cdbCmd) runExec() string {
 	if err != nil {
 		fmt.Printf("%v\n", c.cmd.String())
 		log.Fatalf("%v finished with error: %v\n", c.cdbCmd, stderr.String())
+		return "", fmt.Errorf("%v\n", stderr.String())
 	}
 
 	if len(stdout.Bytes()) > 0 {
-		return stdout.String()
+		return stdout.String(), nil
 	}
 
 	if c.verbose {
 		fmt.Println(c.cmd.String())
 	}
 
-	return ""
+	return "", nil
 }
 
 func (c *cdbCmd) buildCmd() *cdbCmd {
@@ -149,25 +149,41 @@ func (c *cdbCmd) Import(input, cover string) *cdbCmd {
 		media:   c.media,
 		lib:     c.lib,
 		verbose: c.verbose,
-		book:    c.MediaMetaToBook(),
+		book:    MediaMetaToBook(c.lib.Name, c.media),
 	}
-	metaCmd.setMetadataCmd(id).Run()
+	_, err = metaCmd.setMetadataCmd(id).Run()
+	switch {
+	case err != nil:
+		log.Fatal(err)
+	case err == nil:
+		fmt.Printf("imported %v, id %v\n", c.media.GetTag("title"), id)
+	}
 	return c
 }
 
 func (c *cdbCmd) Export(ids, dir, fmts string) *cdbCmd {
 	c.setCdbCmd("export")
 	c.appendArgs(ids)
+
 	if c.lib.IsAudiobooks() {
 		c.appendArgs("--dont-update-metadata")
 	}
+
 	if dir != "" {
 		c.appendArgs("--to-dir", dir)
 	}
+
 	if fmts != "" {
 		c.appendArgs("--formats", fmts)
 	}
-	c.Run()
+
+	_, err := c.Run()
+	switch {
+	case err != nil:
+		log.Fatal(err)
+	case err == nil:
+		fmt.Println("export successful")
+	}
 	return c
 }
 
@@ -197,7 +213,12 @@ func (c *cdbCmd) addBook(input, cover string) (string, error) {
 
 	c.appendArgs(input)
 
-	if id := strings.Split(c.Run(), ": "); len(id) == 2 {
+	str, err := c.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if id := strings.Split(str, ": "); len(id) == 2 {
 		return id[1], nil
 	}
 
@@ -221,22 +242,6 @@ func (c *cdbCmd) setMetadataCmd(id string) *cdbCmd {
 
 func (c *cdbCmd) listCmd() *cdbCmd {
 	return c.setCdbCmd("list")
-}
-
-func (c *cdbCmd) MediaMetaToBook() *Book {
-	book := NewBook(c.lib.Name)
-	titleRegex := regexp.MustCompile(`(?P<title>.*) \[(?P<series>.*), Book (?P<position>.*)\]$`)
-	titleAndSeries := titleRegex.FindStringSubmatch(c.media.GetTag("title"))
-
-	book.NewColumn("title").SetValue(titleAndSeries[titleRegex.SubexpIndex("title")])
-	book.NewItem("series").
-		SetValue(titleAndSeries[titleRegex.SubexpIndex("series")]).
-		Set("position", titleAndSeries[titleRegex.SubexpIndex("position")])
-	book.NewCategory("authors").Split(c.media.GetTag("artist"), true)
-	book.NewCategory("narrators").Split(c.media.GetTag("composer"), true)
-	book.NewColumn("description").SetValue(c.media.GetTag("comment"))
-	book.NewCategory("tags").Split(c.media.GetTag("genre"), false)
-	return book
 }
 
 func (c *cdbCmd) ParseCfg() []string {

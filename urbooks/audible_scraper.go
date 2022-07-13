@@ -73,18 +73,23 @@ func (s *AudibleScraper) String() string {
 		Host:   audible,
 		Path:   "/search",
 	}
+
 	if s.Keywords != "" {
 		s.searchQuery.Set("keywords", s.Keywords)
 	}
+
 	if s.Authors != "" {
 		s.searchQuery.Set("searchAuthor", s.Authors)
 	}
+
 	if s.Narrators != "" {
 		s.searchQuery.Set("searchNarrator", s.Narrators)
 	}
+
 	if s.Title != "" {
 		s.searchQuery.Set("title", s.Title)
 	}
+
 	url.RawQuery = s.searchQuery.Encode()
 	return url.String()
 }
@@ -203,7 +208,6 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
 		if !a.NoCovers {
-			println(coverURL)
 			DownloadCover(slug.Make(title)+".jpg", coverURL)
 		}
 
