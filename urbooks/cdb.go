@@ -155,6 +155,22 @@ func (c *cdbCmd) Import(input, cover string) *cdbCmd {
 	return c
 }
 
+func (c *cdbCmd) Export(ids, dir, fmts string) *cdbCmd {
+	c.setCdbCmd("export")
+	c.appendArgs(ids)
+	if c.lib.IsAudiobooks() {
+		c.appendArgs("--dont-update-metadata")
+	}
+	if dir != "" {
+		c.appendArgs("--to-dir", dir)
+	}
+	if fmts != "" {
+		c.appendArgs("--formats", fmts)
+	}
+	c.Run()
+	return c
+}
+
 func (c *cdbCmd) Remove(id string) *cdbCmd {
 	c.setCdbCmd("remove").appendArgs(id).Run()
 	return c
