@@ -14,14 +14,30 @@ import (
 
 	"github.com/ohzqq/avtools/avtools"
 	"github.com/ohzqq/urbooks-core/calibredb"
+	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
 )
 
 type CalibreServerCfg struct {
+	Opts     *viper.Viper
 	Url      string
 	Username string
 	Password string
+	Cdb      map[string][]string
 	url      *url.URL
+}
+
+type calibreCfg struct {
+	cli *viper.Viper
+	srv *viper.Viper
+	url *url.URL
+}
+
+var cdb = calibreCfg{}
+
+func CfgCdb(v *viper.Viper) {
+	cdb.cli = v.Sub("cdb")
+	cdb.srv = v
 }
 
 type cdbCmd struct {
@@ -168,7 +184,11 @@ func (c *cdbCmd) Add(input, cover string) *cdbCmd {
 func (c *cdbCmd) addBook(input, cover string) (string, error) {
 	c.media = avtools.NewMedia(input).JsonMeta().Unmarshal()
 	c.cdbCmd = "add"
-	c.appendArgs("-d")
+	if cdb.cli.IsSet("add") {
+		for _, o := range cdb.cli.GetStringSlice("add") {
+			c.appendArgs(o)
+		}
+	}
 	if cover != "" {
 		c.appendArgs("-c", cover)
 	}
@@ -221,28 +241,28 @@ func (c *cdbCmd) MediaMetaToBook() *Book {
 
 func (c *cdbCmd) ParseCfg() []string {
 	var args []string
-	if l := c.server.Url; l != "" {
-		u, err := url.Parse(l)
+	if cdb.srv.IsSet("url") {
+		u, err := url.Parse(cdb.srv.GetString("url"))
 		if err != nil {
 			log.Fatal(err)
 		}
 		u.Fragment = c.lib.Name
-		c.server.url = u
+		cdb.url = u
 
-		if c.server.IsOnline() {
+		if cdb.IsOnline() {
 			args = append(args, "--with-library")
-			args = append(args, "'"+c.server.url.String()+"'")
+			args = append(args, "'"+cdb.url.String()+"'")
 		}
 	}
 
-	if p := c.server.Password; p != "" {
+	if cdb.srv.IsSet("password") {
 		args = append(args, "--password")
-		args = append(args, "'"+p+"'")
+		args = append(args, "'"+cdb.srv.GetString("password")+"'")
 	}
 
-	if u := c.server.Username; u != "" {
+	if cdb.srv.IsSet("username") {
 		args = append(args, "--username")
-		args = append(args, u)
+		args = append(args, cdb.srv.GetString("username"))
 	}
 
 	if !slices.Contains(args, "--with-library") {
@@ -258,9 +278,9 @@ func (c *cdbCmd) ParseCfg() []string {
 	return args
 }
 
-func (c CalibreServerCfg) IsOnline() bool {
+func (c calibreCfg) IsOnline() bool {
 	timeout := 1 * time.Second
-	conn, err := net.DialTimeout("tcp", c.url.Host, timeout)
+	conn, err := net.DialTimeout("tcp", cdb.url.Host, timeout)
 	if err != nil {
 		return false
 	}

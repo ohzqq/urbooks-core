@@ -68,7 +68,10 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		urbooks.InitConfig(viper.GetStringMapString("library_options"))
 		urbooks.InitLibraries(viper.Sub("libraries"), viper.GetStringMapString("libraries"), false)
-		err := viper.Sub("calibre").Unmarshal(&calibreServer)
+
+		cdbSub := viper.Sub("calibre")
+		urbooks.CfgCdb(cdbSub)
+		err := cdbSub.Unmarshal(&calibreServer)
 		if err != nil {
 			log.Fatal(err)
 		}

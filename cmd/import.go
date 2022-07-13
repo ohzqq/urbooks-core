@@ -21,7 +21,6 @@ var importCmd = &cobra.Command{
 			cover = urbooks.FindCover()
 		}
 		urbooks.NewCalibredbCmd().
-			SetServer(calibreServer).
 			SetLib(lib).
 			Verbose(verbose).
 			Add(args[0], cover)
