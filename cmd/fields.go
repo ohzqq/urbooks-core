@@ -14,7 +14,7 @@ var fieldsCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		c := urbooks.NewCalibredbCmd().
-			SetLib(lib).
+			WithLib(lib).
 			Verbose(verbose).
 			List("fields")
 		fmt.Println(c.Run())

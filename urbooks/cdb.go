@@ -54,27 +54,19 @@ func (c *cdbCmd) Verbose(v bool) *cdbCmd {
 }
 
 func (c *cdbCmd) Run() string {
-	//fmt.Printf("cdbCmd: %v\n", c.cdbCmd)
-	//fmt.Printf("localCmd: %v\n", c.localCmd)
-	//fmt.Printf("c.lib: %v\n", c.lib)
 	switch {
 	case c.cdbCmd != "":
 		return c.runExec()
 	default:
-		return c.runLocal()
-	}
-	return ""
-}
-
-func (c *cdbCmd) runLocal() string {
-	if c.verbose {
-		fmt.Printf("local command: %v\n", c.localCmd)
-	}
-	switch c.localCmd {
-	case "list libraries":
-		return strings.Join(Libraries(), ", ")
-	case "list fields":
-		return strings.Join(c.lib.DB.AllFields(), ", ")
+		if c.verbose {
+			fmt.Printf("local command: %v\n", c.localCmd)
+		}
+		switch c.localCmd {
+		case "list libraries":
+			return strings.Join(Libraries(), ", ")
+		case "list fields":
+			return strings.Join(c.lib.DB.AllFields(), ", ")
+		}
 	}
 	return ""
 }
@@ -95,7 +87,6 @@ func (c *cdbCmd) runExec() string {
 
 	err := c.cmd.Run()
 
-	fmt.Printf("%v\n", c.cmd.String())
 	if err != nil {
 		fmt.Printf("%v\n", c.cmd.String())
 		log.Fatalf("%v finished with error: %v\n", c.cdbCmd, stderr.String())
@@ -126,7 +117,7 @@ func (c *cdbCmd) appendArgs(arg ...string) *cdbCmd {
 	return c
 }
 
-func (c *cdbCmd) SetLib(l string) *cdbCmd {
+func (c *cdbCmd) WithLib(l string) *cdbCmd {
 	switch {
 	case l == "":
 		c.lib = DefaultLib()
@@ -142,7 +133,6 @@ func (c *cdbCmd) List(arg string) *cdbCmd {
 	switch arg {
 	case "fields":
 		c.localCmd = "list fields"
-		//c.setMetadataCmd()
 		c.appendArgs("--list-fields")
 	case "libs":
 		c.localCmd = "list libraries"
@@ -150,7 +140,7 @@ func (c *cdbCmd) List(arg string) *cdbCmd {
 	return c
 }
 
-func (c *cdbCmd) Add(input, cover string) *cdbCmd {
+func (c *cdbCmd) Import(input, cover string) *cdbCmd {
 	id, err := c.addBook(input, cover)
 	if err != nil {
 		log.Fatal(err)
@@ -162,6 +152,11 @@ func (c *cdbCmd) Add(input, cover string) *cdbCmd {
 		book:    c.MediaMetaToBook(),
 	}
 	metaCmd.setMetadataCmd(id).Run()
+	return c
+}
+
+func (c *cdbCmd) Remove(id string) *cdbCmd {
+	c.setCdbCmd("remove").appendArgs(id).Run()
 	return c
 }
 
