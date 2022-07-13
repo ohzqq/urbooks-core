@@ -20,7 +20,7 @@ vendor/
 # Go workspace file
 go.work
 
-tmp/*
+tmp/
 docker-compose.yml
 *m4b
 *mp3
