@@ -54,9 +54,7 @@ func initConfig() {
 
 		// Search config in home directory with name ".urbooks-core" (without extension).
 		//viper.AddConfigPath(home)
-		viper.AddConfigPath(filepath.Join(home, "Code/urbooks-core/tmp/"))
 		viper.AddConfigPath(filepath.Join(home, ".config/urbooks/"))
-		//viper.SetConfigType("ini")
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("config")
 	}
