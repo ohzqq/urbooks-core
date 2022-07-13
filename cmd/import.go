@@ -30,5 +30,5 @@ var importCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(importCmd)
-	rootCmd.Flags().StringVarP(&cover, "cover", "c", "", "specify cover")
+	importCmd.Flags().StringVarP(&cover, "cover", "c", "", "specify cover")
 }

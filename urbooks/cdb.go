@@ -8,12 +8,12 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/ohzqq/avtools/avtools"
+	"github.com/ohzqq/urbooks-core/calibredb"
 	"golang.org/x/exp/slices"
 )
 
@@ -168,6 +168,7 @@ func (c *cdbCmd) Add(input, cover string) *cdbCmd {
 func (c *cdbCmd) addBook(input, cover string) (string, error) {
 	c.media = avtools.NewMedia(input).JsonMeta().Unmarshal()
 	c.cdbCmd = "add"
+	c.appendArgs("-d")
 	if cover != "" {
 		c.appendArgs("-c", cover)
 	}
@@ -181,26 +182,20 @@ func (c *cdbCmd) addBook(input, cover string) (string, error) {
 func (c *cdbCmd) setMetadataCmd(id string) *cdbCmd {
 	c.cdbCmd = "set_metadata"
 	c.appendArgs(id)
-	tmp := c.book.ConvertTo("opf").Tmp()
-	defer tmp.Close()
-
-	path, err := filepath.Abs(tmp.Name())
-	if err != nil {
-		log.Fatal(err)
+	for field, value := range c.book.StringMap() {
+		f := calibredb.GetCalibreField(field) + ":"
+		switch {
+		case field == "library":
+		default:
+			c.appendArgs("-f", f+value)
+		}
 	}
-	c.appendArgs(path)
-	//for field, value := range c.book.StringMap() {
-	//  f := calibredb.GetCalibreField(field) + ":"
-	//  switch {
-	//  case field == "library":
-	//  case field == "position":
-	//    c.appendArgs("-f", f+value)
-	//  default:
-	//    c.appendArgs("-f", f+`'`+value+`'`)
-	//  }
-	//}
-
 	return c
+}
+
+func shEscape(s string) string {
+	escSpace := regexp.MustCompile(`(\s)`)
+	return escSpace.ReplaceAllString(s, "\\$1")
 }
 
 func (c *cdbCmd) listCmd() *cdbCmd {
