@@ -18,15 +18,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type CalibreServerCfg struct {
-	Opts     *viper.Viper
-	Url      string
-	Username string
-	Password string
-	Cdb      map[string][]string
-	url      *url.URL
-}
-
 type calibreCfg struct {
 	cli *viper.Viper
 	srv *viper.Viper
@@ -42,7 +33,6 @@ func CfgCdb(v *viper.Viper) {
 
 type cdbCmd struct {
 	lib      *Library
-	server   CalibreServerCfg
 	input    string
 	verbose  bool
 	media    *avtools.Media
@@ -136,11 +126,6 @@ func (c *cdbCmd) appendArgs(arg ...string) *cdbCmd {
 	return c
 }
 
-func (c *cdbCmd) SetServer(config CalibreServerCfg) *cdbCmd {
-	c.server = config
-	return c
-}
-
 func (c *cdbCmd) SetLib(l string) *cdbCmd {
 	switch {
 	case l == "":
@@ -174,57 +159,60 @@ func (c *cdbCmd) Add(input, cover string) *cdbCmd {
 		media:   c.media,
 		lib:     c.lib,
 		verbose: c.verbose,
-		server:  c.server,
 		book:    c.MediaMetaToBook(),
 	}
 	metaCmd.setMetadataCmd(id).Run()
 	return c
 }
 
-func (c *cdbCmd) addBook(input, cover string) (string, error) {
-	c.media = avtools.NewMedia(input).JsonMeta().Unmarshal()
-	c.cdbCmd = "add"
-	if cdb.cli.IsSet("add") {
-		for _, o := range cdb.cli.GetStringSlice("add") {
+func (c *cdbCmd) setCdbCmd(cmd string) *cdbCmd {
+	c.cdbCmd = cmd
+	if cdb.cli.IsSet(c.cdbCmd) {
+		for _, o := range cdb.cli.GetStringSlice(c.cdbCmd) {
 			c.appendArgs(o)
 		}
 	}
+	return c
+}
+
+func (c *cdbCmd) addBook(input, cover string) (string, error) {
+	c.media = avtools.NewMedia(input).JsonMeta().Unmarshal()
+
+	c.setCdbCmd("add")
+
 	if cover != "" {
 		c.appendArgs("-c", cover)
 	}
+
 	c.appendArgs(input)
+
 	if id := strings.Split(c.Run(), ": "); len(id) == 2 {
 		return id[1], nil
 	}
+
 	return "", fmt.Errorf("import unsucessful")
 }
 
 func (c *cdbCmd) setMetadataCmd(id string) *cdbCmd {
-	c.cdbCmd = "set_metadata"
+	c.setCdbCmd("set_metadata")
 	c.appendArgs(id)
-	for field, value := range c.book.StringMap() {
-		f := calibredb.GetCalibreField(field) + ":"
-		switch {
-		case field == "library":
-		default:
-			c.appendArgs("-f", f+value)
-		}
-	}
-	return c
-}
 
-func shEscape(s string) string {
-	escSpace := regexp.MustCompile(`(\s)`)
-	return escSpace.ReplaceAllString(s, "\\$1")
+	book := c.book.StringMap()
+	delete(book, "library")
+
+	for field, value := range book {
+		f := calibredb.GetCalibreField(field) + ":"
+		c.appendArgs("-f", f+value)
+	}
+
+	return c
 }
 
 func (c *cdbCmd) listCmd() *cdbCmd {
-	c.cdbCmd = "list"
-	return c
+	return c.setCdbCmd("list")
 }
 
 func (c *cdbCmd) MediaMetaToBook() *Book {
-	//fmt.Printf("media meta: %T\n", NewBookMeta(c.media.Meta.Tags))
 	book := NewBook(c.lib.Name)
 	titleRegex := regexp.MustCompile(`(?P<title>.*) \[(?P<series>.*), Book (?P<position>.*)\]$`)
 	titleAndSeries := titleRegex.FindStringSubmatch(c.media.Meta.Tags["title"])

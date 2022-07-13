@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 
@@ -14,7 +13,6 @@ import (
 var cfgFile string
 var lib string
 var verbose bool
-var calibreServer urbooks.CalibreServerCfg
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -69,11 +67,6 @@ func initConfig() {
 		urbooks.InitConfig(viper.GetStringMapString("library_options"))
 		urbooks.InitLibraries(viper.Sub("libraries"), viper.GetStringMapString("libraries"), false)
 
-		cdbSub := viper.Sub("calibre")
-		urbooks.CfgCdb(cdbSub)
-		err := cdbSub.Unmarshal(&calibreServer)
-		if err != nil {
-			log.Fatal(err)
-		}
+		urbooks.CfgCdb(viper.Sub("calibre"))
 	}
 }
