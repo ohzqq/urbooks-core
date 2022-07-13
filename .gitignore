@@ -22,3 +22,10 @@ go.work
 
 tmp/*
 docker-compose.yml
+*m4b
+*mp3
+*jpg
+*ini
+*opf
+*m4a
+*xml
