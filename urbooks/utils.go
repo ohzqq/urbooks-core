@@ -1,28 +1,10 @@
 package urbooks
 
 import (
-	"bytes"
-	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 )
-
-func shellout(args ...string) (error, string, string) {
-	var (
-		stderr bytes.Buffer
-		stdout bytes.Buffer
-	)
-	cmdArgs := []string{"-c"}
-	cmdArgs = append(cmdArgs, args...)
-	cmd := exec.Command("bash", cmdArgs...)
-	cmd.Stderr = &stderr
-	cmd.Stdout = &stdout
-	fmt.Println(cmd.String())
-	err := cmd.Run()
-	return err, stdout.String(), stderr.String()
-}
 
 func FindCover() string {
 	if img := findFile(".jpg"); len(img) > 0 {
@@ -49,4 +31,56 @@ func findFile(ext string) []string {
 		}
 	}
 	return files
+}
+
+func AudioFormats() []string {
+	return []string{"m4b", "m4a", "mp3", "opus", "ogg"}
+}
+
+func AudioMimeType(ext string) string {
+	switch ext {
+	case "m4b", "m4a":
+		return "audio/mp4"
+	case "mp3":
+		return "audio/mpeg"
+	case "ogg", "opus":
+		return "audio/ogg"
+	}
+	return ""
+}
+
+func BookSortFields() []string {
+	return []string{
+		"added",
+		"sortAs",
+	}
+}
+
+func BookSortTitle(idx int) string {
+	titles := []string{
+		"by Newest",
+		"by Title",
+	}
+	return titles[idx]
+}
+
+func BookCats() []string {
+	return []string{
+		"authors",
+		"tags",
+		"series",
+		"languages",
+		"rating",
+	}
+}
+
+func BookCatsTitle(idx int) string {
+	titles := []string{
+		"by Authors",
+		"by Tags",
+		"by Series",
+		"by Languages",
+		"by Rating",
+	}
+	return titles[idx]
 }
