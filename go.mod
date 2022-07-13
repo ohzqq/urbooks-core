@@ -17,10 +17,10 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.14
 	github.com/muesli/reflow v0.3.0
 	github.com/muesli/termenv v0.12.0
-	github.com/ohzqq/avtools v0.1.0
+	github.com/ohzqq/avtools v0.1.1
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/viper v1.12.0
-	golang.org/x/exp v0.0.0-20220706164943-b4a6d9510983
+	golang.org/x/exp v0.0.0-20220713135740-79cabaa25d75
 	golang.org/x/term v0.0.0-20220526004731-065cf7ba2467
 )
 
@@ -69,7 +69,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.2 // indirect
 	github.com/prometheus/client_golang v1.12.2 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.35.0 // indirect
+	github.com/prometheus/common v0.36.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/sahilm/fuzzy v0.1.0 // indirect
@@ -79,10 +79,10 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.0 // indirect
 	github.com/temoto/robotstxt v1.1.2 // indirect
-	github.com/yuin/goldmark v1.4.12 // indirect
+	github.com/yuin/goldmark v1.4.13 // indirect
 	github.com/yuin/goldmark-emoji v1.0.1 // indirect
-	golang.org/x/net v0.0.0-20220706163947-c90051bbdb60 // indirect
-	golang.org/x/sys v0.0.0-20220704084225-05e143d24a9e // indirect
+	golang.org/x/net v0.0.0-20220708220712-1185a9018129 // indirect
+	golang.org/x/sys v0.0.0-20220712014510-0a85c31ab51e // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect

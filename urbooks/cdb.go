@@ -215,15 +215,16 @@ func (c *cdbCmd) listCmd() *cdbCmd {
 func (c *cdbCmd) MediaMetaToBook() *Book {
 	book := NewBook(c.lib.Name)
 	titleRegex := regexp.MustCompile(`(?P<title>.*) \[(?P<series>.*), Book (?P<position>.*)\]$`)
-	titleAndSeries := titleRegex.FindStringSubmatch(c.media.Meta.Tags["title"])
+	titleAndSeries := titleRegex.FindStringSubmatch(c.media.GetTag("title"))
+
 	book.NewColumn("title").SetValue(titleAndSeries[titleRegex.SubexpIndex("title")])
 	book.NewItem("series").
 		SetValue(titleAndSeries[titleRegex.SubexpIndex("series")]).
 		Set("position", titleAndSeries[titleRegex.SubexpIndex("position")])
-	book.NewCategory("authors").Split(c.media.Meta.Tags["artist"], true)
-	book.NewCategory("narrators").Split(c.media.Meta.Tags["composer"], true)
-	book.NewColumn("description").SetValue(c.media.Meta.Tags["comment"])
-	book.NewCategory("tags").Split(c.media.Meta.Tags["genre"], false)
+	book.NewCategory("authors").Split(c.media.GetTag("artist"), true)
+	book.NewCategory("narrators").Split(c.media.GetTag("composer"), true)
+	book.NewColumn("description").SetValue(c.media.GetTag("comment"))
+	book.NewCategory("tags").Split(c.media.GetTag("genre"), false)
 	return book
 }
 
@@ -255,12 +256,7 @@ func (c *cdbCmd) ParseCfg() []string {
 
 	if !slices.Contains(args, "--with-library") {
 		args = append(args, "--with-library")
-		switch c.lib {
-		//case "-":
-		//args = append(args, c.lib)
-		default:
-			args = append(args, c.lib.Path)
-		}
+		args = append(args, c.lib.Path)
 	}
 
 	return args
