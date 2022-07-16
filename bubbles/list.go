@@ -24,13 +24,25 @@ func (l *listModel) GetSelected() []string {
 	for _, i := range l.list.Items() {
 		switch li := i.(type) {
 		case item:
-			if li.Selected() {
+			if li.IsSelected() {
 				sel = append(sel, li.ID())
 			}
 		}
 	}
 	return sel
 }
+
+//func (m model) getSelectedItems() string {
+//  var sel []string
+//  for _, i := range m.list.Items() {
+//    if item, ok := i.(item); ok {
+//      if item.IsSelected() {
+//        sel = append(sel, strings.TrimPrefix(item.Title(), item.Marker()))
+//      }
+//    }
+//  }
+//  return strings.Join(sel, ", ")
+//}
 
 func (l *listModel) SetHeight(h int) *listModel {
 	l.height = h

@@ -3,6 +3,7 @@ package bubbles
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
@@ -14,14 +15,75 @@ import (
 type item struct {
 	title    string
 	id       string
+	marked   string
+	unmarked string
 	selected bool
 }
 
 func (i item) Title() string       { return i.title }
-func (i item) Selected() bool      { return i.selected }
+func (i item) IsSelected() bool    { return i.selected }
 func (i item) ID() string          { return i.id }
 func (i item) FilterValue() string { return i.title }
-func (i *item) ToggleSelected()    { i.selected = !i.selected }
+
+//func (i *item) ToggleSelected()    { i.selected = !i.selected }
+
+func (i *item) ToggleSelected() {
+	i.selected = !i.selected
+	if i.selected {
+		i.title = strings.ReplaceAll(i.title, i.unmarked, i.marked)
+	} else {
+		i.title = strings.ReplaceAll(i.title, i.marked, i.unmarked)
+	}
+}
+
+func (i item) Marker() string {
+	if i.IsSelected() {
+		return i.marked
+	} else {
+		return i.unmarked
+	}
+}
+
+//func newItemDelegate(keys *KeyMap) list.DefaultDelegate {
+//  d := list.NewDefaultDelegate()
+
+//  d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
+//    var i item
+//    var title string
+
+//    if item, ok := m.SelectedItem().(item); ok {
+//      i = item
+//    } else {
+//      return nil
+//    }
+//    title = i.Title()
+
+//    switch msg := msg.(type) {
+//    case tea.KeyMsg:
+//      switch {
+//      case key.Matches(msg, d.keys["ToggleItem"]):
+//        i.ToggleSelected()
+//        m.SetItem(m.Index(), i)
+//      }
+//    }
+
+//    return nil
+//  }
+
+//  //help := []key.Binding{keys.choose, keys.remove, keys.sel}
+
+//  //d.ShortHelpFunc = func() []key.Binding {
+//  //  return help
+//  //}
+
+//  //d.FullHelpFunc = func() [][]key.Binding {
+//  //  return [][]key.Binding{help}
+//  //}
+
+//  d.ShowDescription = false
+
+//  return d
+//}
 
 type itemDelegate struct {
 	MultiSelect bool
@@ -74,7 +136,7 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 	switch i := listItem.(type) {
 	case item:
 		title = i.Title()
-		selected = i.Selected()
+		selected = i.IsSelected()
 	}
 
 	if m.Width() > 0 {
