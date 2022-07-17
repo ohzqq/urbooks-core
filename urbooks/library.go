@@ -2,6 +2,7 @@ package urbooks
 
 import (
 	"github.com/ohzqq/urbooks-core/calibredb"
+	"golang.org/x/exp/slices"
 )
 
 func Libraries() []string {
@@ -13,9 +14,11 @@ func Lib(l string) *Library {
 }
 
 func DefaultLib() *Library {
-	lib := Cfg().Opts["default"]
-	if lib == "" {
-		lib = Libraries()[0]
+	var lib = Libraries()[0]
+	if l := Cfg().Opts["default"]; l != "" {
+		if slices.Contains(Libraries(), l) {
+			lib = l
+		}
 	}
 	return Lib(lib)
 }

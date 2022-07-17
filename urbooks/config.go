@@ -58,6 +58,9 @@ func InitConfig(opts map[string]string) {
 }
 
 func InitLibraries(v *viper.Viper, libs map[string]string, web bool) {
+	if len(libs) == 0 {
+		log.Fatal("no libraries list in config")
+	}
 	for lib, _ := range libs {
 		Cfg().list = append(Cfg().list, lib)
 

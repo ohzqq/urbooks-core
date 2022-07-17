@@ -11,6 +11,7 @@ SELECT
 		{{- else -}}
 			{{- if eq $field.Table "" -}}
 				{{- if eq $field.Label "cover" -}}
+IFNULL(
 CASE has_cover
 WHEN true
 THEN JSON_OBJECT(
@@ -20,8 +21,7 @@ THEN JSON_OBJECT(
 	'uri', "books/" || books.id || "/cover.jpg",
 	'value', 'cover.jpg'
 )
-ELSE JSON_QUOTE('{}')
-END cover, 
+END, '{}') cover, 
 				{{end -}}
 				{{- template "column" $field}}
 			{{- else -}}

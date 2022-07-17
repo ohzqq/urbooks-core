@@ -14,8 +14,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-var _ = fmt.Sprintf("%v", "")
-
 func Get(u string) ([]byte, error) {
 	url, err := url.Parse(u)
 	if err != nil {

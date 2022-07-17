@@ -60,12 +60,12 @@ func ParseBooks(r []byte) *BookResponse {
 		for key, val := range book {
 			var err error
 			switch key {
+			case "formats":
+				err = json.Unmarshal(val, &formats.items)
 			case "cover":
 				item := formats.AddItem()
 				item.query = response.books.query
 				err = json.Unmarshal(val, &item)
-			case "formats":
-				err = json.Unmarshal(val, &formats.items)
 			case "series", "publishers":
 				item := bb.NewItem(key)
 				item.query = response.books.query

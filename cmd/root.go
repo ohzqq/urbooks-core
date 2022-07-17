@@ -39,6 +39,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urbooks-core.yaml)")
 	rootCmd.PersistentFlags().StringVarP(&lib, "library", "l", "", "library by name")
+	//rootCmd.PersistentFlags().StringVarP(&lib, "library", "l", urbooks.DefaultLib().Name, "library by name")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "library by name")
 }
 
@@ -54,7 +55,8 @@ func initConfig() {
 
 		// Search config in home directory with name ".urbooks-core" (without extension).
 		//viper.AddConfigPath(home)
-		viper.AddConfigPath(filepath.Join(home, ".config/urbooks/"))
+		viper.AddConfigPath(filepath.Join(home, "Code/urbooks-core/tmp"))
+		//viper.AddConfigPath(filepath.Join(home, ".config/urbooks/"))
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("config")
 	}
@@ -67,5 +69,8 @@ func initConfig() {
 		urbooks.InitLibraries(viper.Sub("libraries"), viper.GetStringMapString("libraries"), false)
 
 		urbooks.CfgCdb(viper.Sub("calibre"))
+		if lib == "" {
+			lib = urbooks.DefaultLib().Name
+		}
 	}
 }
