@@ -96,5 +96,7 @@ func InitLibraries(v *viper.Viper, libs map[string]string, web bool) {
 		}
 
 		Cfg().libs[lib] = newLib
+
+		newLib.getDBPreferences()
 	}
 }

@@ -3,6 +3,9 @@
 {{- $lib := . -}}
 
 SELECT
+
+{{- template "custCol" $lib}}
+
 {{range $f := .Request.Fields -}}
 	{{- $field := $lib.GetField $f}}
 
@@ -29,6 +32,28 @@ END, '{}') cover,
 			{{- end}}
 		{{- end}}
 {{end -}}
+
+JSON_QUOTE(
+title || 
+IFNULL(
+	" [" || (
+		SELECT name 
+		FROM series 
+		WHERE series.id 
+		IN (
+			SELECT series 
+			FROM books_series_link 
+			WHERE book=books.id
+		)
+	) ||
+	", Book " || 
+	(series_index) ||
+	"]"
+	, "") 
+)
+titleAndSeries, 
+
+JSON_QUOTE("{{$lib.Name}}") library,
 
 IFNULL(JSON_QUOTE(lower(id)), '""') id
 

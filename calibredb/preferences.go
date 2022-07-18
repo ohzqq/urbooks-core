@@ -2,29 +2,71 @@ package calibredb
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"strings"
-
-	"golang.org/x/exp/slices"
 )
 
-var _ = fmt.Sprintf("%v", "poot")
-
 type Preferences struct {
+	raw              calibrePref
 	HiddenCategories []string          `json:"hiddenCategories"`
 	FieldMeta        Fields            `json:"fieldMetadata"`
 	SavedSearches    map[string]string `json:"savedSearches"`
 }
 
 type calibrePref struct {
-	library          string
+	dbPreferences
+	library   string
+	meta      Fields
+	AllFields []string
+}
+
+type dbPreferences struct {
 	HiddenCategories json.RawMessage `json:"tag_browser_hidden_categories"`
+	DisplayFields    json.RawMessage `json:"book_display_fields"`
 	SavedSearches    json.RawMessage `json:"saved_searches"`
 	FieldMeta        json.RawMessage `json:"field_metadata"`
-	meta             Fields
-	DisplayFields    json.RawMessage `json:"book_display_fields"`
-	AllFields        []string
+}
+
+var custColstmt = `
+SELECT 
+label Label, 
+name Name,
+"custom_column_" || id 'Table',
+CASE is_multiple
+WHEN true THEN "books_custom_column_" || id || "_link"
+ELSE ""
+END JoinTable,
+CASE is_multiple
+WHEN true THEN 'value'
+ELSE ""
+END LinkColumn
+FROM custom_columns;
+`
+
+func (lib *Lib) getCustCols() {
+	rows, err := lib.db.Queryx(custColstmt)
+	if err != nil {
+		log.Fatalf("cust col query failed %v\n", err)
+	}
+
+	var cols []map[string]interface{}
+	for rows.Next() {
+		results := make(map[string]interface{})
+		err = rows.MapScan(results)
+		if err != nil {
+			log.Fatalf("something happened when scanning db results %v\n", err)
+		}
+		cols = append(cols, results)
+	}
+
+	for _, val := range cols {
+		results := make(map[string]string)
+		for k, v := range val {
+			results[k] = v.(string)
+		}
+		lib.CustCols = append(lib.CustCols, results)
+	}
+	//fmt.Printf("%+v\n", lib.CustCols)
 }
 
 const prefSql = `
@@ -59,11 +101,27 @@ func (lib *Lib) getPreferences() {
 		HiddenCategories: pref.parseHiddenCategories(),
 		SavedSearches:    pref.parseSavedSearches(),
 		FieldMeta:        meta,
+		raw:              pref,
 	}
 }
 
 func (p Preferences) toJSON() []byte {
 	json, err := json.Marshal(p)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return json
+}
+
+func (p Preferences) ToJSON() []byte {
+	pref := map[string]json.RawMessage{
+		"HiddenCategories": p.raw.HiddenCategories,
+		"SavedSearches":    p.raw.SavedSearches,
+		"DisplayFields":    p.raw.DisplayFields,
+		"FieldMeta":        p.raw.FieldMeta,
+	}
+
+	json, err := json.Marshal(pref)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -93,30 +151,30 @@ type Fields map[string]*Field
 type Field struct {
 	Library      string            `json:"-"`
 	TableColumns map[string]string `json:"-"`
-	IsDisplayed  bool              `json:"-"`
-	IsNames      bool              `json:"-"`
-	HasJoin      bool              `json:"-"`
-	IsMultiple   bool              `json:"-"`
-	CatID        string            `json:"-"`
-	CategorySort string            `json:"category_sort"`
-	Colnum       int               `json:"colnum"`
-	Column       string            `json:"column"`
-	Datatype     string            `json:"datatype"`
-	Display      Display           `json:"display"`
-	IsCategory   bool              `json:"is_category"`
-	IsCustom     bool              `json:"is_custom"`
-	IsCsp        bool              `json:"is_csp"`
-	IsEditable   bool              `json:"is_editable"`
-	Multiple     Multiple          `json:"is_multiple"`
-	Kind         string            `json:"kind"`
-	Label        string            `json:"label"`
-	LinkColumn   string            `json:"link_column"`
-	Name         string            `json:"name"`
-	RecIndex     int               `json:"rec_index"`
-	SearchTerms  []string          `json:"search_terms"`
-	Table        string            `json:"table"`
-	Value        any               `json:"#value#"`
-	Extra        any               `json:"#extra#"`
+	//IsDisplayed  bool              `json:"-"`
+	IsNames      bool     `json:"-"`
+	HasJoin      bool     `json:"-"`
+	IsMultiple   bool     `json:"-"`
+	CatID        string   `json:"-"`
+	CategorySort string   `json:"category_sort"`
+	Colnum       int      `json:"colnum"`
+	Column       string   `json:"column"`
+	Datatype     string   `json:"datatype"`
+	Display      Display  `json:"display"`
+	IsCategory   bool     `json:"is_category"`
+	IsCustom     bool     `json:"is_custom"`
+	IsCsp        bool     `json:"is_csp"`
+	IsEditable   bool     `json:"is_editable"`
+	Multiple     Multiple `json:"is_multiple"`
+	Kind         string   `json:"kind"`
+	Label        string   `json:"label"`
+	LinkColumn   string   `json:"link_column"`
+	Name         string   `json:"name"`
+	RecIndex     int      `json:"rec_index"`
+	SearchTerms  []string `json:"search_terms"`
+	Table        string   `json:"table"`
+	Value        any      `json:"#value#"`
+	Extra        any      `json:"#extra#"`
 }
 
 type Display struct {
@@ -130,6 +188,25 @@ type Multiple struct {
 	CacheToList string `json:"cache_to_list"`
 	ListToUi    string `json:"list_to_ui"`
 	UiToList    string `json:"ui_to_list"`
+}
+
+type dbFieldTypes struct {
+	MultiCats  []string
+	SingleCats []string
+	JoinCats   []string
+	BookCol    []string
+	DateCol    []string
+	CustomCol  []string
+	Special    []string
+}
+
+var fieldTypes = dbFieldTypes{
+	MultiCats:  []string{"formats", "identifiers"},
+	JoinCats:   []string{"authors", "languages", "tags"},
+	SingleCats: []string{"publisher", "series"},
+	BookCol:    []string{"author_sort", "id", "path", "series_index", "sort", "title", "uuid"},
+	DateCol:    []string{"last_modified", "pubdate", "timestamp"},
+	Special:    []string{"comments", "cover", "library", "rating", "titleAndSeries", "uri"},
 }
 
 func (f Field) Type() string {
@@ -181,18 +258,18 @@ func (p *calibrePref) parseFieldMeta() Fields {
 		p.AllFields = append(p.AllFields, key)
 	}
 
-	var dFields [][]interface{}
-	err = json.Unmarshal(p.DisplayFields, &dFields)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//var dFields [][]interface{}
+	//err = json.Unmarshal(p.DisplayFields, &dFields)
+	//if err != nil {
+	//  log.Fatal(err)
+	//}
 
-	for _, f := range dFields {
-		name := f[0].(string)
-		if slices.Contains(p.AllFields, name) {
-			fields[name].IsDisplayed = f[1].(bool)
-		}
-	}
+	//for _, f := range dFields {
+	//  name := f[0].(string)
+	//  if slices.Contains(p.AllFields, name) {
+	//    fields[name].IsDisplayed = f[1].(bool)
+	//  }
+	//}
 
 	var fmeta = make(Fields)
 	for name, meta := range fields {
@@ -204,9 +281,9 @@ func (p *calibrePref) parseFieldMeta() Fields {
 
 		if meta.Multiple != (Multiple{}) {
 			meta.IsMultiple = true
-			if del := meta.Multiple.UiToList; del == "&" {
-				meta.IsNames = true
-			}
+			//if del := meta.Multiple.UiToList; del == "&" {
+			//meta.IsNames = true
+			//}
 		}
 
 		switch name {
@@ -263,6 +340,9 @@ func (p *calibrePref) parseFieldMeta() Fields {
 				"uri":      `"` + GetJsonField(name) + `/"` + " || id",
 			}
 		case "cover":
+			meta.IsCustom = false
+		case "library":
+			meta.IsCustom = false
 		}
 
 		fmeta[GetJsonField(name)] = meta
@@ -275,164 +355,4 @@ func (p *calibrePref) parseFieldMeta() Fields {
 	}
 
 	return fmeta
-}
-
-func GetFields(f string) *Field {
-	switch f {
-	case "added":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "timestamp",
-			IsEditable: true,
-		}
-	case "authorSort":
-		return &Field{
-			//Library:    lib.Name,
-			IsEditable: true,
-			Label:      "author_sort",
-		}
-	case "authors":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "authors",
-			IsCategory: true,
-			IsEditable: true,
-			IsMultiple: true,
-			IsNames:    true,
-			LinkColumn: "author",
-			Table:      "authors",
-		}
-	case "description":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "comments",
-			IsEditable: true,
-		}
-	case "cover":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "cover",
-			IsEditable: true,
-		}
-	case "formats":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "formats",
-			IsCategory: true,
-			IsEditable: true,
-			IsMultiple: true,
-			Table:      "data",
-		}
-	case "id":
-		return &Field{
-			//Library: lib.Name,
-			Label: "id",
-		}
-	case "identifiers":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "identifiers",
-			IsCategory: true,
-			IsEditable: true,
-			IsMultiple: true,
-			Table:      "identifiers",
-		}
-	case "languages":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "languages",
-			IsCategory: true,
-			IsEditable: true,
-			IsMultiple: true,
-			LinkColumn: "lang_code",
-			Table:      "languages",
-		}
-	case "lastModified":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "last_modified",
-			IsEditable: true,
-		}
-	case "path":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "path",
-			IsEditable: true,
-		}
-	case "position":
-		return &Field{
-			//Library:    lib.Name,
-			IsEditable: true,
-			Label:      "series_index",
-		}
-	case "published":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "pubdate",
-			IsEditable: true,
-		}
-	case "publisher":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "publisher",
-			IsCategory: true,
-			IsEditable: true,
-			LinkColumn: "publisher",
-			Table:      "publishers",
-		}
-	case "rating":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "rating",
-			IsCategory: true,
-			IsEditable: true,
-			IsMultiple: true,
-			LinkColumn: "rating",
-			Table:      "ratings",
-		}
-	case "series":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "series",
-			IsCategory: true,
-			IsEditable: true,
-			LinkColumn: "series",
-			Table:      "series",
-		}
-	case "seriesSort":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "series_sort",
-			IsEditable: true,
-		}
-	case "sort":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "cover",
-			IsEditable: true,
-		}
-	case "tags":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "tags",
-			IsCategory: true,
-			IsEditable: true,
-			IsMultiple: true,
-			LinkColumn: "tag",
-			Table:      "tags",
-		}
-	case "title":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "title",
-			IsEditable: true,
-		}
-	case "uuid":
-		return &Field{
-			//Library:    lib.Name,
-			Label:      "uuid",
-			IsEditable: true,
-		}
-	}
-	return nil
 }

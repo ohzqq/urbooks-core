@@ -1,6 +1,9 @@
 package urbooks
 
 import (
+	"encoding/json"
+	"log"
+
 	"github.com/ohzqq/urbooks-core/calibredb"
 	"golang.org/x/exp/slices"
 )
@@ -30,7 +33,15 @@ type Library struct {
 	DefaultRequest *Request
 	DB             *calibredb.Lib
 	pref           *calibredb.Preferences
+	RawPref        map[string]json.RawMessage
 	req            *Request
+}
+
+type dbPreferences struct {
+	HiddenCategories json.RawMessage
+	DisplayFields    json.RawMessage
+	SavedSearches    json.RawMessage
+	FieldMeta        json.RawMessage
 }
 
 func NewLibrary(name, path string) *Library {
@@ -45,6 +56,14 @@ func NewLibrary(name, path string) *Library {
 
 func (l *Library) IsAudiobooks() bool {
 	return l.Cfg.Audiobooks
+}
+
+func (l *Library) getDBPreferences() {
+	dbPref := NewRequest(l.Name).From("preferences").Response()
+	err := json.Unmarshal(dbPref, &l.RawPref)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 //func (l *Library) NewBook() *Book {

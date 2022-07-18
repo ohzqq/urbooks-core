@@ -49,6 +49,15 @@ func NewBookMeta(m map[string]string) BookMeta {
 	return meta
 }
 
+func NewMeta() BookMeta {
+	return make(BookMeta)
+}
+
+func (bm BookMeta) SetString(key string, val string) BookMeta {
+	bm[key] = MetaString(val)
+	return bm
+}
+
 func (bm BookMeta) Get(k string) Meta {
 	if _, ok := bm[k]; ok {
 		return bm[k]

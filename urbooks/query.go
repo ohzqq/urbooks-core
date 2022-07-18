@@ -43,15 +43,15 @@ type Request struct {
 	resourceID string
 	file       string
 	query      url.Values
-	lib        *Library
+	lib        string
 }
 
-func NewRequest(lib string) *Request {
+func NewRequest(l string) *Request {
 	req := &Request{}
-	req.lib = Lib(lib)
 	req.query = url.Values{}
-	req.query.Add("library", lib)
-	//fmt.Printf("%+v\n\n", req)
+	req.query.Add("library", l)
+	req.lib = l
+	//fmt.Printf("%+V\n\n", req.query)
 	return req
 }
 
@@ -94,8 +94,9 @@ func (r *Request) Get(key string) string {
 }
 
 func (r *Request) Response() []byte {
-	fmt.Printf("%+v\n", r.lib)
-	return r.lib.DB.Get(r.String())
+	lib := Lib(r.lib)
+	//fmt.Printf("%+v\n", lib)
+	return lib.DB.Get(r.String())
 }
 
 func (r *Request) From(table string) *Request {

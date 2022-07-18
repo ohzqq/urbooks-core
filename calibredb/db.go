@@ -13,6 +13,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/ohzqq/urbooks-core/book"
 	"golang.org/x/exp/slices"
 )
 
@@ -21,6 +22,7 @@ type Lib struct {
 	Path        string
 	dbPath      string
 	Preferences *Preferences
+	CustCols    []map[string]string
 	db          *sqlx.DB
 	Request     *request
 	response    *response
@@ -38,6 +40,7 @@ func NewLib(path string) *Lib {
 	lib.Name = filepath.Base(path)
 	lib.db = lib.connectDB()
 	lib.getPreferences()
+	lib.getCustCols()
 	lib.AllFields()
 	lib.bookTmpl = template.Must(template.New("book").Funcs(bookTmplFuncs).ParseFS(sqlTmpl, "sql/*"))
 
@@ -81,7 +84,7 @@ func (lib *Lib) Get(u string) []byte {
 	}
 
 	if lib.Request.cat == "preferences" {
-		return lib.Preferences.toJSON()
+		return lib.Preferences.ToJSON()
 	}
 
 	lib.queryDB()
@@ -111,7 +114,6 @@ func (lib *Lib) queryDB() {
 
 	rows, err := lib.db.Queryx(query, args...)
 	if err != nil {
-		//log.Fatal(err)
 		log.Fatal(query)
 	}
 	defer rows.Close()
@@ -121,20 +123,6 @@ func (lib *Lib) queryDB() {
 		if err := rows.MapScan(m); err != nil {
 			fmt.Errorf("Association %s", err)
 		}
-		//if lib.Request.cat != "customColumns" && lib.Request.cat != "preferences" {
-		//  u := url.URL{}
-		//  q := url.Values{}
-		//  q.Set("library", lib.Request.library)
-		//  var id string
-		//  err := json.Unmarshal([]byte(m["id"].(string)), &id)
-		//  if err != nil {
-		//    log.Fatal(err)
-		//  }
-		//  u.Path = path.Join(lib.Request.path, id)
-		//  u.RawQuery = q.Encode()
-		//  m["url"] = `"` + u.String() + `"`
-		//}
-
 		lib.response.Data = append(lib.response.Data, convertFields(m))
 	}
 }
@@ -176,15 +164,15 @@ func (lib Lib) IsCustomColumn(f string) bool {
 	return slices.Contains(lib.CustomColumns(), f)
 }
 
-func (lib Lib) Displayed() []string {
-	var cols []string
-	for c, meta := range lib.Preferences.FieldMeta {
-		if meta.IsDisplayed {
-			cols = append(cols, c)
-		}
-	}
-	return cols
-}
+//func (lib Lib) Displayed() []string {
+//  var cols []string
+//  for c, meta := range lib.Preferences.FieldMeta {
+//    if meta.IsDisplayed {
+//      cols = append(cols, c)
+//    }
+//  }
+//  return cols
+//}
 
 func (lib Lib) IsDisplayed(f string) bool {
 	return slices.Contains(lib.Categories(), f)
@@ -198,6 +186,12 @@ func (lib Lib) CatCollections() []string {
 		}
 	}
 	return cols
+}
+
+func (lib Lib) GetBookFields() *book.Fields {
+	fields := book.NewFields()
+	fields.ParseDBFieldMeta(lib.Preferences.raw.FieldMeta, lib.Preferences.raw.DisplayFields)
+	return fields
 }
 
 func (lib Lib) IsCategoryCollection(f string) bool {
@@ -305,6 +299,10 @@ func (lib *Lib) bookStmt() (string, []interface{}) {
 	return lib.filterQuery(lib.renderSqlTmpl("book"))
 }
 
+func (lib *Lib) custStmt() {
+	println(lib.renderSqlTmpl("custCol"))
+}
+
 // Build association Queries
 func (lib *Lib) relationStmt(table string) (string, []interface{}) {
 	lib.Request.isSorted = true
@@ -406,7 +404,7 @@ func BookSortField(f string) string {
 func GetCalibreField(f string) string {
 	var jsonFieldToCalibre = map[string]string{
 		"authorSort":  "author_sort",
-		"ratings":     "rating",
+		"rating":      "rating",
 		"description": "comments",
 		"modified":    "last_modified",
 		"published":   "pubdate",
@@ -427,7 +425,7 @@ func GetJsonField(f string) string {
 	var calibreFieldToJson = map[string]string{
 		"authors":       "authors",
 		"author_sort":   "authorSort",
-		"rating":        "ratings",
+		"rating":        "rating",
 		"publisher":     "publishers",
 		"comments":      "description",
 		"last_modified": "modified",

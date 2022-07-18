@@ -103,6 +103,26 @@ func (c *cdbCmd) runCdb() (string, error) {
 	return "", nil
 }
 
+type CalibreSearch struct {
+	Authors   string
+	Added     string
+	Limit     string
+	Narrators string
+	Order     string
+	Published string
+	Publisher string
+	Rating    string
+	Series    string
+	Sort      string
+	Tags      string
+	Title     string
+}
+
+func (c *cdbCmd) searchCmd() *cdbCmd {
+	c.setCdbCmd("search")
+	return c
+}
+
 func (c *cdbCmd) buildCmd() *cdbCmd {
 	var cmdArgs []string
 	cmdArgs = append(cmdArgs, c.cdbCmd)

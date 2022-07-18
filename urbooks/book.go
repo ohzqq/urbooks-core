@@ -300,25 +300,6 @@ func (i Item) ID() string                  { return i.Get("id") }
 func (i Item) URL() string                 { return i.Get("url") }
 func (i Item) Get(v string) string         { return i.meta[v] }
 
-type MetaString string
-
-func NewMetaString() *MetaString {
-	ms := MetaString("")
-	return &ms
-}
-
-func (ms *MetaString) SetValue(v string) *MetaString {
-	s := MetaString(v)
-	ms = &s
-	return ms
-}
-
-func (ms MetaString) URL() string                 { return "" }
-func (ms MetaString) IsNull() bool                { return ms == "" }
-func (ms MetaString) Value() string               { return string(ms) }
-func (ms MetaString) String() string              { return string(ms) }
-func (ms MetaString) FieldMeta() *calibredb.Field { return &calibredb.Field{} }
-
 type Column struct {
 	Field *calibredb.Field
 	query url.Values
@@ -339,3 +320,22 @@ func (c Column) Value() string               { return c.meta }
 func (c Column) String() string              { return c.meta }
 func (c Column) FieldMeta() *calibredb.Field { return c.Field }
 func (c Column) IsNull() bool                { return c.meta == "" }
+
+type MetaString string
+
+func NewMetaString() *MetaString {
+	ms := MetaString("")
+	return &ms
+}
+
+func (ms *MetaString) SetValue(v string) *MetaString {
+	s := MetaString(v)
+	ms = &s
+	return ms
+}
+
+func (ms MetaString) URL() string                 { return "" }
+func (ms MetaString) IsNull() bool                { return ms == "" }
+func (ms MetaString) Value() string               { return string(ms) }
+func (ms MetaString) String() string              { return string(ms) }
+func (ms MetaString) FieldMeta() *calibredb.Field { return &calibredb.Field{} }
