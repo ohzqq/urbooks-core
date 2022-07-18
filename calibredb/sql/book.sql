@@ -9,9 +9,6 @@ SELECT
 {{range $f := .Request.Fields -}}
 	{{- $field := $lib.GetField $f}}
 
-		{{- if $field.IsCustom -}}
-			{{- template "customColumn" $field}}
-		{{- else -}}
 			{{- if eq $field.Table "" -}}
 				{{- if eq $field.Label "cover" -}}
 IFNULL(
