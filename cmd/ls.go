@@ -51,15 +51,20 @@ func buildRequest(args []string) *urbooks.Request {
 }
 
 func somebooks() {
-	resp, err := urbooks.Get(req.String())
-	if err != nil {
-		log.Fatal(err)
-	}
+	resp := makeReq(req)
 	fmt.Println(string(resp))
 	bookResp := urbooks.ParseBooks(resp)
 	for _, book := range bookResp.Books() {
 		fmt.Println(book.Get("rating").String())
 	}
+}
+
+func makeReq(r *urbooks.Request) []byte {
+	resp, err := urbooks.Get(r.String())
+	if err != nil {
+		log.Fatal(err)
+	}
+	return resp
 }
 
 func init() {

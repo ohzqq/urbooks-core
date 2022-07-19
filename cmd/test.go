@@ -1,9 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/ohzqq/urbooks-core/calibredb"
 	"github.com/ohzqq/urbooks-core/urbooks"
 	"github.com/spf13/cobra"
 )
@@ -23,9 +20,9 @@ var testCmd = &cobra.Command{
 		//for _, f := range fields.Each() {
 		//fmt.Printf("%+v\n", f.Label)
 		//}
-		req = buildRequest(args)
+		req = urbooks.NewRequest(lib).From("authors").Limit("1")
 		somebooks()
-		fmt.Printf("%+v\n", calibredb.FieldList())
+		//fmt.Printf("%+v\n", calibredb.FieldList())
 	},
 }
 
