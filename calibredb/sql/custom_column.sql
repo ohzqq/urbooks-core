@@ -1,24 +1,34 @@
-{{define "customColumn"}}
+{{define "CustCol"}}
+JSON_OBJECT(
+{{range $col := .CustCols -}}
+
+{{- if ne $col.join_table "" -}}
+
+"{{$col.label}}",
 IFNULL((
 SELECT 
-{{if .is_multiple -}}
-
-JSON_GROUP_ARRAY(JSON_OBJECT('value', value, 'id', lower(id), 'uri', "{{.Label}}/" || id))
+JSON_GROUP_ARRAY(JSON_OBJECT('value', value, 'id', lower(id), 'uri', "{{$col.label}}/" || id))
 	
-FROM {{.table}} 
-WHERE {{.table}}.id 
+FROM {{$col.table}} 
+WHERE {{$col.table}}.id 
 IN (
 	SELECT value
-	FROM books_{{.table}}_link 
+	FROM {{$col.join_table}}
 	WHERE book=books.id
-)), '[]') {{.label}},
+)), '[]'),
 
 {{- else -}}
 
+"{{$col.label}}",
+IFNULL((
+SELECT 
 JSON_QUOTE(value)
-FROM {{.table}}
+FROM {{$col.table}}
 WHERE book=books.id
-), '""') {{.label}},
+), '') 
 
 {{- end -}}
+
+{{end}}
+) customColumns,
 {{end}}
