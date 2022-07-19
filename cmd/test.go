@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ohzqq/urbooks-core/book"
+	"github.com/ohzqq/urbooks-core/calibredb"
 	"github.com/ohzqq/urbooks-core/urbooks"
 	"github.com/spf13/cobra"
 )
@@ -24,7 +25,7 @@ var testCmd = &cobra.Command{
 		}
 		req = buildRequest(args)
 		somebooks()
-		fmt.Printf("%+v\n", searchFields[8])
+		fmt.Printf("%+v\n", calibredb.FieldList())
 	},
 }
 

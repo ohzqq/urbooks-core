@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 type Preferences struct {
@@ -29,17 +31,17 @@ type dbPreferences struct {
 
 var custColstmt = `
 SELECT 
-label Label, 
-name Name,
-"custom_column_" || id 'Table',
+label label, 
+name name,
+"custom_column_" || id 'table',
 CASE is_multiple
 WHEN true THEN "books_custom_column_" || id || "_link"
 ELSE ""
-END JoinTable,
+END join_table,
 CASE is_multiple
 WHEN true THEN 'value'
 ELSE ""
-END LinkColumn
+END link_column
 FROM custom_columns;
 `
 
@@ -65,6 +67,7 @@ func (lib *Lib) getCustCols() {
 			results[k] = v.(string)
 		}
 		lib.CustCols = append(lib.CustCols, results)
+		lib.fields.CustomCol = append(lib.fields.CustomCol, results["label"])
 	}
 	//fmt.Printf("%+v\n", lib.CustCols)
 }
@@ -84,6 +87,36 @@ IN (
 )
 `
 
+func (lib *Lib) getFieldMeta(f, v string) string {
+	if slices.Contains(lib.fields.CustomCol, f) {
+		f = "#" + f
+	}
+
+	jmeta := lib.fieldMeta[f]
+
+	if v == "join_table" && len(jmeta["is_multiple"].(map[string]interface{})) != 0 {
+		if col := jmeta["link_column"]; col != nil {
+			return "books_" + jmeta["table"].(string) + "_link"
+		}
+	}
+
+	if val := jmeta[v]; val != nil {
+		return val.(string)
+	}
+
+	if v == "table" {
+		switch f {
+		case "comments":
+			return "comments"
+		case "formats":
+			return "data"
+		case "identifiers":
+			return "identifiers"
+		}
+	}
+	return ""
+}
+
 func (lib *Lib) getPreferences() {
 	row := lib.db.QueryRowx(prefSql)
 	var dbPref []byte
@@ -102,6 +135,11 @@ func (lib *Lib) getPreferences() {
 		SavedSearches:    pref.parseSavedSearches(),
 		FieldMeta:        meta,
 		raw:              pref,
+	}
+
+	err = json.Unmarshal(pref.FieldMeta, &lib.fieldMeta)
+	if err != nil {
+		log.Fatalf("getDBfieldMeta json unmarshal failed: %v\n", err)
 	}
 }
 
@@ -191,6 +229,7 @@ type Multiple struct {
 }
 
 type dbFieldTypes struct {
+	Lib        string
 	MultiCats  []string
 	SingleCats []string
 	JoinCats   []string
@@ -198,15 +237,103 @@ type dbFieldTypes struct {
 	DateCol    []string
 	CustomCol  []string
 	Special    []string
+	urCols     []string
 }
 
-var fieldTypes = dbFieldTypes{
+var defaultFields = dbFieldTypes{
 	MultiCats:  []string{"formats", "identifiers"},
 	JoinCats:   []string{"authors", "languages", "tags"},
 	SingleCats: []string{"publisher", "series"},
 	BookCol:    []string{"author_sort", "id", "path", "series_index", "sort", "title", "uuid"},
 	DateCol:    []string{"last_modified", "pubdate", "timestamp"},
-	Special:    []string{"comments", "cover", "library", "rating", "titleAndSeries", "uri"},
+	Special:    []string{"comments", "cover", "rating"},
+	urCols:     []string{"library", "titleAndSeries", "uri"},
+}
+
+func newLibFields(lib string) *dbFieldTypes {
+	return &dbFieldTypes{
+		Lib:        lib,
+		MultiCats:  defaultFields.MultiCats,
+		JoinCats:   defaultFields.JoinCats,
+		SingleCats: defaultFields.SingleCats,
+		BookCol:    defaultFields.BookCol,
+		DateCol:    defaultFields.DateCol,
+		Special:    defaultFields.Special,
+		urCols:     defaultFields.urCols,
+	}
+}
+
+func GetTableColumns(f, lib string) map[string]string {
+	fields := map[string]map[string]string{
+		"authors": map[string]string{
+			"value": "name",
+			"uri":   `"authors/"` + " || id",
+		},
+		"formats": map[string]string{
+			"basename":  "name",
+			"extension": "lower(format)",
+			"value":     `name || '.' || lower(format)`,
+			"size":      "lower(uncompressed_size)",
+			"uri":       `"books/" || books.id`,
+			"path":      `"` + lib + `" || "/" || path || "/" || name || '.' || lower(format)`,
+		},
+		"identifiers": map[string]string{
+			"value": "val",
+			"type":  "type",
+		},
+		"languages": map[string]string{
+			"value": "lang_code",
+			"uri":   `"languages/"` + " || id",
+		},
+		"publishers": map[string]string{
+			"value": "name",
+			"uri":   `"publisher/"` + " || id",
+		},
+		"ratings": map[string]string{
+			"value": "rating",
+		},
+		"series": map[string]string{
+			"value":    "name",
+			"position": "lower(series_index)",
+			"uri":      `"series/"` + " || id",
+		},
+		"tags": map[string]string{
+			"value": "name",
+			"uri":   `"tags/"` + " || id",
+		},
+	}
+	return fields[f]
+}
+
+func CalibreFieldList() []string {
+	var fields []string
+	for _, f := range defaultFields.MultiCats {
+		fields = append(fields, f)
+	}
+	for _, f := range defaultFields.JoinCats {
+		fields = append(fields, f)
+	}
+	for _, f := range defaultFields.SingleCats {
+		fields = append(fields, f)
+	}
+	for _, f := range defaultFields.BookCol {
+		fields = append(fields, f)
+	}
+	for _, f := range defaultFields.DateCol {
+		fields = append(fields, f)
+	}
+	for _, f := range defaultFields.Special {
+		fields = append(fields, f)
+	}
+	return fields
+}
+
+func FieldList() []string {
+	fields := CalibreFieldList()
+	for _, f := range defaultFields.urCols {
+		fields = append(fields, f)
+	}
+	return fields
 }
 
 func (f Field) Type() string {

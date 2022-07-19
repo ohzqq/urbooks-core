@@ -1,45 +1,43 @@
 package calibredb
 
 import (
-	"strings"
-	"strconv"
 	"fmt"
 	"log"
-	"regexp"
 	"net/url"
+	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 
 	"golang.org/x/exp/slices"
 )
 
-var _ = fmt.Sprintf("%v", "poot")
-
 type request struct {
-	URL *url.URL
-	query url.Values
-	prefix string
-	itemIDs []int
-	pathParams []string
-	library string
-	path string
-	cat string
-	CatLabel string
-	ids string
-	sort string
-	pathID string
-	PathID string
-	queryIDs string
-	Fields []string
+	URL          *url.URL
+	query        url.Values
+	prefix       string
+	itemIDs      []int
+	pathParams   []string
+	library      string
+	path         string
+	cat          string
+	CatLabel     string
+	ids          string
+	sort         string
+	pathID       string
+	PathID       string
+	queryIDs     string
+	Fields       []string
 	itemsPerPage int
-	currentPage int
-	allItems bool
-	isCustom bool
-	HasFields bool
-	isSorted bool
-	desc bool
-	collection bool
-	bookQuery bool
-	mtx sync.Mutex
+	currentPage  int
+	allItems     bool
+	isCustom     bool
+	HasFields    bool
+	isSorted     bool
+	desc         bool
+	collection   bool
+	bookQuery    bool
+	mtx          sync.Mutex
 }
 
 func (lib *Lib) newRequest(u string) (*request, error) {
@@ -137,8 +135,8 @@ func (lib *Lib) newRequest(u string) (*request, error) {
 	}
 
 	if req.query.Has("fields") {
-			req.HasFields = true
-			req.Fields = strings.Split(req.query.Get("fields"), ",")
+		req.HasFields = true
+		req.Fields = strings.Split(req.query.Get("fields"), ",")
 
 		if req.cat != "books" {
 			if len(req.Fields) == 1 {
@@ -191,6 +189,5 @@ func (lib *Lib) newRequest(u string) (*request, error) {
 }
 
 func (r *request) calculateOffset() int {
-	return r.itemsPerPage * r.currentPage - r.itemsPerPage
+	return r.itemsPerPage*r.currentPage - r.itemsPerPage
 }
-

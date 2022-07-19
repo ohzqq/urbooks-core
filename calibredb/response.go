@@ -2,7 +2,6 @@ package calibredb
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/url"
 	"path"
@@ -10,8 +9,6 @@ import (
 	"strings"
 	"sync"
 )
-
-var _ = fmt.Sprintf("%v", "poot")
 
 type response struct {
 	Links         map[string]string  `json:"links"`

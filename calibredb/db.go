@@ -21,6 +21,8 @@ type Lib struct {
 	Name        string
 	Path        string
 	dbPath      string
+	fields      *dbFieldTypes
+	fieldMeta   map[string]map[string]interface{}
 	Preferences *Preferences
 	CustCols    []map[string]string
 	db          *sqlx.DB
@@ -39,19 +41,23 @@ func NewLib(path string) *Lib {
 	lib.dbPath = "file:" + filepath.Join(path, "metadata.db") + "?cache=shared&mode=ro"
 	lib.Name = filepath.Base(path)
 	lib.db = lib.connectDB()
+	lib.fields = newLibFields(lib.Name)
 	lib.getPreferences()
 	lib.getCustCols()
 	lib.AllFields()
 	lib.bookTmpl = template.Must(template.New("book").Funcs(bookTmplFuncs).ParseFS(sqlTmpl, "sql/*"))
 
-	//fmt.Println(lib.Categories())
+	fmt.Printf("%+v\n", lib.getFieldMeta("formats", "table"))
 	return &lib
 }
 
 var (
 	bookTmplFuncs = map[string]any{
-		"GetCalibreField": GetCalibreField,
-		"GetJsonField":    GetJsonField,
+		"GetCalibreField":  GetCalibreField,
+		"GetJsonField":     GetJsonField,
+		"GetTableColumns":  GetTableColumns,
+		"FieldList":        FieldList,
+		"CalibreFieldList": CalibreFieldList,
 	}
 )
 
@@ -190,7 +196,6 @@ func (lib Lib) CatCollections() []string {
 
 func (lib Lib) GetBookFields() *book.Fields {
 	fields := book.NewFields()
-	fields.ParseDBFieldMeta(lib.Preferences.raw.FieldMeta, lib.Preferences.raw.DisplayFields)
 	return fields
 }
 
@@ -426,7 +431,7 @@ func GetJsonField(f string) string {
 		"authors":       "authors",
 		"author_sort":   "authorSort",
 		"rating":        "rating",
-		"publisher":     "publishers",
+		"publisher":     "publisher",
 		"comments":      "description",
 		"last_modified": "modified",
 		"pubdate":       "published",
