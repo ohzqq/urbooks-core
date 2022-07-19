@@ -1,7 +1,9 @@
 {{define "custCol"}}
 JSON_OBJECT(
-{{range $col := .CustCols}}
-{{if ne $col.join_table "" -}}
+{{range $col := .CustCols- }}
+
+{{- if ne $col.join_table "" -}}
+
 "{{$col.label}}",
 IFNULL((
 SELECT 
