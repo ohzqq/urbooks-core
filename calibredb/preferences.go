@@ -32,8 +32,15 @@ type dbPreferences struct {
 var custColstmt = `
 SELECT 
 label label, 
-name name,
-"custom_column_" || id 'table',
+lower(id) id, 
+CASE IFNULL(JSON_EXTRACT(display, "$.is_names"), 0)
+WHEN 0 THEN "false"
+WHEN 1 THEN "true"
+END is_names,"custom_column_" || id 'table',
+CASE is_multiple
+WHEN true THEN "true"
+ELSE "false"
+END is_multiple,
 CASE is_multiple
 WHEN true THEN "books_custom_column_" || id || "_link"
 ELSE ""
@@ -66,6 +73,7 @@ func (lib *Lib) getCustCols() {
 		for k, v := range val {
 			results[k] = v.(string)
 		}
+		results["label"] = "#" + results["label"]
 		lib.CustCols = append(lib.CustCols, results)
 		lib.Fields.CustomCol = append(lib.Fields.CustomCol, results["label"])
 	}
@@ -92,7 +100,7 @@ func GetFieldMeta(lib *Lib, f, v string) string {
 }
 
 func (lib *Lib) getFieldMeta(f, v string) string {
-	if slices.Contains(lib.Fields.CustomCol, f) {
+	if slices.Contains(lib.Fields.CustomCol, "#"+f) {
 		f = "#" + f
 	}
 

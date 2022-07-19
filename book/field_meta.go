@@ -278,10 +278,6 @@ func defaultFields() []*Field {
 				UiToList:    "&",
 			},
 			Table: "authors",
-			TableColumns: map[string]string{
-				"value": "name",
-				"uri":   `"authors/"` + " || id",
-			},
 		},
 		&Field{
 			idx:        authorSort,
@@ -317,14 +313,6 @@ func defaultFields() []*Field {
 				ListToUi:    ", ",
 				UiToList:    ",",
 			},
-			TableColumns: map[string]string{
-				"basename":  "name",
-				"extension": "lower(format)",
-				"value":     `name || '.' || lower(format)`,
-				"size":      "lower(uncompressed_size)",
-				"uri":       `"books/" || books.id`,
-				//"path":      `"` + p.library + `" || "/" || path || "/" || name || '.' || lower(format)`,
-			},
 		},
 		&Field{
 			idx:       id,
@@ -341,10 +329,6 @@ func defaultFields() []*Field {
 			Column:       "val",
 			CategorySort: "type",
 			Table:        "identifiers",
-			TableColumns: map[string]string{
-				"value": "val",
-				"type":  "type",
-			},
 		},
 		&Field{
 			idx:        languages,
@@ -359,10 +343,6 @@ func defaultFields() []*Field {
 				CacheToList: ",",
 				ListToUi:    ", ",
 				UiToList:    ",",
-			},
-			TableColumns: map[string]string{
-				"value": "lang_code",
-				"uri":   `"languages/"` + " || id",
 			},
 		},
 		&Field{
@@ -396,10 +376,6 @@ func defaultFields() []*Field {
 			IsEditable: true,
 			LinkColumn: "publisher",
 			Table:      "publishers",
-			TableColumns: map[string]string{
-				"value": "name",
-				"uri":   `"publisher/"` + " || id",
-			},
 		},
 		&Field{
 			idx:        rating,
@@ -410,9 +386,6 @@ func defaultFields() []*Field {
 			IsMultiple: true,
 			LinkColumn: "rating",
 			Table:      "ratings",
-			TableColumns: map[string]string{
-				"value": "rating",
-			},
 		},
 		&Field{
 			idx:        series,
@@ -422,11 +395,6 @@ func defaultFields() []*Field {
 			IsEditable: true,
 			LinkColumn: "series",
 			Table:      "series",
-			TableColumns: map[string]string{
-				"value":    "name",
-				"position": "lower(series_index)",
-				"uri":      `"series/"` + " || id",
-			},
 		},
 		&Field{
 			idx:        position,
@@ -453,10 +421,6 @@ func defaultFields() []*Field {
 				CacheToList: ",",
 				ListToUi:    ", ",
 				UiToList:    ",",
-			},
-			TableColumns: map[string]string{
-				"value": "name",
-				"uri":   `"tags/"` + " || id",
 			},
 		},
 		&Field{

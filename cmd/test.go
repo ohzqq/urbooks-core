@@ -20,8 +20,9 @@ var testCmd = &cobra.Command{
 		//for _, f := range fields.Each() {
 		//fmt.Printf("%+v\n", f.Label)
 		//}
-		req = urbooks.NewRequest(lib.Name).From("narrators").Limit("1")
-		somecat(req)
+		req = urbooks.NewRequest(lib.Name).From("books").Limit("1")
+		//somecat(req)
+		somebooks(req)
 		//fmt.Printf("%+v\n", calibredb.FieldList())
 	},
 }

@@ -48,7 +48,7 @@ func NewLib(path string) *Lib {
 	lib.bookTmpl = template.Must(template.New("book").Funcs(bookTmplFuncs).ParseFS(sqlTmpl, "sql/*"))
 
 	//fmt.Printf("%+v\n", lib.renderSqlTmpl("newbook"))
-	//fmt.Printf("%+v\n", lib.getFieldMeta("series", "join_table"))
+	fmt.Printf("%+v\n", lib.CustCols)
 	return &lib
 }
 
@@ -315,8 +315,7 @@ func (lib *Lib) relationStmt(table string) (string, []interface{}) {
 	lib.Request.isSorted = true
 	lib.Request.sort = lib.GetField(table).Column
 
-	println(lib.renderSqlTmpl("newcat"))
-	return lib.filterQuery(lib.renderSqlTmpl("newcat"))
+	return lib.filterQuery(lib.renderSqlTmpl("category"))
 }
 
 func (lib *Lib) filterQuery(q string) (string, []interface{}) {
