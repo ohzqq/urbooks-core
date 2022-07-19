@@ -36,7 +36,7 @@ var lsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cmdLib = urbooks.Lib(lib)
 		req = buildRequest(args)
-		somebooks()
+		somebooks(req)
 		fmt.Printf("%+v\n", searchFields[8])
 	},
 }
@@ -50,13 +50,18 @@ func buildRequest(args []string) *urbooks.Request {
 	//return req
 }
 
-func somebooks() {
-	resp := makeReq(req)
+func somebooks(r *urbooks.Request) {
+	resp := makeReq(r)
 	fmt.Println(string(resp))
 	bookResp := urbooks.ParseBooks(resp)
 	for _, book := range bookResp.Books() {
 		fmt.Println(book.Get("rating").String())
 	}
+}
+
+func somecat(r *urbooks.Request) {
+	resp := makeReq(r)
+	fmt.Println(string(resp))
 }
 
 func makeReq(r *urbooks.Request) []byte {

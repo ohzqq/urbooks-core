@@ -1,34 +1,49 @@
 {{define "category"}}
 {{- $lib := . -}}
-{{- $field := $lib.GetField $lib.Request.CatLabel -}}
+{{- $field := $lib.Request.CatLabel -}}
+{{- $label := GetFieldMeta $lib $lib.Request.CatLabel "label" -}}
+{{- $table := GetFieldMeta $lib $lib.Request.CatLabel "table" -}}
+{{- $link := GetFieldMeta $lib $lib.Request.CatLabel "link_column" -}}
+{{- $join := GetFieldMeta $lib $lib.Request.CatLabel "join_table" -}}
+{{- $custom := GetFieldMeta $lib $lib.Request.CatLabel "custom_column" -}}
 
-SELECT 
-{{if eq $field.LinkColumn "" -}}
-	JSON_GROUP_ARRAY(book) books, 
-{{- end -}}
+{{if eq $field "identifiers" "formats"}}
+SELECT
+JSON_GROUP_ARRAY(book) books,
+{{- range $key, $col := GetTableColumns $field $lib.Name -}}
+	{{- if ne $key "path" -}}
+		{{- if ne $key "uri"}}
+IFNULL(JSON_QUOTE({{$col}}), "") {{$key}}, 
+		{{- end -}}
+	{{- end -}}
+{{- end}}
+IFNULL(JSON_QUOTE(lower(id)), '""') id
+FROM {{$table}}
+{{if eq $table "data" -}}
+GROUP BY extension
+{{- else if eq $table "identifiers" -}}
+GROUP BY val
+{{end}}
 
-{{if $field.IsCustom -}}
-	IFNULL(JSON_QUOTE(value), '""') value,
 {{- else -}}
 
-{{- range $col := $field.TableColumns -}}
-	IFNULL(JSON_QUOTE({{$col}}), '""') value,
-{{- end}}
-
+SELECT
+{{if eq $custom "true" -}}
+IFNULL(JSON_QUOTE(value), '""') value,
+IFNULL(JSON_QUOTE("{{$label}}/" || id), '""') uri,
 {{- end -}}
 
-{{if ne $field.LinkColumn "" -}}
+{{- range $key, $col := GetTableColumns $field $lib.Name}}
+	{{- if ne $key "position"}}
+IFNULL(JSON_QUOTE({{$col}}), "") {{$key}}, 
+	{{- end -}}
+{{- end}}
+
 (SELECT
 JSON_QUOTE(lower(COUNT(book)))
-FROM books_{{$field.Table}}_link
-WHERE {{$field.LinkColumn}}={{$field.Table}}.id) books,
-{{end -}}
-
-JSON_QUOTE("{{$field.Label}}/" || id) uri,
-IFNULL(JSON_QUOTE(lower(id)), '""') id
-FROM {{$field.Table}}
-
-{{if eq $field.LinkColumn "" -}}
-	GROUP BY {{$field.Column}}
+FROM books_{{$table}}_link
+WHERE {{$link}}={{$table}}.id) books,
+IFNULL(JSON_QUOTE(lower(id)), "") id
+FROM {{$table}}
 {{- end -}}
 {{end}}

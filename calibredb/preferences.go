@@ -96,6 +96,12 @@ func (lib *Lib) getFieldMeta(f, v string) string {
 		f = "#" + f
 	}
 
+	if v == "custom_column" {
+		if strings.HasPrefix(f, "#") {
+			return "true"
+		}
+	}
+
 	jmeta := lib.fieldMeta[f]
 
 	if v == "join_table" {
@@ -281,7 +287,7 @@ func GetTableColumns(f, lib string) map[string]string {
 			"value":     `name || '.' || lower(format)`,
 			"size":      "lower(uncompressed_size)",
 			"uri":       `"books/" || books.id`,
-			"path":      `"` + lib + `" || "/" || path || "/" || name || '.' || lower(format)`,
+			"path":      `"` + lib + `" || "/" || books.path || "/" || name || '.' || lower(format)`,
 		},
 		"identifiers": map[string]string{
 			"value": "val",
@@ -295,8 +301,8 @@ func GetTableColumns(f, lib string) map[string]string {
 			"value": "name",
 			"uri":   `"publisher/"` + " || id",
 		},
-		"ratings": map[string]string{
-			"value": "rating",
+		"rating": map[string]string{
+			"value": "lower(rating)",
 		},
 		"series": map[string]string{
 			"value":    "name",
@@ -341,6 +347,9 @@ func FieldList() []string {
 	}
 	return fields
 }
+
+//func FieldType() string {
+//}
 
 func (f Field) Type() string {
 	switch {
@@ -442,7 +451,7 @@ func (p *calibrePref) parseFieldMeta() Fields {
 				"value":     `name || '.' || lower(format)`,
 				"size":      "lower(uncompressed_size)",
 				"uri":       `"books/" || books.id`,
-				"path":      `"` + p.library + `" || "/" || path || "/" || name || '.' || lower(format)`,
+				"path":      `"` + p.library + `" || "/" || books.path || "/" || name || '.' || lower(format)`,
 			}
 			meta.CategorySort = "format"
 			meta.Table = "data"

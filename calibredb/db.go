@@ -315,7 +315,8 @@ func (lib *Lib) relationStmt(table string) (string, []interface{}) {
 	lib.Request.isSorted = true
 	lib.Request.sort = lib.GetField(table).Column
 
-	return lib.filterQuery(lib.renderSqlTmpl("category"))
+	println(lib.renderSqlTmpl("newcat"))
+	return lib.filterQuery(lib.renderSqlTmpl("newcat"))
 }
 
 func (lib *Lib) filterQuery(q string) (string, []interface{}) {
