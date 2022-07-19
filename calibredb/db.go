@@ -21,7 +21,7 @@ type Lib struct {
 	Name        string
 	Path        string
 	dbPath      string
-	fields      *dbFieldTypes
+	Fields      *dbFieldTypes
 	fieldMeta   map[string]map[string]interface{}
 	Preferences *Preferences
 	CustCols    []map[string]string
@@ -41,13 +41,14 @@ func NewLib(path string) *Lib {
 	lib.dbPath = "file:" + filepath.Join(path, "metadata.db") + "?cache=shared&mode=ro"
 	lib.Name = filepath.Base(path)
 	lib.db = lib.connectDB()
-	lib.fields = newLibFields(lib.Name)
+	lib.Fields = newLibFields(lib.Name)
 	lib.getPreferences()
 	lib.getCustCols()
 	lib.AllFields()
 	lib.bookTmpl = template.Must(template.New("book").Funcs(bookTmplFuncs).ParseFS(sqlTmpl, "sql/*"))
 
-	fmt.Printf("%+v\n", lib.getFieldMeta("formats", "table"))
+	//fmt.Printf("%+v\n", lib.renderSqlTmpl("newbook"))
+	//fmt.Printf("%+v\n", lib.getFieldMeta("series", "join_table"))
 	return &lib
 }
 
@@ -58,6 +59,7 @@ var (
 		"GetTableColumns":  GetTableColumns,
 		"FieldList":        FieldList,
 		"CalibreFieldList": CalibreFieldList,
+		"GetFieldMeta":     GetFieldMeta,
 	}
 )
 

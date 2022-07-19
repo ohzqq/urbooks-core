@@ -67,7 +67,7 @@ func (lib *Lib) getCustCols() {
 			results[k] = v.(string)
 		}
 		lib.CustCols = append(lib.CustCols, results)
-		lib.fields.CustomCol = append(lib.fields.CustomCol, results["label"])
+		lib.Fields.CustomCol = append(lib.Fields.CustomCol, results["label"])
 	}
 	//fmt.Printf("%+v\n", lib.CustCols)
 }
@@ -87,16 +87,22 @@ IN (
 )
 `
 
+func GetFieldMeta(lib *Lib, f, v string) string {
+	return lib.getFieldMeta(f, v)
+}
+
 func (lib *Lib) getFieldMeta(f, v string) string {
-	if slices.Contains(lib.fields.CustomCol, f) {
+	if slices.Contains(lib.Fields.CustomCol, f) {
 		f = "#" + f
 	}
 
 	jmeta := lib.fieldMeta[f]
 
-	if v == "join_table" && len(jmeta["is_multiple"].(map[string]interface{})) != 0 {
-		if col := jmeta["link_column"]; col != nil {
-			return "books_" + jmeta["table"].(string) + "_link"
+	if v == "join_table" {
+		if f == "series" || f == "publisher" || len(jmeta["is_multiple"].(map[string]interface{})) != 0 {
+			if col := jmeta["link_column"]; col != nil {
+				return "books_" + jmeta["table"].(string) + "_link"
+			}
 		}
 	}
 
@@ -244,9 +250,9 @@ var defaultFields = dbFieldTypes{
 	MultiCats:  []string{"formats", "identifiers"},
 	JoinCats:   []string{"authors", "languages", "tags"},
 	SingleCats: []string{"publisher", "series"},
-	BookCol:    []string{"author_sort", "id", "path", "series_index", "sort", "title", "uuid"},
+	BookCol:    []string{"author_sort", "path", "sort", "title", "uuid"},
 	DateCol:    []string{"last_modified", "pubdate", "timestamp"},
-	Special:    []string{"comments", "cover", "rating"},
+	Special:    []string{"comments", "id", "series_index", "cover", "rating"},
 	urCols:     []string{"library", "titleAndSeries", "uri"},
 }
 
@@ -285,7 +291,7 @@ func GetTableColumns(f, lib string) map[string]string {
 			"value": "lang_code",
 			"uri":   `"languages/"` + " || id",
 		},
-		"publishers": map[string]string{
+		"publisher": map[string]string{
 			"value": "name",
 			"uri":   `"publisher/"` + " || id",
 		},

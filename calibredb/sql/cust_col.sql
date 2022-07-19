@@ -1,13 +1,13 @@
-{{define "custCol"}}
+{{define "CustCol"}}
 JSON_OBJECT(
-{{range $col := .CustCols- }}
+{{range $col := .CustCols -}}
 
 {{- if ne $col.join_table "" -}}
 
 "{{$col.label}}",
 IFNULL((
 SELECT 
-JSON_GROUP_ARRAY(JSON_OBJECT('value', value, 'id', lower(id), 'uri', "{{$col.Label}}/" || id))
+JSON_GROUP_ARRAY(JSON_OBJECT('value', value, 'id', lower(id), 'uri', "{{$col.label}}/" || id))
 	
 FROM {{$col.table}} 
 WHERE {{$col.table}}.id 
