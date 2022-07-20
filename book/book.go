@@ -89,6 +89,11 @@ func (i *Item) Get(val string) string {
 	return ""
 }
 
+func (i *Item) Set(k, v string) *Item {
+	i.data[k] = v
+	return i
+}
+
 func (i *Item) String(f *Field) string {
 	return i.Get("value")
 }
