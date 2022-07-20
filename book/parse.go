@@ -17,6 +17,13 @@ func ParseBooks(r []byte) Books {
 		fmt.Printf("response err: %v\n", err)
 	}
 
+	var rmeta map[string]string
+	err = json.Unmarshal(resp["meta"], &rmeta)
+	if err != nil {
+		fmt.Printf("response err: %v\n", err)
+	}
+	lib := rmeta["library"]
+
 	var rawbooks []map[string]json.RawMessage
 	err = json.Unmarshal(resp["data"], &rawbooks)
 	if err != nil {
@@ -28,6 +35,12 @@ func ParseBooks(r []byte) Books {
 		book := NewBook()
 		for key, value := range b {
 			field := book.GetField(key)
+			field.Library = lib
+
+			if key != "customColumns" {
+				field.Meta.UnmarshalJSON(value)
+			}
+
 			field.Data = value
 
 			if key != field.JsonLabel {
@@ -36,7 +49,7 @@ func ParseBooks(r []byte) Books {
 
 			if key == "customColumns" {
 				var custom = make(map[string]map[string]json.RawMessage)
-				err := json.Unmarshal(value, &custom)
+				err = json.Unmarshal(value, &custom)
 				if err != nil {
 					fmt.Printf("custom column parsing error: %v\n", err)
 				}
@@ -59,9 +72,12 @@ func ParseBooks(r []byte) Books {
 					case "true":
 						col.IsMultiple = true
 						col.IsCollection = true
+						col.Meta = &Collection{}
 					case "false":
 						col.IsColumn = true
+						col.Meta = NewColumn()
 					}
+					col.Meta.UnmarshalJSON(col.Data)
 
 					if meta["is_names"] == "true" {
 						col.IsNames = true

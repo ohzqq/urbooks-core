@@ -5,44 +5,6 @@ import (
 	"log"
 )
 
-const (
-	sort     = iota
-	order    = iota
-	limit    = iota
-	category = iota
-)
-
-func defaultCalibreFields() []string {
-	return []string{
-		"authors",
-		"author_sort",
-		"comments",
-		"cover",
-		"formats",
-		"id",
-		"identifiers",
-		"languages",
-		"library",
-		"last_modified",
-		"path",
-		"pubdate",
-		"publisher",
-		"rating",
-		"series",
-		"series_index",
-		"sort",
-		"tags",
-		"timestamp",
-		"title",
-		"titleAndSeries",
-		"uri",
-		"uuid",
-		"customColumns",
-		//"duration",
-		//"narrators",
-	}
-}
-
 type Fields struct {
 	displayFields [][]interface{}
 	lib           string
@@ -83,8 +45,6 @@ type Field struct {
 	RecIndex     int             `json:"rec_index"`
 	SearchTerms  []string        `json:"search_terms"`
 	Table        string          `json:"table"`
-	//Value        any               `json:"#value#"`
-	//Extra        any               `json:"#extra#"`
 }
 
 type Display struct {
@@ -107,22 +67,46 @@ func NewFields() *Fields {
 	}
 }
 
-func NewField() *Field {
-	return &Field{}
+func (f *Fields) AddField(field *Field) *Fields {
+	f.idx[field.CalibreLabel] = len(f.meta)
+	f.meta = append(f.meta, field)
+	return f
+}
+
+func (f *Fields) GetField(name string) *Field {
+	return f.meta[f.GetFieldIndex(name)]
+}
+
+func (f *Fields) GetFieldIndex(name string) int {
+	return f.idx[name]
 }
 
 func (f *Fields) Each() []*Field {
 	return defaultFields()
-	//return f.meta
 }
 
-//func (f *Fields) AllJson() []string {
-//  return f.json
-//}
+func (f *Field) Index() int {
+	return f.idx
+}
 
-//func (f *Fields) AllCalibre() []string {
-//  return f.calibre
-//}
+const (
+	nameSep    = " & "
+	itemSep    = ", "
+	cliItemSep = `,`
+	cliNameSep = `&`
+)
+
+func (f *Field) String() string {
+	return f.Meta.String(f)
+}
+
+func (f *Field) URL() string {
+	return f.Meta.URL(f)
+}
+
+func (f *Field) IsNull() bool {
+	return f.Meta.IsNull()
+}
 
 func (f *Fields) ParseDBFieldMeta(meta, display json.RawMessage) {
 	err := json.Unmarshal(display, &f.displayFields)
@@ -143,7 +127,6 @@ func (f *Fields) ParseDBFieldMeta(meta, display json.RawMessage) {
 	}
 
 	for name, meta := range f.DbMeta {
-		//println(name)
 		if meta.IsCustom {
 			meta.JsonLabel = name
 			f.AddField(meta)
@@ -159,22 +142,12 @@ func (f *Fields) ParseDBFieldMeta(meta, display json.RawMessage) {
 	}
 }
 
-func (f *Fields) AddField(field *Field) *Fields {
-	f.idx[field.CalibreLabel] = len(f.meta)
-	f.meta = append(f.meta, field)
-	//f.calibre = append(f.calibre, field.Label)
-	//f.json = append(f.json, field.Label)
-	return f
-}
-
-func (f *Fields) GetField(name string) *Field {
-	idx := f.GetFieldIndex(name)
-	return f.meta[idx]
-}
-
-func (f *Fields) GetFieldIndex(name string) int {
-	return f.idx[name]
-}
+const (
+	sort     = iota
+	order    = iota
+	limit    = iota
+	category = iota
+)
 
 const (
 	authors        = iota
@@ -201,8 +174,6 @@ const (
 	uri            = iota
 	uuid           = iota
 	custCols       = iota
-	//duration       = iota
-	//narrators      = iota
 )
 
 func defaultFieldsIdx() map[string]int {
@@ -231,38 +202,6 @@ func defaultFieldsIdx() map[string]int {
 		"uri":            uri,
 		"uuid":           uuid,
 		"customColumns":  custCols,
-		//"duration":       duration,
-		//"narrators":      narrators,
-	}
-}
-
-func defaultJsonFields() []string {
-	return []string{
-		"authors",
-		"authorSort",
-		"description",
-		"cover",
-		"formats",
-		"id",
-		"identifiers",
-		"languages",
-		"library",
-		"modified",
-		"path",
-		"published",
-		"publisher",
-		"rating",
-		"series",
-		"position",
-		"sortAs",
-		"tags",
-		"added",
-		"title",
-		"titleAndSeries",
-		"uri",
-		"uuid",
-		//"duration",
-		//"narrators",
 	}
 }
 
@@ -272,6 +211,7 @@ func defaultFields() []*Field {
 			idx:          authors,
 			CalibreLabel: "authors",
 			JsonLabel:    "authors",
+			Meta:         NewCollection(),
 			IsCollection: true,
 			IsCategory:   true,
 			IsEditable:   true,
@@ -282,6 +222,7 @@ func defaultFields() []*Field {
 			idx:          authorSort,
 			CalibreLabel: "author_sort",
 			JsonLabel:    "authorSort",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 			IsEditable:   true,
 		},
@@ -289,6 +230,7 @@ func defaultFields() []*Field {
 			idx:          description,
 			CalibreLabel: "comments",
 			JsonLabel:    "description",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 			IsEditable:   true,
 		},
@@ -296,6 +238,7 @@ func defaultFields() []*Field {
 			idx:          cover,
 			CalibreLabel: "cover",
 			JsonLabel:    "cover",
+			Meta:         NewItem(),
 			IsItem:       true,
 			IsEditable:   true,
 		},
@@ -303,6 +246,7 @@ func defaultFields() []*Field {
 			idx:          formats,
 			CalibreLabel: "formats",
 			JsonLabel:    "formats",
+			Meta:         NewCollection(),
 			IsCollection: true,
 			IsCategory:   true,
 			IsEditable:   true,
@@ -313,12 +257,14 @@ func defaultFields() []*Field {
 			idx:          id,
 			CalibreLabel: "id",
 			JsonLabel:    "id",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 		},
 		&Field{
 			idx:          identifiers,
 			CalibreLabel: "identifiers",
 			JsonLabel:    "identifiers",
+			Meta:         NewCollection(),
 			IsCollection: true,
 			IsCategory:   true,
 			IsEditable:   true,
@@ -329,6 +275,7 @@ func defaultFields() []*Field {
 			idx:          languages,
 			CalibreLabel: "languages",
 			JsonLabel:    "languages",
+			Meta:         NewCollection(),
 			IsCollection: true,
 			IsCategory:   true,
 			IsEditable:   true,
@@ -338,12 +285,14 @@ func defaultFields() []*Field {
 			idx:          library,
 			CalibreLabel: "library",
 			JsonLabel:    "library",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 		},
 		&Field{
 			idx:          modified,
 			CalibreLabel: "last_modified",
 			JsonLabel:    "modified",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 			IsEditable:   true,
 		},
@@ -351,12 +300,14 @@ func defaultFields() []*Field {
 			idx:          path,
 			CalibreLabel: "path",
 			JsonLabel:    "path",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 		},
 		&Field{
 			idx:          published,
 			CalibreLabel: "pubdate",
 			JsonLabel:    "published",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 			IsEditable:   true,
 		},
@@ -364,6 +315,7 @@ func defaultFields() []*Field {
 			idx:          publisher,
 			CalibreLabel: "publisher",
 			JsonLabel:    "publisher",
+			Meta:         NewItem(),
 			IsItem:       true,
 			IsCategory:   true,
 			IsEditable:   true,
@@ -372,6 +324,7 @@ func defaultFields() []*Field {
 			idx:          rating,
 			CalibreLabel: "rating",
 			JsonLabel:    "rating",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 			IsCategory:   true,
 			IsEditable:   true,
@@ -381,6 +334,7 @@ func defaultFields() []*Field {
 			idx:          series,
 			CalibreLabel: "series",
 			JsonLabel:    "series",
+			Meta:         NewItem(),
 			IsItem:       true,
 			IsCategory:   true,
 			IsEditable:   true,
@@ -389,6 +343,7 @@ func defaultFields() []*Field {
 			idx:          position,
 			CalibreLabel: "series_index",
 			JsonLabel:    "position",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 			IsEditable:   true,
 		},
@@ -396,6 +351,7 @@ func defaultFields() []*Field {
 			idx:          sortAs,
 			CalibreLabel: "sort",
 			JsonLabel:    "sortAs",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 			IsEditable:   true,
 		},
@@ -403,6 +359,7 @@ func defaultFields() []*Field {
 			idx:          tags,
 			CalibreLabel: "tags",
 			JsonLabel:    "tags",
+			Meta:         NewCollection(),
 			IsCollection: true,
 			IsCategory:   true,
 			IsEditable:   true,
@@ -412,12 +369,14 @@ func defaultFields() []*Field {
 			idx:          added,
 			CalibreLabel: "timestamp",
 			JsonLabel:    "added",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 		},
 		&Field{
 			idx:          title,
 			CalibreLabel: "title",
 			JsonLabel:    "title",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 			IsEditable:   true,
 		},
@@ -425,18 +384,21 @@ func defaultFields() []*Field {
 			idx:          titleAndSeries,
 			CalibreLabel: "titleAndSeries",
 			JsonLabel:    "titleAndSeries",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 		},
 		&Field{
 			idx:          uri,
 			CalibreLabel: "uri",
 			JsonLabel:    "uri",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 		},
 		&Field{
 			idx:          uuid,
 			CalibreLabel: "uuid",
 			JsonLabel:    "uuid",
+			Meta:         NewColumn(),
 			IsColumn:     true,
 		},
 		&Field{
@@ -444,16 +406,5 @@ func defaultFields() []*Field {
 			CalibreLabel: "custom_columns",
 			JsonLabel:    "customColumns",
 		},
-		//"seriesSort": &Field{
-		//  idx:        seriesSort,
-		//  Label:      "series_sort",
-		//  IsEditable: true,
-		//},
-		//"duration": &Field{
-		//  idx: duration,
-		//},
-		//"narrators": &Field{
-		//  idx: narrators,
-		//},
 	}
 }

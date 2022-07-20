@@ -28,7 +28,10 @@ var testCmd = &cobra.Command{
 		j := makeReq(req)
 		fmt.Println(string(j))
 		parsed := book.ParseBooks(j)[0]
-		fmt.Printf("%+V\n", parsed.GetField("duration"))
+		fmt.Printf("%+V\n", parsed.GetField("tags").URL())
+		fmt.Printf("%+V\n", parsed.GetField("narrators").String())
+		fmt.Printf("%+V\n", parsed.GetField("cover").URL())
+		fmt.Printf("%+V\n", parsed.GetField("title").String())
 		//fmt.Printf("%+v\n", calibredb.FieldList())
 	},
 }
