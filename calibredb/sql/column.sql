@@ -2,7 +2,7 @@
 
 {{- $lib := . -}}
 
-IFNULL(JSON_QUOTE(lower(id)), '""') id,
+IFNULL(JSON_QUOTE(lower(books.id)), '""') id,
 IFNULL(JSON_QUOTE(lower(series_index)), '""') position,
 {{range $field := .Fields.BookCol -}}
 	IFNULL(JSON_QUOTE({{$field}}), '""') {{GetJsonField $field}},

@@ -36,7 +36,8 @@ lower(id) id,
 CASE IFNULL(JSON_EXTRACT(display, "$.is_names"), 0)
 WHEN 0 THEN "false"
 WHEN 1 THEN "true"
-END is_names,"custom_column_" || id 'table',
+END is_names,
+"custom_column_" || id 'table',
 CASE is_multiple
 WHEN true THEN "true"
 ELSE "false"
