@@ -48,7 +48,7 @@ func NewLib(path string) *Lib {
 	lib.bookTmpl = template.Must(template.New("book").Funcs(bookTmplFuncs).ParseFS(sqlTmpl, "sql/*"))
 
 	//fmt.Printf("%+v\n", lib.renderSqlTmpl("newbook"))
-	fmt.Printf("%+v\n", lib.CustCols)
+	//fmt.Printf("%+v\n", lib.CustCols)
 	return &lib
 }
 

@@ -16,6 +16,10 @@ func Lib(l string) *Library {
 	return cfg.libs[l]
 }
 
+func GetLib(l string) *Library {
+	return cfg.libs[l]
+}
+
 func DefaultLib() *Library {
 	var lib = Libraries()[0]
 	if l := Cfg().Opts["default"]; l != "" {

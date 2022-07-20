@@ -37,6 +37,7 @@ func defaultCalibreFields() []string {
 		"titleAndSeries",
 		"uri",
 		"uuid",
+		"customColumns",
 		//"duration",
 		//"narrators",
 	}
@@ -46,41 +47,42 @@ type Fields struct {
 	displayFields [][]interface{}
 	lib           string
 	DbMeta        map[string]*Field
-	//calibre       []string
-	//json          []string
-	meta []*Field
-	idx  map[string]int
+	meta          []*Field
+	idx           map[string]int
 }
 
 type Field struct {
 	idx          int
-	Library      string            `json:"-"`
-	TableColumns map[string]string `json:"-"`
-	IsDisplayed  bool              `json:"-"`
-	IsNames      bool              `json:"-"`
-	HasJoin      bool              `json:"-"`
-	IsMultiple   bool              `json:"-"`
-	CatID        string            `json:"-"`
-	CategorySort string            `json:"category_sort"`
-	Colnum       int               `json:"colnum"`
-	Column       string            `json:"column"`
-	Datatype     string            `json:"datatype"`
-	Display      Display           `json:"display"`
-	IsCategory   bool              `json:"is_category"`
-	IsCustom     bool              `json:"is_custom"`
-	IsCsp        bool              `json:"is_csp"`
-	IsEditable   bool              `json:"is_editable"`
-	Multiple     Multiple          `json:"is_multiple"`
-	Kind         string            `json:"kind"`
-	Label        string            `json:"label"`
-	LinkColumn   string            `json:"link_column"`
-	Name         string            `json:"name"`
-	RecIndex     int               `json:"rec_index"`
-	SearchTerms  []string          `json:"search_terms"`
-	Table        string            `json:"table"`
-	IsJson       bool              `json:"-"`
-	JsonLabel    string            `json:"-"`
-	Value        string            `json:"-"`
+	Library      string          `json:"-"`
+	IsDisplayed  bool            `json:"-"`
+	IsNames      bool            `json:"-"`
+	IsMultiple   bool            `json:"-"`
+	CatID        string          `json:"-"`
+	IsJson       bool            `json:"-"`
+	JsonLabel    string          `json:"-"`
+	Data         json.RawMessage `json:"-"`
+	Value        string          `json:"-"`
+	Meta         Meta            `json:"-"`
+	IsColumn     bool            `json:"-"`
+	IsCollection bool            `json:"-"`
+	IsItem       bool            `json:"-"`
+	CategorySort string          `json:"category_sort"`
+	Colnum       int             `json:"colnum"`
+	Column       string          `json:"column"`
+	Datatype     string          `json:"datatype"`
+	Display      Display         `json:"display"`
+	IsCategory   bool            `json:"is_category"`
+	IsCustom     bool            `json:"is_custom"`
+	IsCsp        bool            `json:"is_csp"`
+	IsEditable   bool            `json:"is_editable"`
+	Multiple     Multiple        `json:"is_multiple"`
+	Kind         string          `json:"kind"`
+	CalibreLabel string          `json:"label"`
+	LinkColumn   string          `json:"link_column"`
+	Name         string          `json:"name"`
+	RecIndex     int             `json:"rec_index"`
+	SearchTerms  []string        `json:"search_terms"`
+	Table        string          `json:"table"`
 	//Value        any               `json:"#value#"`
 	//Extra        any               `json:"#extra#"`
 }
@@ -100,11 +102,13 @@ type Multiple struct {
 
 func NewFields() *Fields {
 	return &Fields{
-		//calibre: defaultCalibreFields(),
-		//json:    defaultJsonFields(),
 		meta: defaultFields(),
 		idx:  defaultFieldsIdx(),
 	}
+}
+
+func NewField() *Field {
+	return &Field{}
 }
 
 func (f *Fields) Each() []*Field {
@@ -128,7 +132,7 @@ func (f *Fields) ParseDBFieldMeta(meta, display json.RawMessage) {
 
 	for _, field := range f.displayFields {
 		name := field[0].(string)
-		if ff := f.GetField(name); ff.Label == name {
+		if ff := f.GetField(name); ff.CalibreLabel == name {
 			ff.IsDisplayed = field[1].(bool)
 		}
 	}
@@ -156,7 +160,7 @@ func (f *Fields) ParseDBFieldMeta(meta, display json.RawMessage) {
 }
 
 func (f *Fields) AddField(field *Field) *Fields {
-	f.idx[field.Label] = len(f.meta)
+	f.idx[field.CalibreLabel] = len(f.meta)
 	f.meta = append(f.meta, field)
 	//f.calibre = append(f.calibre, field.Label)
 	//f.json = append(f.json, field.Label)
@@ -226,6 +230,7 @@ func defaultFieldsIdx() map[string]int {
 		"titleAndSeries": titleAndSeries,
 		"uri":            uri,
 		"uuid":           uuid,
+		"customColumns":  custCols,
 		//"duration":       duration,
 		//"narrators":      narrators,
 	}
@@ -264,196 +269,180 @@ func defaultJsonFields() []string {
 func defaultFields() []*Field {
 	return []*Field{
 		&Field{
-			idx:        authors,
-			Label:      "authors",
-			JsonLabel:  "authors",
-			IsCategory: true,
-			IsEditable: true,
-			IsMultiple: true,
-			IsNames:    true,
-			LinkColumn: "author",
-			Multiple: Multiple{
-				CacheToList: ",",
-				ListToUi:    " & ",
-				UiToList:    "&",
-			},
-			Table: "authors",
+			idx:          authors,
+			CalibreLabel: "authors",
+			JsonLabel:    "authors",
+			IsCollection: true,
+			IsCategory:   true,
+			IsEditable:   true,
+			IsMultiple:   true,
+			IsNames:      true,
 		},
 		&Field{
-			idx:        authorSort,
-			Label:      "author_sort",
-			JsonLabel:  "authorSort",
-			IsEditable: true,
+			idx:          authorSort,
+			CalibreLabel: "author_sort",
+			JsonLabel:    "authorSort",
+			IsColumn:     true,
+			IsEditable:   true,
 		},
 		&Field{
-			idx:        description,
-			Label:      "comments",
-			JsonLabel:  "description",
-			Table:      "comments",
-			IsEditable: true,
+			idx:          description,
+			CalibreLabel: "comments",
+			JsonLabel:    "description",
+			IsColumn:     true,
+			IsEditable:   true,
 		},
 		&Field{
-			idx:        cover,
-			Label:      "cover",
-			JsonLabel:  "cover",
-			IsEditable: true,
+			idx:          cover,
+			CalibreLabel: "cover",
+			JsonLabel:    "cover",
+			IsItem:       true,
+			IsEditable:   true,
 		},
 		&Field{
 			idx:          formats,
-			Label:        "formats",
+			CalibreLabel: "formats",
 			JsonLabel:    "formats",
+			IsCollection: true,
 			IsCategory:   true,
 			IsEditable:   true,
 			IsMultiple:   true,
-			Table:        "data",
 			CategorySort: "format",
-			Column:       "format",
-			Multiple: Multiple{
-				CacheToList: ",",
-				ListToUi:    ", ",
-				UiToList:    ",",
-			},
 		},
 		&Field{
-			idx:       id,
-			Label:     "id",
-			JsonLabel: "id",
+			idx:          id,
+			CalibreLabel: "id",
+			JsonLabel:    "id",
+			IsColumn:     true,
 		},
 		&Field{
 			idx:          identifiers,
-			Label:        "identifiers",
+			CalibreLabel: "identifiers",
 			JsonLabel:    "identifiers",
+			IsCollection: true,
 			IsCategory:   true,
 			IsEditable:   true,
 			IsMultiple:   true,
-			Column:       "val",
 			CategorySort: "type",
-			Table:        "identifiers",
 		},
 		&Field{
-			idx:        languages,
-			Label:      "languages",
-			JsonLabel:  "languages",
-			IsCategory: true,
-			IsEditable: true,
-			IsMultiple: true,
-			LinkColumn: "lang_code",
-			Table:      "languages",
-			Multiple: Multiple{
-				CacheToList: ",",
-				ListToUi:    ", ",
-				UiToList:    ",",
-			},
+			idx:          languages,
+			CalibreLabel: "languages",
+			JsonLabel:    "languages",
+			IsCollection: true,
+			IsCategory:   true,
+			IsEditable:   true,
+			IsMultiple:   true,
 		},
 		&Field{
-			idx:       library,
-			Label:     "library",
-			JsonLabel: "library",
+			idx:          library,
+			CalibreLabel: "library",
+			JsonLabel:    "library",
+			IsColumn:     true,
 		},
 		&Field{
-			idx:        modified,
-			Label:      "last_modified",
-			JsonLabel:  "modified",
-			IsEditable: true,
+			idx:          modified,
+			CalibreLabel: "last_modified",
+			JsonLabel:    "modified",
+			IsColumn:     true,
+			IsEditable:   true,
 		},
 		&Field{
-			idx:        path,
-			Label:      "path",
-			JsonLabel:  "path",
-			IsEditable: true,
+			idx:          path,
+			CalibreLabel: "path",
+			JsonLabel:    "path",
+			IsColumn:     true,
 		},
 		&Field{
-			idx:        published,
-			Label:      "pubdate",
-			JsonLabel:  "published",
-			IsEditable: true,
+			idx:          published,
+			CalibreLabel: "pubdate",
+			JsonLabel:    "published",
+			IsColumn:     true,
+			IsEditable:   true,
 		},
 		&Field{
-			idx:        publisher,
-			Label:      "publisher",
-			JsonLabel:  "publisher",
-			IsCategory: true,
-			IsEditable: true,
-			LinkColumn: "publisher",
-			Table:      "publishers",
+			idx:          publisher,
+			CalibreLabel: "publisher",
+			JsonLabel:    "publisher",
+			IsItem:       true,
+			IsCategory:   true,
+			IsEditable:   true,
 		},
 		&Field{
-			idx:        rating,
-			Label:      "rating",
-			JsonLabel:  "rating",
-			IsCategory: true,
-			IsEditable: true,
-			IsMultiple: true,
-			LinkColumn: "rating",
-			Table:      "ratings",
+			idx:          rating,
+			CalibreLabel: "rating",
+			JsonLabel:    "rating",
+			IsColumn:     true,
+			IsCategory:   true,
+			IsEditable:   true,
+			IsMultiple:   true,
 		},
 		&Field{
-			idx:        series,
-			Label:      "series",
-			JsonLabel:  "series",
-			IsCategory: true,
-			IsEditable: true,
-			LinkColumn: "series",
-			Table:      "series",
+			idx:          series,
+			CalibreLabel: "series",
+			JsonLabel:    "series",
+			IsItem:       true,
+			IsCategory:   true,
+			IsEditable:   true,
 		},
 		&Field{
-			idx:        position,
-			Label:      "series_index",
-			JsonLabel:  "position",
-			IsEditable: true,
+			idx:          position,
+			CalibreLabel: "series_index",
+			JsonLabel:    "position",
+			IsColumn:     true,
+			IsEditable:   true,
 		},
 		&Field{
-			idx:        sortAs,
-			Label:      "sort",
-			JsonLabel:  "sortAs",
-			IsEditable: true,
+			idx:          sortAs,
+			CalibreLabel: "sort",
+			JsonLabel:    "sortAs",
+			IsColumn:     true,
+			IsEditable:   true,
 		},
 		&Field{
-			idx:        tags,
-			Label:      "tags",
-			JsonLabel:  "tags",
-			IsCategory: true,
-			IsEditable: true,
-			IsMultiple: true,
-			LinkColumn: "tag",
-			Table:      "tags",
-			Multiple: Multiple{
-				CacheToList: ",",
-				ListToUi:    ", ",
-				UiToList:    ",",
-			},
+			idx:          tags,
+			CalibreLabel: "tags",
+			JsonLabel:    "tags",
+			IsCollection: true,
+			IsCategory:   true,
+			IsEditable:   true,
+			IsMultiple:   true,
 		},
 		&Field{
-			idx:        added,
-			Label:      "timestamp",
-			JsonLabel:  "added",
-			IsEditable: true,
+			idx:          added,
+			CalibreLabel: "timestamp",
+			JsonLabel:    "added",
+			IsColumn:     true,
 		},
 		&Field{
-			idx:        title,
-			Label:      "title",
-			JsonLabel:  "title",
-			IsEditable: true,
+			idx:          title,
+			CalibreLabel: "title",
+			JsonLabel:    "title",
+			IsColumn:     true,
+			IsEditable:   true,
 		},
 		&Field{
-			idx:       titleAndSeries,
-			Label:     "titleAndSeries",
-			JsonLabel: "titleAndSeries",
-			Name:      "titleAndSeries",
+			idx:          titleAndSeries,
+			CalibreLabel: "titleAndSeries",
+			JsonLabel:    "titleAndSeries",
+			IsColumn:     true,
 		},
 		&Field{
-			idx:        uri,
-			Label:      "uri",
-			JsonLabel:  "uri",
-			Column:     "uri",
-			Name:       "uri",
-			IsEditable: true,
+			idx:          uri,
+			CalibreLabel: "uri",
+			JsonLabel:    "uri",
+			IsColumn:     true,
 		},
 		&Field{
-			idx:        uuid,
-			Label:      "uuid",
-			JsonLabel:  "uuid",
-			IsEditable: true,
+			idx:          uuid,
+			CalibreLabel: "uuid",
+			JsonLabel:    "uuid",
+			IsColumn:     true,
+		},
+		&Field{
+			idx:          custCols,
+			CalibreLabel: "custom_columns",
+			JsonLabel:    "customColumns",
 		},
 		//"seriesSort": &Field{
 		//  idx:        seriesSort,

@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+
+	"github.com/ohzqq/urbooks-core/book"
 	"github.com/ohzqq/urbooks-core/urbooks"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +25,10 @@ var testCmd = &cobra.Command{
 		//}
 		req = urbooks.NewRequest(lib.Name).From("books").Limit("1")
 		//somecat(req)
-		somebooks(req)
+		j := makeReq(req)
+		fmt.Println(string(j))
+		parsed := book.ParseBooks(j)[0]
+		fmt.Printf("%+V\n", parsed.GetField("duration"))
 		//fmt.Printf("%+v\n", calibredb.FieldList())
 	},
 }
