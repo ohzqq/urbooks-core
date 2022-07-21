@@ -124,31 +124,44 @@ func (i *Item) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+//type Column struct {
+//data string
+//}
+
 type Column string
 
-func NewColumn() *Column {
+func NewColumn() Column {
 	ms := Column("")
-	return &ms
+	return ms
 }
-func (c *Column) String(f *Field) string {
+func (c Column) String(f *Field) string {
+	fmt.Printf("col string val %+V\n", f.Meta.(Column))
 	return string(f.Data)
 }
 
-func (c *Column) URL(f *Field) string {
+func (c Column) URL(f *Field) string {
 	return ""
 }
 
-func (c *Column) IsNull() bool {
-	return string(*c) == ""
+func (c Column) IsNull() bool {
+	return string(c) == ""
 }
 
-func (c *Column) UnmarshalJSON(b []byte) error {
+func (c Column) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		fmt.Printf("collection failed: %v\n", err)
+		return err
+	}
+	fmt.Println(s)
+	c.SetValue(s)
 	return nil
 }
 
-func (c *Column) SetValue(v string) *Column {
+func (c Column) SetValue(v string) Column {
 	s := Column(v)
-	c = &s
+	c = s
+	//fmt.Printf("set col val %+V\n", *c)
 	return c
 }
 

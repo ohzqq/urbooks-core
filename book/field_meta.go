@@ -102,6 +102,15 @@ const (
 	cliNameSep = `&`
 )
 
+func (f *Field) SetMeta(data json.RawMessage) *Field {
+	switch {
+	case f.IsCollection:
+	case f.IsItem:
+	case f.IsColumn:
+	}
+	return f
+}
+
 func (f *Field) String() string {
 	return f.Meta.String(f)
 }
@@ -126,8 +135,8 @@ func (f *Field) Collection() *Collection {
 	return f.Meta.(*Collection)
 }
 
-func (f *Field) Col() *Column {
-	return f.Meta.(*Column)
+func (f *Field) Col() Column {
+	return f.Meta.(Column)
 }
 
 func (f *Fields) ParseDBFieldMeta(meta, display json.RawMessage) {

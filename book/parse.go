@@ -38,6 +38,19 @@ func ParseBooks(r []byte) Books {
 			field := book.GetField(key)
 			field.Library = lib
 
+			//if key == "title" {
+			//  var m string
+			//  err = json.Unmarshal(value, &m)
+			//  if err != nil {
+			//    fmt.Printf("book parsing error: %v\n", err)
+			//  }
+			//  fmt.Println(m)
+			//  c := Column(m)
+			//  fmt.Println(c)
+			//  field.Meta = &c
+			//  fmt.Printf("%+V\n", book.GetField("title").String())
+			//}
+
 			if key != "customColumns" {
 				field.Meta.UnmarshalJSON(value)
 			}

@@ -26,10 +26,10 @@ var testCmd = &cobra.Command{
 		req = urbooks.NewRequest(lib.Name).From("books").Limit("1")
 		//somecat(req)
 		j := makeReq(req)
-		fmt.Println(string(j))
+		//fmt.Println(string(j))
 		parsed := book.ParseBooks(j)[0]
-		fmt.Printf("%+V\n", parsed.ConvertTo("markdown").Print())
-		//fmt.Printf("%+V\n", parsed.GetField("narrators").String())
+		//parsed.ConvertTo("markdown").Print()
+		fmt.Printf("%+v\n", parsed.GetField("title").String())
 		//fmt.Printf("%+V\n", parsed.GetField("cover").URL())
 		//fmt.Printf("%+v\n", calibredb.FieldList())
 	},
