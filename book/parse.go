@@ -11,7 +11,7 @@ func ParseBooks(r []byte) Books {
 		err error
 	)
 
-	var resp map[string][]byte
+	var resp map[string]json.RawMessage
 	err = json.Unmarshal(r, &resp)
 	if err != nil {
 		fmt.Printf("response err: %v\n", err)
@@ -24,7 +24,7 @@ func ParseBooks(r []byte) Books {
 	}
 	lib := rmeta["library"]
 
-	var rawbooks []map[string][]byte
+	var rawbooks []map[string]json.RawMessage
 	err = json.Unmarshal(resp["data"], &rawbooks)
 	if err != nil {
 		fmt.Printf("book parsing error: %v\n", err)
@@ -33,6 +33,7 @@ func ParseBooks(r []byte) Books {
 	var books Books
 	for _, b := range rawbooks {
 		book := NewBook()
+		book.lib = lib
 		for key, value := range b {
 			field := book.GetField(key)
 			field.Library = lib
@@ -48,7 +49,7 @@ func ParseBooks(r []byte) Books {
 			}
 
 			if key == "customColumns" {
-				var custom = make(map[string]map[string][]byte)
+				var custom = make(map[string]map[string]json.RawMessage)
 				err = json.Unmarshal(value, &custom)
 				if err != nil {
 					fmt.Printf("custom column parsing error: %v\n", err)

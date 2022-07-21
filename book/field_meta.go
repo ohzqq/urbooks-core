@@ -74,15 +74,21 @@ func (f *Fields) AddField(field *Field) *Fields {
 }
 
 func (f *Fields) GetField(name string) *Field {
-	return f.meta[f.GetFieldIndex(name)]
+	idx := f.GetFieldIndex(name)
+	return f.meta[idx]
+}
+
+func (f *Fields) SetMeta(name string, meta Meta) *Fields {
+	f.GetField(name).Meta = meta
+	return f
 }
 
 func (f *Fields) GetFieldIndex(name string) int {
 	return f.idx[name]
 }
 
-func (f *Fields) Each() []*Field {
-	return defaultFields()
+func (f *Fields) EachField() []*Field {
+	return f.meta
 }
 
 func (f *Field) Index() int {
