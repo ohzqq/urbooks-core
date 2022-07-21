@@ -16,22 +16,17 @@ var testCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		lib := urbooks.Lib(lib)
 		println(lib.Name)
-		//fields := book.NewFields()
-		//fields.ParseDBFieldMeta(lib.RawPref["FieldMeta"], lib.RawPref["DisplayFields"])
-		//fmt.Printf("%+v\n", fields.GetFieldIndex("narrators"))
-		//fmt.Printf("%+v\n", fields.GetField("narrators").Label)
-		//for _, f := range fields.Each() {
-		//fmt.Printf("%+v\n", f.Label)
-		//}
 		req = urbooks.NewRequest(lib.Name).From("books").Limit("1")
 		//somecat(req)
 		j := makeReq(req)
-		//fmt.Println(string(j))
 		parsed := book.ParseBooks(j)[0]
-		//parsed.ConvertTo("markdown").Print()
 		fmt.Printf("%+v\n", parsed.GetField("title").String())
-		//fmt.Printf("%+V\n", parsed.GetField("cover").URL())
-		//fmt.Printf("%+v\n", calibredb.FieldList())
+		parsed.ConvertTo("ffmeta").Print()
+		b := book.NewBook()
+		b.GetField("authors").SetMeta("bleep & blorp")
+		b.GetField("titleAndSeries").SetMeta("poot")
+		b.ConvertTo("ffmeta").Print()
+		//fmt.Printf("%+v\n", b.ConvertTo("markdown").Print())
 	},
 }
 

@@ -47,6 +47,17 @@ func (c *Collection) AddItem() *Item {
 	return item
 }
 
+func (c *Collection) EachItem() []*Item {
+	return c.data
+}
+
+const (
+	nameSep    = " & "
+	itemSep    = ", "
+	cliItemSep = `,`
+	cliNameSep = `&`
+)
+
 func (c *Collection) String(f *Field) string {
 	return c.Join(f.IsNames)
 }
@@ -64,6 +75,17 @@ func (c *Collection) Join(isNames bool) string {
 	}
 }
 
+func (c *Collection) Split(value string, names bool) *Collection {
+	sep := itemSep
+	if names {
+		sep = nameSep
+	}
+	for _, val := range strings.Split(value, sep) {
+		c.AddItem().Set("value", val)
+	}
+	return c
+}
+
 func (c *Collection) URL(f *Field) string {
 	q := url.Values{}
 	q.Set("library", f.Library)
@@ -76,9 +98,11 @@ func (c *Collection) IsNull() bool {
 }
 
 func (c *Collection) UnmarshalJSON(b []byte) error {
-	if err := json.Unmarshal(b, &c.data); err != nil {
-		fmt.Printf("collection failed: %v\n", err)
-		return err
+	if len(b) > 0 {
+		if err := json.Unmarshal(b, &c.data); err != nil {
+			fmt.Printf("collection failed: %v\n", err)
+			return err
+		}
 	}
 	return nil
 }
@@ -116,53 +140,50 @@ func (i *Item) IsNull() bool {
 }
 
 func (i *Item) UnmarshalJSON(b []byte) error {
-	i.data = make(map[string]string)
-	if err := json.Unmarshal(b, &i.data); err != nil {
-		fmt.Printf("collection failed: %v\n", err)
-		return err
+	if len(b) > 0 {
+		i.data = make(map[string]string)
+		if err := json.Unmarshal(b, &i.data); err != nil {
+			fmt.Printf("collection failed: %v\n", err)
+			return err
+		}
 	}
 	return nil
 }
-
-//type Column struct {
-//data string
-//}
 
 type Column string
 
-func NewColumn() Column {
+func NewColumn() *Column {
 	ms := Column("")
-	return ms
-}
-func (c Column) String(f *Field) string {
-	fmt.Printf("col string val %+V\n", f.Meta.(Column))
-	return string(f.Data)
+	return &ms
 }
 
-func (c Column) URL(f *Field) string {
+func (c *Column) String(f *Field) string {
+	if len(f.Data) > 0 {
+		var s string
+		if err := json.Unmarshal(f.Data, &s); err != nil {
+			fmt.Printf("%v failed: %v\n", f.JsonLabel, err)
+		}
+		return s
+	}
+
+	return string(*c)
+}
+
+func (c *Column) URL(f *Field) string {
 	return ""
 }
 
-func (c Column) IsNull() bool {
-	return string(c) == ""
+func (c *Column) IsNull() bool {
+	return string(*c) == ""
 }
 
-func (c Column) UnmarshalJSON(b []byte) error {
-	var s string
-	if err := json.Unmarshal(b, &s); err != nil {
-		fmt.Printf("collection failed: %v\n", err)
-		return err
-	}
-	fmt.Println(s)
-	c.SetValue(s)
+func (c *Column) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-func (c Column) SetValue(v string) Column {
+func (c *Column) Set(v string) *Column {
 	s := Column(v)
-	c = s
-	//fmt.Printf("set col val %+V\n", *c)
-	return c
+	return &s
 }
 
 type metaFmt struct {

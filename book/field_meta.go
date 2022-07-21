@@ -95,19 +95,17 @@ func (f *Field) Index() int {
 	return f.idx
 }
 
-const (
-	nameSep    = " & "
-	itemSep    = ", "
-	cliItemSep = `,`
-	cliNameSep = `&`
-)
-
-func (f *Field) SetMeta(data json.RawMessage) *Field {
+func (f *Field) SetMeta(data string) *Field {
+	var meta Meta
 	switch {
 	case f.IsCollection:
+		meta = f.Collection().Split(data, f.IsNames)
 	case f.IsItem:
+		meta = f.Item().Set("value", data)
 	case f.IsColumn:
+		meta = f.Col().Set(data)
 	}
+	f.Meta = meta
 	return f
 }
 
@@ -135,8 +133,8 @@ func (f *Field) Collection() *Collection {
 	return f.Meta.(*Collection)
 }
 
-func (f *Field) Col() Column {
-	return f.Meta.(Column)
+func (f *Field) Col() *Column {
+	return f.Meta.(*Column)
 }
 
 func (f *Fields) ParseDBFieldMeta(meta, display json.RawMessage) {
