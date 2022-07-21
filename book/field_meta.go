@@ -67,6 +67,18 @@ func NewFields() *Fields {
 	}
 }
 
+func (f *Fields) NewField(label string) *Field {
+	field := &Field{
+		JsonLabel:    label,
+		CalibreLabel: label,
+		IsCustom:     true,
+		//IsCustom:     strings.HasPrefix(label, "#"),
+	}
+	f.AddField(field)
+
+	return field
+}
+
 func (f *Fields) AddField(field *Field) *Fields {
 	f.idx[field.CalibreLabel] = len(f.meta)
 	f.meta = append(f.meta, field)
@@ -77,16 +89,17 @@ func (f *Fields) GetSeriesString() string {
 	s := f.GetField("series")
 	if !s.IsNull() {
 		p := "1.0"
-		if series.String() != "" {
-			if pos := bm.Get("position").String(); pos != "" {
+		if s.String() != "" {
+			if pos := f.GetField("position").String(); pos != "" {
 				p = pos
 			}
-			if pos := series.Get("position"); pos != "" {
+			if pos := s.GetMeta().Item().Get("position"); pos != "" {
 				p = pos
 			}
 		}
-		return series.String() + `, Book ` + p
+		return s.String() + `, Book ` + p
 	}
+	return ""
 }
 
 func (f *Fields) GetField(name string) *Field {
@@ -105,6 +118,29 @@ func (f *Fields) GetFieldIndex(name string) int {
 
 func (f *Fields) EachField() []*Field {
 	return f.meta
+}
+
+func (f *Fields) ListFields() []string {
+	var fields []string
+	for _, field := range f.EachField() {
+		fields = append(fields, field.JsonLabel)
+	}
+	return fields
+}
+
+func (f *Field) SetKind(kind string) *Field {
+	switch kind {
+	case "collection":
+		f.IsCollection = true
+		f.Meta = NewCollection()
+	case "item":
+		f.IsItem = true
+		f.Meta = NewItem()
+	case "column":
+		f.IsColumn = true
+		f.Meta = NewColumn()
+	}
+	return f
 }
 
 func (f *Field) Index() int {

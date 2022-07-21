@@ -327,7 +327,11 @@ func (lib *Lib) filterQuery(q string) (string, []interface{}) {
 	stmt.WriteString("\n")
 
 	if len(lib.Request.itemIDs) > 0 {
-		stmt.WriteString(" WHERE id IN (?) ")
+		if lib.Request.bookQuery {
+			stmt.WriteString(" WHERE books.id IN (?) ")
+		} else {
+			stmt.WriteString(" WHERE id IN (?) ")
+		}
 		stmt.WriteString("\n")
 	}
 

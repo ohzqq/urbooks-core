@@ -225,9 +225,9 @@ func (b *Book) StringMap() map[string]string {
 	m := make(map[string]string)
 	for _, field := range b.EachField() {
 		key := field.JsonLabel
-		if field.IsCustom {
-			key = "#" + key
-		}
+		//if field.IsCustom {
+		//  key = "#" + key
+		//}
 
 		if key != "customColumns" {
 			m[key] = field.Meta.String(field)
