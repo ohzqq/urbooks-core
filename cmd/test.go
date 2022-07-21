@@ -20,8 +20,8 @@ var testCmd = &cobra.Command{
 		//somecat(req)
 		j := makeReq(req)
 		parsed := book.ParseBooks(j)[0]
-		fmt.Printf("%+v\n", parsed.GetField("title").String())
-		parsed.ConvertTo("ffmeta").Print()
+		fmt.Printf("%+v\n", parsed.GetSeriesString())
+		//parsed.ConvertTo("ffmeta").Print()
 		b := book.NewBook()
 		b.GetField("authors").SetMeta("bleep & blorp")
 		b.GetField("titleAndSeries").SetMeta("poot")

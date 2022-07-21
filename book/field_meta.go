@@ -73,6 +73,22 @@ func (f *Fields) AddField(field *Field) *Fields {
 	return f
 }
 
+func (f *Fields) GetSeriesString() string {
+	s := f.GetField("series")
+	if !s.IsNull() {
+		p := "1.0"
+		if series.String() != "" {
+			if pos := bm.Get("position").String(); pos != "" {
+				p = pos
+			}
+			if pos := series.Get("position"); pos != "" {
+				p = pos
+			}
+		}
+		return series.String() + `, Book ` + p
+	}
+}
+
 func (f *Fields) GetField(name string) *Field {
 	idx := f.GetFieldIndex(name)
 	return f.meta[idx]
