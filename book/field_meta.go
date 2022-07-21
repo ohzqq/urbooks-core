@@ -114,6 +114,22 @@ func (f *Field) IsNull() bool {
 	return f.Meta.IsNull()
 }
 
+func (f *Field) GetMeta() *Field {
+	return f
+}
+
+func (f *Field) Item() *Item {
+	return f.Meta.(*Item)
+}
+
+func (f *Field) Collection() *Collection {
+	return f.Meta.(*Collection)
+}
+
+func (f *Field) Col() *Column {
+	return f.Meta.(*Column)
+}
+
 func (f *Fields) ParseDBFieldMeta(meta, display json.RawMessage) {
 	err := json.Unmarshal(display, &f.displayFields)
 	if err != nil {

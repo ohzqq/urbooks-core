@@ -189,20 +189,18 @@ var MetaFmt = []metaFmt{
 
 func (b *Book) StringMap() map[string]string {
 	m := make(map[string]string)
-	//lib := Lib(b.GetField("library").String())
 	for _, field := range b.EachField() {
-		//field := b.GetField(k)
-		k := field.JsonLabel
-		var key string
-		switch {
-		case field.IsCustom:
-			key = "#" + k
-		default:
-			key = k
+		key := field.JsonLabel
+		if field.IsCustom {
+			key = "#" + key
 		}
-		m[key] = field.Meta.String(field)
+
+		if key != "customColumns" {
+			m[key] = field.Meta.String(field)
+		}
+
 		if key == "series" {
-			if pos := b.GetField("position").String(); pos != "" {
+			if pos := field.GetMeta().Item().Get("position"); pos != "" {
 				m["position"] = pos
 			}
 		}
