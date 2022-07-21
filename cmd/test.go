@@ -28,7 +28,7 @@ var testCmd = &cobra.Command{
 		j := makeReq(req)
 		fmt.Println(string(j))
 		parsed := book.ParseBooks(j)[0]
-		fmt.Printf("%+V\n", parsed.StringMap())
+		fmt.Printf("%+V\n", parsed.ConvertTo("markdown").Print())
 		//fmt.Printf("%+V\n", parsed.GetField("narrators").String())
 		//fmt.Printf("%+V\n", parsed.GetField("cover").URL())
 		//fmt.Printf("%+v\n", calibredb.FieldList())
