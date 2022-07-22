@@ -16,6 +16,104 @@ import (
 
 type Books []*Book
 
+func (books *Books) UnmarshalJSON(r []byte) error {
+	var (
+		err error
+	)
+
+	var resp map[string]json.RawMessage
+	err = json.Unmarshal(r, &resp)
+	if err != nil {
+		return fmt.Errorf("unmarshal response error: %v\n", err)
+	}
+
+	var rmeta map[string]string
+	err = json.Unmarshal(resp["meta"], &rmeta)
+	if err != nil {
+		return fmt.Errorf("unmarshal response meta error: %v\n", err)
+	}
+	lib := rmeta["library"]
+
+	var rawbooks []map[string]json.RawMessage
+	err = json.Unmarshal(resp["data"], &rawbooks)
+	if err != nil {
+		return fmt.Errorf("book parsing error: %v\n", err)
+	}
+
+	for _, b := range rawbooks {
+		book := NewBook()
+		book.lib = lib
+		for key, value := range b {
+			field := book.GetField(key)
+			field.Library = lib
+
+			if key != "customColumns" {
+				err := field.Meta.UnmarshalJSON(value)
+				if err != nil {
+					return err
+				}
+			}
+
+			field.Data = value
+
+			if key != field.JsonLabel {
+				return fmt.Errorf("json: %v\n field meta: %v\n", key, field.JsonLabel)
+			}
+
+			if key == "customColumns" {
+				var custom = make(map[string]map[string]json.RawMessage)
+				err = json.Unmarshal(value, &custom)
+				if err != nil {
+					return fmt.Errorf("custom column parsing error: %v\n", err)
+				}
+
+				for name, cdata := range custom {
+					col := &Field{
+						IsCustom:     true,
+						Data:         cdata["data"],
+						CalibreLabel: name,
+						JsonLabel:    name,
+						IsEditable:   true,
+					}
+
+					meta := make(map[string]string)
+					err = json.Unmarshal(cdata["meta"], &meta)
+					if err != nil {
+						return fmt.Errorf("custom column parsing error: %v\n", err)
+					}
+
+					switch meta["is_multiple"] {
+					case "true":
+						col.IsMultiple = true
+						col.IsCollection = true
+						col.Meta = &Collection{}
+					case "false":
+						col.IsColumn = true
+						col.Meta = NewColumn()
+					}
+					err = col.Meta.UnmarshalJSON(col.Data)
+					if err != nil {
+						return err
+					}
+
+					if meta["is_names"] == "true" {
+						col.IsNames = true
+					}
+
+					book.AddField(col)
+				}
+			}
+		}
+		books.AddBook(book)
+	}
+	return nil
+}
+
+func (b *Books) AddBook(book *Book) *Books {
+	*b = append(*b, book)
+	return b
+}
+
 type Book struct {
 	lib string
 	fmt metaFmt
@@ -173,13 +271,9 @@ func (c *Column) URL(f *Field) string {
 	return ""
 }
 
-func (c *Column) IsNull() bool {
-	return string(*c) == ""
-}
+func (c *Column) IsNull() bool { return string(*c) == "" }
 
-func (c *Column) UnmarshalJSON(b []byte) error {
-	return nil
-}
+func (c *Column) UnmarshalJSON(b []byte) error { return nil }
 
 func (c *Column) Set(v string) *Column {
 	s := Column(v)
