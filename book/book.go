@@ -8,10 +8,12 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/gosimple/slug"
+	"golang.org/x/exp/slices"
 )
 
 type Books []*Book
@@ -149,6 +151,32 @@ func NewBook() *Book {
 	return &Book{Fields: NewFields()}
 }
 
+func (b Book) GetFile(f string) *Item {
+	formats := b.GetField("formats")
+	switch f {
+	case "cover":
+		return b.GetField("cover").Item()
+	case "audio":
+		for _, item := range formats.Collection().EachItem() {
+			if slices.Contains(AudioFormats(), item.Get("extension")) {
+				q := url.Values{}
+				q.Set("library", b.lib)
+				q.Set("format", item.Get("extension"))
+				u := url.URL{Path: item.Get("uri"), RawQuery: q.Encode()}
+				item.Set("url", u.String())
+				return item
+			}
+		}
+	default:
+		for _, item := range formats.Collection().EachItem() {
+			if item.Get("extension") == f {
+				return item
+			}
+		}
+	}
+	return &Item{}
+}
+
 type Collection struct {
 	data []*Item
 }
@@ -216,7 +244,7 @@ func (c *Collection) IsNull() bool {
 func (c *Collection) UnmarshalJSON(b []byte) error {
 	if len(b) > 0 {
 		if err := json.Unmarshal(b, &c.data); err != nil {
-			fmt.Printf("collection failed: %v\n", err)
+			fmt.Printf("poot failed: %v\n", err)
 			return err
 		}
 	}
@@ -253,6 +281,17 @@ func (i *Item) URL(f *Field) string {
 
 func (i *Item) IsNull() bool {
 	return len(i.data) == 0
+}
+
+func (i Item) TotalBooks() int {
+	if t := i.Get("books"); t != "" {
+		b, err := strconv.Atoi(t)
+		if err != nil {
+			return 0
+		}
+		return b
+	}
+	return 0
 }
 
 func (i *Item) UnmarshalJSON(b []byte) error {

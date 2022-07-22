@@ -76,85 +76,39 @@ func (b *BookResponse) UnmarshalJSON(d []byte) error {
 	return nil
 }
 
-//func ParseBooks(r []byte) *BookResponse {
-//var (
-//  response BookResponse
-//  err      error
-//)
+type CatResponse struct {
+	Response
+	data *book.Category
+}
 
-//var resp map[string]json.RawMessage
-//err = json.Unmarshal(r, &resp)
-//if err != nil {
-//  fmt.Println("error:", err)
-//}
+func ParseCatResponse(d []byte) (CatResponse, error) {
+	response := CatResponse{}
+	err := json.Unmarshal(d, &response)
+	if err != nil {
+		return response, fmt.Errorf("%v\n", err)
+	}
+	return response, nil
+}
 
-//response.Response = ParseResponse(resp)
+func (c CatResponse) Items() []*book.Item {
+	return c.data.EachItem()
+}
 
-//var books []map[string]json.RawMessage
-//err = json.Unmarshal(resp["data"], &books)
-//if err != nil {
-//  fmt.Println("error:", err)
-//}
+func (c *CatResponse) UnmarshalJSON(d []byte) error {
+	var err error
 
-//response.books.query = url.Values{}
-//response.books.query.Set("library", response.GetMeta("library"))
-//lib := Lib(response.GetMeta("library"))
+	c.Response, err = ParseResponse(d)
+	if err != nil {
+		return err
+	}
 
-//  for _, book := range books {
-//    bb := NewBook(lib.Name)
-//    formats := bb.NewCategory("formats")
-//    formats.query = response.books.query
-//    for key, val := range book {
-//      var err error
-//      switch key {
-//      case "formats":
-//        err = json.Unmarshal(val, &formats.items)
-//      case "cover":
-//        item := formats.AddItem()
-//        item.query = response.books.query
-//        err = json.Unmarshal(val, &item)
-//      case "series", "publishers":
-//        item := bb.NewItem(key)
-//        item.query = response.books.query
-//        err = json.Unmarshal(val, &item)
-//        u := &url.URL{Path: item.Get("uri"), RawQuery: response.books.query.Encode()}
-//        item.Set("url", u.String())
-//      case "authors", "narrators", "identifiers", "languages", "tags":
-//        cat := bb.NewCategory(key)
-//        cat.query = response.books.query
+	c.data, err = book.ParseCategory(d)
+	if err != nil {
+		return err
+	}
 
-//        err = json.Unmarshal(val, &cat.items)
-
-//        for _, item := range cat.items {
-//          u := &url.URL{Path: item.Get("uri"), RawQuery: response.books.query.Encode()}
-//          item.Set("url", u.String())
-//        }
-//      default:
-//        col := bb.NewColumn(key)
-//        col.query = response.books.query
-//        err = json.Unmarshal(val, &col.meta)
-//      }
-//      if err != nil {
-//        fmt.Printf("%v: %v\n", key, err)
-//      }
-//    }
-//    response.books.Add(bb)
-//  }
-//  return &response
-//}
-
-//func (i *Item) UnmarshalJSON(b []byte) error {
-//  i.meta = make(map[string]string)
-//  if err := json.Unmarshal(b, &i.meta); err != nil {
-//    return err
-//  }
-//  return nil
-//}
-
-//type CatResponse struct {
-//  Response
-//  data Category
-//}
+	return nil
+}
 
 //func ParseCategory(r []byte) *CatResponse {
 //  var (
@@ -184,10 +138,6 @@ func (b *BookResponse) UnmarshalJSON(d []byte) error {
 //  }
 
 //  return &response
-//}
-
-//func (c CatResponse) Items() []*Item {
-//  return c.data.Items()
 //}
 
 //func (c CatResponse) Label() string {

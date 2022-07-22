@@ -46,7 +46,7 @@ func (lib *Lib) setResponseMeta() {
 	lib.response.addMeta("currentPage", lib.Request.query.Get("currentPage"))
 	lib.response.addMeta("itemsPerPage", lib.Request.query.Get("itemsPerPage"))
 	lib.response.addMeta("endpoint", lib.Request.cat)
-	lib.response.addMeta("categoryLabel", "")
+	lib.response.addMeta("categoryLabel", lib.Request.cat)
 
 	if lib.response.booksInCat != "" {
 		lib.response.addMeta("categoryLabel", lib.response.booksInCat)

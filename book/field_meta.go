@@ -68,14 +68,8 @@ func NewFields() *Fields {
 }
 
 func (f *Fields) NewField(label string) *Field {
-	field := &Field{
-		JsonLabel:    label,
-		CalibreLabel: label,
-		IsCustom:     true,
-		//IsCustom:     strings.HasPrefix(label, "#"),
-	}
+	field := NewField(label)
 	f.AddField(field)
-
 	return field
 }
 
@@ -126,6 +120,15 @@ func (f *Fields) ListFields() []string {
 		fields = append(fields, field.JsonLabel)
 	}
 	return fields
+}
+
+func NewField(label string) *Field {
+	return &Field{
+		JsonLabel:    label,
+		CalibreLabel: label,
+		IsCustom:     true,
+		//IsCustom:     strings.HasPrefix(label, "#"),
+	}
 }
 
 func (f *Field) SetKind(kind string) *Field {
@@ -187,6 +190,14 @@ func (f *Field) Collection() *Collection {
 
 func (f *Field) Col() *Column {
 	return f.Meta.(*Column)
+}
+
+func (f *Field) UnmarshalJSON(d []byte) error {
+	err := f.Meta.UnmarshalJSON(d)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (f *Fields) ParseDBFieldMeta(meta, display json.RawMessage) {
@@ -256,6 +267,18 @@ const (
 	uuid           = iota
 	custCols       = iota
 )
+
+func GetDefaultField(name string) *Field {
+	return defaultFields()[defaultFieldsIdx()[name]]
+}
+
+func ListDefaultFields() []string {
+	var fields []string
+	for _, field := range defaultFields() {
+		fields = append(fields, field.JsonLabel)
+	}
+	return fields
+}
 
 func defaultFieldsIdx() map[string]int {
 	return map[string]int{
