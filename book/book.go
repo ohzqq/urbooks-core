@@ -16,6 +16,16 @@ import (
 
 type Books []*Book
 
+func ParseBooks(r []byte) Books {
+	var books Books
+	err := json.Unmarshal(r, &books)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%+v\n", books)
+	return books
+}
+
 func (books *Books) UnmarshalJSON(r []byte) error {
 	var (
 		err error
