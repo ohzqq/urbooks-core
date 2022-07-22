@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/ohzqq/urbooks-core/urbooks"
 	"github.com/spf13/cobra"
 )
@@ -13,12 +15,13 @@ var testCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		lib := urbooks.Lib(lib)
 		println(lib.Name)
-		//req = urbooks.NewRequest(lib.Name).From("books").Find("333")
-		req = buildRequest(args)
-		somebooks(req)
-		//fmt.Printf("%+v\n", )
+		req = urbooks.NewRequest(lib.Name).From("authors").Limit("1")
+		//req = buildRequest(args)
+		//somebooks(req)
 		//somecat(req)
-		//j := makeReq(req)
+		j := makeReq(req)
+		fmt.Println(string(j))
+
 		//parsed, err := book.ParseBooks(j)
 		//if err != nil {
 		//log.Fatal(err)
