@@ -16,46 +16,50 @@ import (
 
 type Books []*Book
 
-func ParseBooks(r []byte) Books {
-	var books Books
-	err := json.Unmarshal(r, &books)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%+v\n", books)
-	return books
-}
-
-func (books *Books) UnmarshalJSON(r []byte) error {
-	var (
-		err error
-	)
+func ParseBooks(r []byte) (Books, error) {
+	var err error
 
 	var resp map[string]json.RawMessage
 	err = json.Unmarshal(r, &resp)
 	if err != nil {
-		return fmt.Errorf("unmarshal response error: %v\n", err)
+		return nil, fmt.Errorf("unmarshal response error: %v\n", err)
 	}
 
 	var rmeta map[string]string
 	err = json.Unmarshal(resp["meta"], &rmeta)
 	if err != nil {
-		return fmt.Errorf("unmarshal response meta error: %v\n", err)
+		return nil, fmt.Errorf("unmarshal response meta error: %v\n", err)
 	}
 	lib := rmeta["library"]
 
+	var books Books
+	err = json.Unmarshal(resp["data"], &books)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal books: %v\n", err)
+	}
+
+	for _, b := range books.EachBook() {
+		b.lib = lib
+		for _, field := range b.EachField() {
+			field.Library = lib
+		}
+	}
+	return books, nil
+}
+
+func (books *Books) UnmarshalJSON(r []byte) error {
+	var err error
+
 	var rawbooks []map[string]json.RawMessage
-	err = json.Unmarshal(resp["data"], &rawbooks)
+	err = json.Unmarshal(r, &rawbooks)
 	if err != nil {
 		return fmt.Errorf("book parsing error: %v\n", err)
 	}
 
 	for _, b := range rawbooks {
 		book := NewBook()
-		book.lib = lib
 		for key, value := range b {
 			field := book.GetField(key)
-			field.Library = lib
 
 			if key != "customColumns" {
 				err := field.Meta.UnmarshalJSON(value)
@@ -122,6 +126,10 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 func (b *Books) AddBook(book *Book) *Books {
 	*b = append(*b, book)
 	return b
+}
+
+func (b *Books) EachBook() []*Book {
+	return *b
 }
 
 type Book struct {

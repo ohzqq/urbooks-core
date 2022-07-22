@@ -53,9 +53,14 @@ func buildRequest(args []string) *urbooks.Request {
 func somebooks(r *urbooks.Request) {
 	resp := makeReq(r)
 	fmt.Println(string(resp))
-	bookResp := urbooks.ParseBooks(resp)
+	bookResp, err := urbooks.ParseBookResponse(resp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	//fmt.Printf("%+v\n", bookResp)
 	for _, book := range bookResp.Books() {
-		fmt.Println(book.Get("rating").String())
+		//fmt.Println("toot")
+		fmt.Println(book.GetField("title").String())
 	}
 }
 

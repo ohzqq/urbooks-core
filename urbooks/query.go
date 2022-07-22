@@ -4,7 +4,7 @@ import (
 	//"strings"
 	"log"
 	//"strconv"
-	"encoding/json"
+
 	"fmt"
 	"net/url"
 	"path"
@@ -142,45 +142,4 @@ func (r *Request) Order(order string) *Request {
 func (r *Request) Desc() *Request {
 	r.query.Add("order", "desc")
 	return r
-}
-
-type ResponseLinks map[string]string
-
-type ResponseLink struct {
-	Rel  string
-	Href string
-}
-
-type ResponseMeta map[string]string
-
-type ResponseErrors []map[string]string
-
-type Response struct {
-	Links  ResponseLinks  `json:"links"`
-	Meta   ResponseMeta   `json:"meta"`
-	Errors ResponseErrors `json:"errors"`
-}
-
-func ParseResponse(resp map[string]json.RawMessage) Response {
-	var (
-		response Response
-		err      error
-	)
-
-	err = json.Unmarshal(resp["meta"], &response.Meta)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	err = json.Unmarshal(resp["errors"], &response.Errors)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	err = json.Unmarshal(resp["links"], &response.Links)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-
-	return response
 }
