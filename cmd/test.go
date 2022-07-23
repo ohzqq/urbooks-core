@@ -22,7 +22,7 @@ var testCmd = &cobra.Command{
 		//somebooks(req)
 		//somecat(req)
 		j := makeReq(req)
-		//fmt.Println(string(j))
+		fmt.Println(string(j))
 		parsed, err := urbooks.ParseBookResponse(j)
 		//cat, err := urbooks.ParseCatResponse(j)
 		if err != nil {
@@ -30,7 +30,7 @@ var testCmd = &cobra.Command{
 		}
 		//fmt.Printf("category %+V\n", cat.Items())
 		fmt.Printf("%+V\n", parsed.Books()[0].GetField("series").String())
-		fmt.Printf("%+V\n", parsed.Books()[0].GetField("publisher"))
+		fmt.Printf("%+V\n", parsed.Books()[0].GetField("title").String())
 		//fmt.Printf("%+V\n", parsed.Books()[0].GetField("cover"))
 
 		//if err != nil {

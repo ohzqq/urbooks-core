@@ -138,7 +138,7 @@ type Meta interface {
 	String(f *Field) string
 	URL(f *Field) string
 	IsNull() bool
-	ParseData(f *Field) error
+	ParseData(f *Field)
 }
 
 func NewBook() *Book {
@@ -235,19 +235,17 @@ func (c *Collection) IsNull() bool {
 	return len(c.data) == 0
 }
 
-func (c *Collection) ParseData(f *Field) error {
+func (c *Collection) ParseData(f *Field) {
 	switch d := f.data.(type) {
 	case string:
-		c = c.Split(d, f.IsNames)
-		return nil
+		c.Split(d, f.IsNames)
 	case json.RawMessage:
 		if len(d) > 0 {
 			if err := json.Unmarshal(d, &c.data); err != nil {
-				return fmt.Errorf("collection failed: %v\n", err)
+				log.Fatalf("poot failed: %v\n", err)
 			}
 		}
 	}
-	return nil
 }
 
 type Item struct {
@@ -293,25 +291,20 @@ func (i Item) TotalBooks() int {
 	return 0
 }
 
-func (i *Item) ParseData(f *Field) error {
+func (i *Item) ParseData(f *Field) {
 	switch d := f.data.(type) {
 	case string:
-		i.Set("value", d)
-		return nil
+		i = i.Set("value", d)
 	case json.RawMessage:
-		if len(d) > 0 {
-			if err := json.Unmarshal(d, &i.data); err != nil {
-				return fmt.Errorf("item failed: %v\n", err)
-			}
-			return fmt.Errorf("no data:")
+		err := i.UnmarshalJSON(d)
+		if err != nil {
+			fmt.Printf("item failed: %v\n", err)
 		}
 	}
-	return nil
 }
 
 func (i *Item) UnmarshalJSON(b []byte) error {
 	if len(b) > 0 {
-		//i.data = make(map[string]string)
 		if err := json.Unmarshal(b, &i.data); err != nil {
 			fmt.Printf("collection failed: %v\n", err)
 			return err
@@ -328,14 +321,6 @@ func NewMetaColumn() *Column {
 }
 
 func (c *Column) String(f *Field) string {
-	if len(f.jsonData) > 0 {
-		var s string
-		if err := json.Unmarshal(f.jsonData, &s); err != nil {
-			fmt.Printf("%v failed: %v\n", f.JsonLabel, err)
-		}
-		return s
-	}
-
 	return string(*c)
 }
 
@@ -343,17 +328,22 @@ func (c *Column) URL(f *Field) string {
 	return ""
 }
 
-func (c *Column) IsNull() bool { return string(*c) == "" }
+func (c *Column) IsNull() bool {
+	return string(*c) == ""
+}
 
 func (c *Column) ParseData(f *Field) {
 	switch d := f.data.(type) {
 	case string:
 		c.Set(d)
 	case json.RawMessage:
+		if len(d) > 0 {
+			if err := json.Unmarshal(d, &c); err != nil {
+				fmt.Printf("%v failed: %v\n", d, err)
+			}
+		}
 	}
 }
-
-func (c *Column) UnmarshalJSON(b []byte) error { return nil }
 
 func (c *Column) Set(v string) *Column {
 	s := Column(v)

@@ -230,10 +230,7 @@ func (f *Field) SetMeta(m Meta) *Field {
 }
 
 func (f *Field) ParseData() *Field {
-	err := f.Meta.ParseData(f)
-	if err != nil {
-		log.Fatal(err)
-	}
+	f.Meta.ParseData(f)
 	return f
 }
 
