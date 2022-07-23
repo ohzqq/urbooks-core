@@ -32,6 +32,15 @@ type dbPreferences struct {
 var custColstmt = `
 SELECT 
 label label, 
+(SELECT 
+CASE IFNULL(JSON_EXTRACT(val, "$." || "#" || label || ".is_category"), 0)
+WHEN 0 THEN "false"
+WHEN 1 then "true"
+END
+FROM preferences 
+WHERE key 
+IN ('field_metadata')
+) is_category,
 lower(id) id, 
 CASE IFNULL(JSON_EXTRACT(display, "$.is_names"), 0)
 WHEN 0 THEN "false"

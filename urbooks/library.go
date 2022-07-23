@@ -41,13 +41,6 @@ type Library struct {
 	req            *Request
 }
 
-type dbPreferences struct {
-	HiddenCategories json.RawMessage
-	DisplayFields    json.RawMessage
-	SavedSearches    json.RawMessage
-	FieldMeta        json.RawMessage
-}
-
 func NewLibrary(name, path string) *Library {
 	l := Library{}
 	l.Cfg = Cfg().libCfg[name]

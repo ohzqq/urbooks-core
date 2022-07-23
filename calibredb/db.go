@@ -13,7 +13,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/ohzqq/urbooks-core/book"
 	"golang.org/x/exp/slices"
 )
 
@@ -106,6 +105,25 @@ func (lib *Lib) validEndpoint(point string) bool {
 	return slices.Contains(end, point)
 }
 
+func (lib *Lib) Categories() []string {
+	var fields []string
+	for _, f := range defaultFields.MultiCats {
+		fields = append(fields, f)
+	}
+	for _, f := range defaultFields.JoinCats {
+		fields = append(fields, f)
+	}
+	for _, f := range defaultFields.SingleCats {
+		fields = append(fields, f)
+	}
+	for _, f := range lib.CustCols {
+		if f["is_category"] == "true" {
+			fields = append(fields, f["label"])
+		}
+	}
+	return fields
+}
+
 func (lib *Lib) connectDB() *sqlx.DB {
 	database, err := sqlx.Open("sqlite3", lib.dbPath)
 	if err != nil {
@@ -133,108 +151,6 @@ func (lib *Lib) queryDB() {
 		}
 		lib.response.Data = append(lib.response.Data, convertFields(m))
 	}
-}
-
-func (lib Lib) GetField(f string) *Field {
-	switch slices.Contains(lib.AllFields(), f) {
-	case true:
-		return lib.Preferences.FieldMeta[f]
-	default:
-		return &Field{Column: f, Label: f}
-	}
-}
-
-func (lib Lib) Categories() []string {
-	var cat []string
-	for c, meta := range lib.Preferences.FieldMeta {
-		if meta.IsCategory {
-			cat = append(cat, c)
-		}
-	}
-	return cat
-}
-
-func (lib Lib) IsCategory(f string) bool {
-	return slices.Contains(lib.Categories(), f)
-}
-
-func (lib Lib) CustomColumns() []string {
-	var cols []string
-	for c, meta := range lib.Preferences.FieldMeta {
-		if meta.IsCustom {
-			cols = append(cols, c)
-		}
-	}
-	return cols
-}
-
-func (lib Lib) IsCustomColumn(f string) bool {
-	return slices.Contains(lib.CustomColumns(), f)
-}
-
-//func (lib Lib) Displayed() []string {
-//  var cols []string
-//  for c, meta := range lib.Preferences.FieldMeta {
-//    if meta.IsDisplayed {
-//      cols = append(cols, c)
-//    }
-//  }
-//  return cols
-//}
-
-func (lib Lib) IsDisplayed(f string) bool {
-	return slices.Contains(lib.Categories(), f)
-}
-
-func (lib Lib) CatCollections() []string {
-	var cols []string
-	for c, meta := range lib.Preferences.FieldMeta {
-		if meta.IsMultiple {
-			cols = append(cols, c)
-		}
-	}
-	return cols
-}
-
-func (lib Lib) GetBookFields() *book.Fields {
-	fields := book.NewFields()
-	return fields
-}
-
-func (lib Lib) IsCategoryCollection(f string) bool {
-	return slices.Contains(lib.CatCollections(), f)
-}
-
-func (lib Lib) CatSingletons() []string {
-	var cols []string
-	for c, meta := range lib.Preferences.FieldMeta {
-		if !meta.IsMultiple {
-			if meta.IsCategory {
-				cols = append(cols, c)
-			}
-		}
-	}
-	return cols
-}
-
-func (lib Lib) IsCategorySingleton(f string) bool {
-	return slices.Contains(lib.CatSingletons(), f)
-}
-
-func (lib Lib) BookColumns() []string {
-	var cols []string
-	for c, meta := range lib.Preferences.FieldMeta {
-		if !meta.IsMultiple {
-			if !meta.IsCategory {
-				cols = append(cols, c)
-			}
-		}
-	}
-	return cols
-}
-
-func (lib Lib) IsBookColumn(f string) bool {
-	return slices.Contains(lib.BookColumns(), f)
 }
 
 func (lib *Lib) numberOfItems() {
@@ -313,7 +229,12 @@ func (lib *Lib) custStmt() {
 // Build association Queries
 func (lib *Lib) relationStmt(table string) (string, []interface{}) {
 	lib.Request.isSorted = true
-	lib.Request.sort = lib.GetField(table).Column
+	//lib.Request.sort = lib.GetField(table).Column
+	field := GetTableColumns(table, lib.Name)
+	lib.Request.sort = field["value"]
+	if table == "formats" {
+		lib.Request.sort = "format"
+	}
 
 	return lib.filterQuery(lib.renderSqlTmpl("category"))
 }
