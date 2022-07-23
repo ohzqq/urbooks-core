@@ -23,6 +23,9 @@ type Field struct {
 	CatID        string   `json:"-"`
 	IsJson       bool     `json:"-"`
 	JsonLabel    string   `json:"-"`
+	jsonData     []byte   `json:"-"`
+	stringData   string   `json:"-"`
+	data         any      `json:"-"`
 	Data         []byte   `json:"-"`
 	Value        string   `json:"-"`
 	Meta         Meta     `json:"-"`
@@ -133,14 +136,14 @@ func NewField(label string) *Field {
 
 func NewCollection(label string) *Field {
 	field := NewField(label)
-	field.IsColumn = true
+	field.IsCollection = true
 	field.Meta = NewMetaCollection()
 	return field
 }
 
 func NewItem(label string) *Field {
 	field := NewField(label)
-	field.IsColumn = true
+	field.IsItem = true
 	field.Meta = NewMetaItem()
 	return field
 }
@@ -157,6 +160,21 @@ func (f *Field) SetCalibreLabel(label string) *Field {
 	return f
 }
 
+func (f *Field) setJsonData(data []byte) *Field {
+	f.jsonData = data
+	return f
+}
+
+func (f *Field) SetData(data any) *Field {
+	f.data = data
+	return f
+}
+
+func (f *Field) setStringData(data string) *Field {
+	f.stringData = data
+	return f
+}
+
 func (f *Field) SetIsEditable() *Field {
 	f.IsEditable = true
 	return f
@@ -169,6 +187,11 @@ func (f *Field) SetIsMultiple() *Field {
 
 func (f *Field) SetIsNames() *Field {
 	f.IsNames = true
+	return f
+}
+
+func (f *Field) SetIsCustom() *Field {
+	f.IsCustom = true
 	return f
 }
 
@@ -197,11 +220,32 @@ func (f *Field) SetKind(kind string) *Field {
 	return f
 }
 
-func (f *Field) Index() int {
+func (f *Field) GetIndex() int {
 	return f.idx
 }
 
-func (f *Field) SetMeta(data string) *Field {
+func (f *Field) SetMeta(m Meta) *Field {
+	f.Meta = m
+	return f
+}
+
+func (f *Field) ParseData() *Field {
+	//if f.stringData != "" {
+	//  f.SetStringMeta(f.stringData)
+	//}
+
+	//if len(f.jsonData) > 0 {
+	//  err := f.Meta.UnmarshalJSON(f.jsonData)
+	//  if err != nil {
+	//    log.Fatal(err)
+	//  }
+	//}
+
+	f.Meta.ParseData(f)
+	return f
+}
+
+func (f *Field) SetStringMeta(data string) *Field {
 	var meta Meta
 	switch {
 	case f.IsCollection:
@@ -243,13 +287,13 @@ func (f *Field) Col() *Column {
 	return f.Meta.(*Column)
 }
 
-func (f *Field) UnmarshalJSON(d []byte) error {
-	err := f.Meta.UnmarshalJSON(d)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+//func (f *Field) UnmarshalJSON(d []byte) error {
+//  err := f.Meta.UnmarshalJSON(d)
+//  if err != nil {
+//    return err
+//  }
+//  return nil
+//}
 
 func (f *Fields) ParseDBFieldMeta(meta, display json.RawMessage) {
 	err := json.Unmarshal(display, &f.displayFields)
@@ -362,34 +406,86 @@ func defaultFieldsIdx() map[string]int {
 
 func defaultFields() []*Field {
 	return []*Field{
-		NewCollection("authors").SetIndex(authors).SetIsCategory().SetIsMultiple().SetIsEditable().SetIsNames(),
-		NewColumn("authorSort").SetCalibreLabel("author_sort").SetIndex(authorSort).SetIsEditable(),
-		NewColumn("description").SetCalibreLabel("comments").SetIndex(description).SetIsEditable(),
-		NewColumn("cover").SetIndex(cover).SetIsEditable(),
-		NewCollection("formats").SetIndex(formats).SetIsCategory().SetIsMultiple().SetIsEditable(),
+		NewCollection("authors").
+			SetIndex(authors).
+			SetIsCategory().
+			SetIsMultiple().
+			SetIsEditable().
+			SetIsNames(),
+		NewColumn("authorSort").
+			SetCalibreLabel("author_sort").
+			SetIndex(authorSort).
+			SetIsEditable(),
+		NewColumn("description").
+			SetCalibreLabel("comments").
+			SetIndex(description).
+			SetIsEditable(),
+		NewItem("cover").
+			SetIndex(cover).
+			SetIsEditable(),
+		NewCollection("formats").
+			SetIndex(formats).
+			SetIsCategory().
+			SetIsMultiple().
+			SetIsEditable(),
 		NewColumn("id").SetIndex(id),
-		NewCollection("identifiers").SetIndex(identifiers).SetIsCategory().SetIsMultiple().SetIsEditable(),
-		NewCollection("languages").SetIndex(languages).SetIsCategory().SetIsMultiple().SetIsEditable(),
+		NewCollection("identifiers").
+			SetIndex(identifiers).
+			SetIsCategory().
+			SetIsMultiple().
+			SetIsEditable(),
+		NewCollection("languages").
+			SetIndex(languages).
+			SetIsCategory().
+			SetIsMultiple().
+			SetIsEditable(),
 		NewColumn("library").SetIndex(library),
-		NewColumn("modified").SetCalibreLabel("last_modified").SetIndex(modified),
+		NewColumn("modified").
+			SetCalibreLabel("last_modified").
+			SetIndex(modified),
 		NewColumn("path").SetIndex(path),
-		NewColumn("published").SetCalibreLabel("pubdate").SetIndex(published).SetIsEditable(),
-		NewItem("publisher").SetIndex(publisher).SetIsEditable().SetIsCategory(),
-		NewColumn("rating").SetIndex(rating).SetIsCategory().SetIsEditable(),
-		NewItem("series").SetIndex(series).SetIsEditable().SetIsCategory(),
-		NewColumn("position").SetCalibreLabel("series_index").SetIndex(position).SetIsEditable(),
-		NewColumn("sortAs").SetCalibreLabel("sort").SetIndex(sortAs).SetIsEditable(),
-		NewCollection("tags").SetIndex(tags).SetIsCategory().SetIsMultiple().SetIsEditable(),
-		NewColumn("added").SetCalibreLabel("timestamp").SetIndex(added),
-		NewColumn("title").SetIndex(title).SetIsEditable(),
-		NewColumn("titleAndSeries").SetIndex(titleAndSeries).SetIsEditable(),
-		NewColumn("added").SetCalibreLabel("timestamp").SetIndex(added),
+		NewColumn("published").
+			SetCalibreLabel("pubdate").
+			SetIndex(published).
+			SetIsEditable(),
+		NewItem("publisher").
+			SetIndex(publisher).
+			SetIsEditable().
+			SetIsCategory(),
+		NewColumn("rating").
+			SetIndex(rating).
+			SetIsCategory().
+			SetIsEditable(),
+		NewItem("series").
+			SetIndex(series).
+			SetIsCategory().
+			SetIsEditable(),
+		NewColumn("position").
+			SetCalibreLabel("series_index").
+			SetIndex(position).
+			SetIsEditable(),
+		NewColumn("sortAs").
+			SetCalibreLabel("sort").
+			SetIndex(sortAs).
+			SetIsEditable(),
+		NewCollection("tags").
+			SetIndex(tags).
+			SetIsCategory().
+			SetIsMultiple().
+			SetIsEditable(),
+		NewColumn("added").
+			SetCalibreLabel("timestamp").
+			SetIndex(added),
+		NewColumn("title").
+			SetIndex(title).
+			SetIsEditable(),
+		NewColumn("titleAndSeries").
+			SetIndex(titleAndSeries).
+			SetIsEditable(),
 		NewColumn("uri").SetIndex(uri),
 		NewColumn("uuid").SetIndex(uuid),
-		&Field{
-			idx:          custCols,
-			CalibreLabel: "custom_columns",
-			JsonLabel:    "customColumns",
-		},
+		NewField("customColumns").
+			SetCalibreLabel("custom_columns").
+			SetIndex(custCols),
 	}
 }

@@ -62,15 +62,15 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 		book := NewBook()
 		for key, value := range b {
 			field := book.GetField(key)
+			field.SetData(value)
 
 			if key != "customColumns" {
-				err := field.Meta.UnmarshalJSON(value)
-				if err != nil {
-					return err
-				}
+				field.ParseData()
+				//err := field.Meta.UnmarshalJSON(value)
+				//if err != nil {
+				//  return err
+				//}
 			}
-
-			field.Data = value
 
 			if key != field.JsonLabel {
 				return fmt.Errorf("json: %v\n field meta: %v\n", key, field.JsonLabel)
@@ -84,13 +84,7 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 				}
 
 				for name, cdata := range custom {
-					col := &Field{
-						IsCustom:     true,
-						Data:         cdata["data"],
-						CalibreLabel: name,
-						JsonLabel:    name,
-						IsEditable:   true,
-					}
+					col := NewField(name).SetIsCustom().SetIsEditable().SetData(cdata["data"])
 
 					meta := make(map[string]string)
 					err = json.Unmarshal(cdata["meta"], &meta)
@@ -100,20 +94,22 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 
 					switch meta["is_multiple"] {
 					case "true":
-						col.IsMultiple = true
+						col.SetIsMultiple()
+						//col.IsMultiple = true
 						col.IsCollection = true
-						col.Meta = &Collection{}
+						//col.Meta = &Collection{}
+						col.SetMeta(NewMetaCollection())
 					case "false":
 						col.IsColumn = true
-						col.Meta = NewMetaColumn()
+						col.SetMeta(NewMetaColumn())
 					}
-					err = col.Meta.UnmarshalJSON(col.Data)
-					if err != nil {
-						return err
-					}
+					col.ParseData()
+					//if err != nil {
+					//  return err
+					//}
 
 					if meta["is_names"] == "true" {
-						col.IsNames = true
+						col.SetIsNames()
 					}
 
 					book.AddField(col)
@@ -144,7 +140,7 @@ type Meta interface {
 	String(f *Field) string
 	URL(f *Field) string
 	IsNull() bool
-	UnmarshalJSON(b []byte) error
+	ParseData(f *Field)
 }
 
 func NewBook() *Book {
@@ -241,6 +237,19 @@ func (c *Collection) IsNull() bool {
 	return len(c.data) == 0
 }
 
+func (c *Collection) ParseData(f *Field) {
+	switch d := f.data.(type) {
+	case string:
+		c = c.Split(d, f.IsNames)
+	case json.RawMessage:
+		if len(d) > 0 {
+			if err := json.Unmarshal(d, &c.data); err != nil {
+				log.Fatalf("poot failed: %v\n", err)
+			}
+		}
+	}
+}
+
 func (c *Collection) UnmarshalJSON(b []byte) error {
 	if len(b) > 0 {
 		if err := json.Unmarshal(b, &c.data); err != nil {
@@ -294,9 +303,22 @@ func (i Item) TotalBooks() int {
 	return 0
 }
 
+func (i *Item) ParseData(f *Field) {
+	switch d := f.data.(type) {
+	case string:
+		i = i.Set("value", d)
+	case json.RawMessage:
+		if len(d) > 0 {
+			if err := json.Unmarshal(d, &i.data); err != nil {
+				fmt.Printf("item failed: %v\n", err)
+			}
+		}
+	}
+}
+
 func (i *Item) UnmarshalJSON(b []byte) error {
 	if len(b) > 0 {
-		i.data = make(map[string]string)
+		//i.data = make(map[string]string)
 		if err := json.Unmarshal(b, &i.data); err != nil {
 			fmt.Printf("collection failed: %v\n", err)
 			return err
@@ -313,9 +335,9 @@ func NewMetaColumn() *Column {
 }
 
 func (c *Column) String(f *Field) string {
-	if len(f.Data) > 0 {
+	if len(f.jsonData) > 0 {
 		var s string
-		if err := json.Unmarshal(f.Data, &s); err != nil {
+		if err := json.Unmarshal(f.jsonData, &s); err != nil {
 			fmt.Printf("%v failed: %v\n", f.JsonLabel, err)
 		}
 		return s
@@ -329,6 +351,14 @@ func (c *Column) URL(f *Field) string {
 }
 
 func (c *Column) IsNull() bool { return string(*c) == "" }
+
+func (c *Column) ParseData(f *Field) {
+	switch d := f.data.(type) {
+	case string:
+		c.Set(d)
+	case json.RawMessage:
+	}
+}
 
 func (c *Column) UnmarshalJSON(b []byte) error { return nil }
 

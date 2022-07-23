@@ -16,7 +16,8 @@ var testCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		lib := urbooks.Lib(lib)
 		println(lib.Name)
-		req = urbooks.NewRequest(lib.Name).From("books").Limit("1")
+		req = urbooks.NewRequest(lib.Name).From("books").Find("333")
+		//req = urbooks.NewRequest(lib.Name).From("authors").Limit("1")
 		//req = buildRequest(args)
 		//somebooks(req)
 		//somecat(req)
@@ -24,18 +25,19 @@ var testCmd = &cobra.Command{
 		//fmt.Println(string(j))
 		parsed, err := urbooks.ParseBookResponse(j)
 		//cat, err := urbooks.ParseCatResponse(j)
-		//err := json.Unmarshal(j, &cat)
 		if err != nil {
 			log.Fatal(err)
 		}
 		//fmt.Printf("category %+V\n", cat.Items())
+		fmt.Printf("%+V\n", parsed.Books()[0].GetField("series").String())
+		fmt.Printf("%+V\n", parsed.Books()[0].GetField("publisher"))
+		//fmt.Printf("%+V\n", parsed.Books()[0].GetField("cover"))
 
 		//if err != nil {
 		//log.Fatal(err)
 		//}
 		//bb := parsed[0]
 
-		fmt.Printf("%+v\n", parsed.Books()[0].GetField("identifiers"))
 		//parsed.ConvertTo("ffmeta").Print()
 		//b := book.NewBook()
 		//b.NewField("narrators").SetKind("collection").SetMeta("forever")

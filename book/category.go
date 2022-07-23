@@ -42,18 +42,10 @@ func ParseCategory(r []byte) (*Category, error) {
 	return cat, nil
 }
 
-func (c *Category) Data() *Collection {
+func (c *Category) GetMeta() *Collection {
 	return c.Meta.(*Collection)
 }
 
 func (c *Category) EachItem() []*Item {
-	return c.Data().EachItem()
+	return c.GetMeta().EachItem()
 }
-
-//func (c *Category) UnmarshalJSON(d []byte) error {
-//  err := c.UnmarshalJSON(d)
-//  if err != nil {
-//    return err
-//  }
-//  return nil
-//}
