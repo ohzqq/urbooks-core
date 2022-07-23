@@ -230,18 +230,10 @@ func (f *Field) SetMeta(m Meta) *Field {
 }
 
 func (f *Field) ParseData() *Field {
-	//if f.stringData != "" {
-	//  f.SetStringMeta(f.stringData)
-	//}
-
-	//if len(f.jsonData) > 0 {
-	//  err := f.Meta.UnmarshalJSON(f.jsonData)
-	//  if err != nil {
-	//    log.Fatal(err)
-	//  }
-	//}
-
-	f.Meta.ParseData(f)
+	err := f.Meta.ParseData(f)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return f
 }
 

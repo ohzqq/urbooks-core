@@ -95,9 +95,7 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 					switch meta["is_multiple"] {
 					case "true":
 						col.SetIsMultiple()
-						//col.IsMultiple = true
 						col.IsCollection = true
-						//col.Meta = &Collection{}
 						col.SetMeta(NewMetaCollection())
 					case "false":
 						col.IsColumn = true
@@ -140,7 +138,7 @@ type Meta interface {
 	String(f *Field) string
 	URL(f *Field) string
 	IsNull() bool
-	ParseData(f *Field)
+	ParseData(f *Field) error
 }
 
 func NewBook() *Book {
@@ -237,24 +235,16 @@ func (c *Collection) IsNull() bool {
 	return len(c.data) == 0
 }
 
-func (c *Collection) ParseData(f *Field) {
+func (c *Collection) ParseData(f *Field) error {
 	switch d := f.data.(type) {
 	case string:
 		c = c.Split(d, f.IsNames)
+		return nil
 	case json.RawMessage:
 		if len(d) > 0 {
 			if err := json.Unmarshal(d, &c.data); err != nil {
-				log.Fatalf("poot failed: %v\n", err)
+				return fmt.Errorf("collection failed: %v\n", err)
 			}
-		}
-	}
-}
-
-func (c *Collection) UnmarshalJSON(b []byte) error {
-	if len(b) > 0 {
-		if err := json.Unmarshal(b, &c.data); err != nil {
-			fmt.Printf("poot failed: %v\n", err)
-			return err
 		}
 	}
 	return nil
@@ -303,17 +293,20 @@ func (i Item) TotalBooks() int {
 	return 0
 }
 
-func (i *Item) ParseData(f *Field) {
+func (i *Item) ParseData(f *Field) error {
 	switch d := f.data.(type) {
 	case string:
-		i = i.Set("value", d)
+		i.Set("value", d)
+		return nil
 	case json.RawMessage:
 		if len(d) > 0 {
 			if err := json.Unmarshal(d, &i.data); err != nil {
-				fmt.Printf("item failed: %v\n", err)
+				return fmt.Errorf("item failed: %v\n", err)
 			}
+			return fmt.Errorf("no data:")
 		}
 	}
+	return nil
 }
 
 func (i *Item) UnmarshalJSON(b []byte) error {
