@@ -118,7 +118,7 @@ func (lib *Lib) queryDB() {
 	var (
 		query, args = lib.queryStmt()
 	)
-	//fmt.Printf("%v\n", query)
+	//fmt.Println(query)
 
 	rows, err := lib.db.Queryx(query, args...)
 	if err != nil {

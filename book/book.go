@@ -64,16 +64,12 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 			field := book.GetField(key)
 			field.SetData(value)
 
-			if key != "customColumns" {
-				field.ParseData()
-				//err := field.Meta.UnmarshalJSON(value)
-				//if err != nil {
-				//  return err
-				//}
-			}
-
 			if key != field.JsonLabel {
 				return fmt.Errorf("json: %v\n field meta: %v\n", key, field.JsonLabel)
+			}
+
+			if key != "customColumns" {
+				field.ParseData()
 			}
 
 			if key == "customColumns" {
@@ -213,9 +209,9 @@ func (c *Collection) Join(isNames bool) string {
 	}
 }
 
-func (c *Collection) Split(value string, names bool) *Collection {
+func (c *Collection) Split(value string, isNames bool) *Collection {
 	sep := itemSep
-	if names {
+	if isNames {
 		sep = nameSep
 	}
 	for _, val := range strings.Split(value, sep) {

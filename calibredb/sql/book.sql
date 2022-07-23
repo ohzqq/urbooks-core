@@ -6,5 +6,5 @@ SELECT
 {{template "MultiCats" . -}}
 {{template "CustCol" .}}
 JSON_QUOTE("{{.Name}}") library
-FROM books, custom_columns
+FROM books
 {{end}}
