@@ -35,7 +35,7 @@ var testCmd = &cobra.Command{
 		//}
 		//bb := parsed[0]
 
-		fmt.Printf("%+v\n", parsed.Books()[0].GetFile("cover"))
+		fmt.Printf("%+v\n", parsed.Books()[0].GetField("identifiers"))
 		//parsed.ConvertTo("ffmeta").Print()
 		//b := book.NewBook()
 		//b.NewField("narrators").SetKind("collection").SetMeta("forever")

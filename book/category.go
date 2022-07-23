@@ -12,7 +12,7 @@ type Category struct {
 
 func NewCategory(name string) *Category {
 	return &Category{
-		Field: NewField(name).SetKind("collection"),
+		Field: NewCollection(name),
 	}
 }
 

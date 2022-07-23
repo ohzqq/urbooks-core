@@ -105,7 +105,7 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 						col.Meta = &Collection{}
 					case "false":
 						col.IsColumn = true
-						col.Meta = NewColumn()
+						col.Meta = NewMetaColumn()
 					}
 					err = col.Meta.UnmarshalJSON(col.Data)
 					if err != nil {
@@ -181,12 +181,12 @@ type Collection struct {
 	data []*Item
 }
 
-func NewCollection() *Collection {
+func NewMetaCollection() *Collection {
 	return &Collection{}
 }
 
 func (c *Collection) AddItem() *Item {
-	item := NewItem()
+	item := NewMetaItem()
 	c.data = append(c.data, item)
 	return item
 }
@@ -255,7 +255,7 @@ type Item struct {
 	data map[string]string
 }
 
-func NewItem() *Item {
+func NewMetaItem() *Item {
 	return &Item{data: make(map[string]string)}
 }
 
@@ -307,7 +307,7 @@ func (i *Item) UnmarshalJSON(b []byte) error {
 
 type Column string
 
-func NewColumn() *Column {
+func NewMetaColumn() *Column {
 	ms := Column("")
 	return &ms
 }

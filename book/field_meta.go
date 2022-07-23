@@ -3,6 +3,7 @@ package book
 import (
 	"encoding/json"
 	"log"
+	"strings"
 )
 
 type Fields struct {
@@ -126,22 +127,72 @@ func NewField(label string) *Field {
 	return &Field{
 		JsonLabel:    label,
 		CalibreLabel: label,
-		IsCustom:     true,
-		//IsCustom:     strings.HasPrefix(label, "#"),
+		IsCustom:     strings.HasPrefix(label, "#"),
 	}
+}
+
+func NewCollection(label string) *Field {
+	field := NewField(label)
+	field.IsColumn = true
+	field.Meta = NewMetaCollection()
+	return field
+}
+
+func NewItem(label string) *Field {
+	field := NewField(label)
+	field.IsColumn = true
+	field.Meta = NewMetaItem()
+	return field
+}
+
+func NewColumn(label string) *Field {
+	field := NewField(label)
+	field.IsColumn = true
+	field.Meta = NewMetaColumn()
+	return field
+}
+
+func (f *Field) SetCalibreLabel(label string) *Field {
+	f.CalibreLabel = label
+	return f
+}
+
+func (f *Field) SetIsEditable() *Field {
+	f.IsEditable = true
+	return f
+}
+
+func (f *Field) SetIsMultiple() *Field {
+	f.IsMultiple = true
+	return f
+}
+
+func (f *Field) SetIsNames() *Field {
+	f.IsNames = true
+	return f
+}
+
+func (f *Field) SetIsCategory() *Field {
+	f.IsCategory = true
+	return f
+}
+
+func (f *Field) SetIndex(idx int) *Field {
+	f.idx = idx
+	return f
 }
 
 func (f *Field) SetKind(kind string) *Field {
 	switch kind {
 	case "collection":
 		f.IsCollection = true
-		f.Meta = NewCollection()
+		f.Meta = NewMetaCollection()
 	case "item":
 		f.IsItem = true
-		f.Meta = NewItem()
+		f.Meta = NewMetaItem()
 	case "column":
 		f.IsColumn = true
-		f.Meta = NewColumn()
+		f.Meta = NewMetaColumn()
 	}
 	return f
 }
@@ -311,200 +362,30 @@ func defaultFieldsIdx() map[string]int {
 
 func defaultFields() []*Field {
 	return []*Field{
-		&Field{
-			idx:          authors,
-			CalibreLabel: "authors",
-			JsonLabel:    "authors",
-			Meta:         NewCollection(),
-			IsCollection: true,
-			IsCategory:   true,
-			IsEditable:   true,
-			IsMultiple:   true,
-			IsNames:      true,
-		},
-		&Field{
-			idx:          authorSort,
-			CalibreLabel: "author_sort",
-			JsonLabel:    "authorSort",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-			IsEditable:   true,
-		},
-		&Field{
-			idx:          description,
-			CalibreLabel: "comments",
-			JsonLabel:    "description",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-			IsEditable:   true,
-		},
-		&Field{
-			idx:          cover,
-			CalibreLabel: "cover",
-			JsonLabel:    "cover",
-			Meta:         NewItem(),
-			IsItem:       true,
-			IsEditable:   true,
-		},
-		&Field{
-			idx:          formats,
-			CalibreLabel: "formats",
-			JsonLabel:    "formats",
-			Meta:         NewCollection(),
-			IsCollection: true,
-			IsCategory:   true,
-			IsEditable:   true,
-			IsMultiple:   true,
-			CategorySort: "format",
-		},
-		&Field{
-			idx:          id,
-			CalibreLabel: "id",
-			JsonLabel:    "id",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-		},
-		&Field{
-			idx:          identifiers,
-			CalibreLabel: "identifiers",
-			JsonLabel:    "identifiers",
-			Meta:         NewCollection(),
-			IsCollection: true,
-			IsCategory:   true,
-			IsEditable:   true,
-			IsMultiple:   true,
-			CategorySort: "type",
-		},
-		&Field{
-			idx:          languages,
-			CalibreLabel: "languages",
-			JsonLabel:    "languages",
-			Meta:         NewCollection(),
-			IsCollection: true,
-			IsCategory:   true,
-			IsEditable:   true,
-			IsMultiple:   true,
-		},
-		&Field{
-			idx:          library,
-			CalibreLabel: "library",
-			JsonLabel:    "library",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-		},
-		&Field{
-			idx:          modified,
-			CalibreLabel: "last_modified",
-			JsonLabel:    "modified",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-			IsEditable:   true,
-		},
-		&Field{
-			idx:          path,
-			CalibreLabel: "path",
-			JsonLabel:    "path",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-		},
-		&Field{
-			idx:          published,
-			CalibreLabel: "pubdate",
-			JsonLabel:    "published",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-			IsEditable:   true,
-		},
-		&Field{
-			idx:          publisher,
-			CalibreLabel: "publisher",
-			JsonLabel:    "publisher",
-			Meta:         NewItem(),
-			IsItem:       true,
-			IsCategory:   true,
-			IsEditable:   true,
-		},
-		&Field{
-			idx:          rating,
-			CalibreLabel: "rating",
-			JsonLabel:    "rating",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-			IsCategory:   true,
-			IsEditable:   true,
-			IsMultiple:   true,
-		},
-		&Field{
-			idx:          series,
-			CalibreLabel: "series",
-			JsonLabel:    "series",
-			Meta:         NewItem(),
-			IsItem:       true,
-			IsCategory:   true,
-			IsEditable:   true,
-		},
-		&Field{
-			idx:          position,
-			CalibreLabel: "series_index",
-			JsonLabel:    "position",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-			IsEditable:   true,
-		},
-		&Field{
-			idx:          sortAs,
-			CalibreLabel: "sort",
-			JsonLabel:    "sortAs",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-			IsEditable:   true,
-		},
-		&Field{
-			idx:          tags,
-			CalibreLabel: "tags",
-			JsonLabel:    "tags",
-			Meta:         NewCollection(),
-			IsCollection: true,
-			IsCategory:   true,
-			IsEditable:   true,
-			IsMultiple:   true,
-		},
-		&Field{
-			idx:          added,
-			CalibreLabel: "timestamp",
-			JsonLabel:    "added",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-		},
-		&Field{
-			idx:          title,
-			CalibreLabel: "title",
-			JsonLabel:    "title",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-			IsEditable:   true,
-		},
-		&Field{
-			idx:          titleAndSeries,
-			CalibreLabel: "titleAndSeries",
-			JsonLabel:    "titleAndSeries",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-		},
-		&Field{
-			idx:          uri,
-			CalibreLabel: "uri",
-			JsonLabel:    "uri",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-		},
-		&Field{
-			idx:          uuid,
-			CalibreLabel: "uuid",
-			JsonLabel:    "uuid",
-			Meta:         NewColumn(),
-			IsColumn:     true,
-		},
+		NewCollection("authors").SetIndex(authors).SetIsCategory().SetIsMultiple().SetIsEditable().SetIsNames(),
+		NewColumn("authorSort").SetCalibreLabel("author_sort").SetIndex(authorSort).SetIsEditable(),
+		NewColumn("description").SetCalibreLabel("comments").SetIndex(description).SetIsEditable(),
+		NewColumn("cover").SetIndex(cover).SetIsEditable(),
+		NewCollection("formats").SetIndex(formats).SetIsCategory().SetIsMultiple().SetIsEditable(),
+		NewColumn("id").SetIndex(id),
+		NewCollection("identifiers").SetIndex(identifiers).SetIsCategory().SetIsMultiple().SetIsEditable(),
+		NewCollection("languages").SetIndex(languages).SetIsCategory().SetIsMultiple().SetIsEditable(),
+		NewColumn("library").SetIndex(library),
+		NewColumn("modified").SetCalibreLabel("last_modified").SetIndex(modified),
+		NewColumn("path").SetIndex(path),
+		NewColumn("published").SetCalibreLabel("pubdate").SetIndex(published).SetIsEditable(),
+		NewItem("publisher").SetIndex(publisher).SetIsEditable().SetIsCategory(),
+		NewColumn("rating").SetIndex(rating).SetIsCategory().SetIsEditable(),
+		NewItem("series").SetIndex(series).SetIsEditable().SetIsCategory(),
+		NewColumn("position").SetCalibreLabel("series_index").SetIndex(position).SetIsEditable(),
+		NewColumn("sortAs").SetCalibreLabel("sort").SetIndex(sortAs).SetIsEditable(),
+		NewCollection("tags").SetIndex(tags).SetIsCategory().SetIsMultiple().SetIsEditable(),
+		NewColumn("added").SetCalibreLabel("timestamp").SetIndex(added),
+		NewColumn("title").SetIndex(title).SetIsEditable(),
+		NewColumn("titleAndSeries").SetIndex(titleAndSeries).SetIsEditable(),
+		NewColumn("added").SetCalibreLabel("timestamp").SetIndex(added),
+		NewColumn("uri").SetIndex(uri),
+		NewColumn("uuid").SetIndex(uuid),
 		&Field{
 			idx:          custCols,
 			CalibreLabel: "custom_columns",
