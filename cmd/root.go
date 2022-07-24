@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 
@@ -66,11 +67,13 @@ func initConfig() {
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		urbooks.InitConfig(viper.GetStringMapString("library_options"))
-		urbooks.InitLibraries(viper.Sub("libraries"), viper.GetStringMapString("libraries"), false)
+		urbooks.InitLibraries(viper.Sub("libraries"), false)
 
 		urbooks.CfgCdb(viper.Sub("calibre"))
 		if lib == "" {
 			lib = urbooks.DefaultLib().Name
 		}
+	} else {
+		log.Fatal(err)
 	}
 }

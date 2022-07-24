@@ -1,8 +1,8 @@
 package urbooks
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,8 +11,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/spf13/viper"
 )
-
-var _ = fmt.Sprintf("%v", "")
 
 func Cfg() *config {
 	return cfg
@@ -24,6 +22,15 @@ type libCfg struct {
 	Default    bool
 	Audiobooks bool
 	WebOpts    webOpts `mapstructure:"website_options"`
+}
+
+func newLibCfg(v *viper.Viper, name string) *libCfg {
+	cfg := &libCfg{Name: name}
+	err := v.Sub(name).Unmarshal(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return cfg
 }
 
 type webOpts struct {
@@ -57,19 +64,16 @@ func InitConfig(opts map[string]string) {
 	cfg.Opts = opts
 }
 
-func InitLibraries(v *viper.Viper, libs map[string]string, web bool) {
+func InitLibraries(v *viper.Viper, web bool) {
+	libs := v.AllSettings()
 	if len(libs) == 0 {
 		log.Fatal("no libraries list in config")
 	}
 	for lib, _ := range libs {
 		Cfg().list = append(Cfg().list, lib)
 
-		libcfg := libCfg{}
-		libcfg.Name = lib
-		err := v.Sub(lib).Unmarshal(&libcfg)
-		if err != nil {
-			log.Fatal(err)
-		}
+		libcfg := newLibCfg(v, lib)
+
 		var libPath string
 		switch web {
 		case true:
@@ -78,13 +82,14 @@ func InitLibraries(v *viper.Viper, libs map[string]string, web bool) {
 			libPath = filepath.Join(libcfg.Path, lib)
 		}
 
-		Cfg().libCfg[lib] = &libcfg
+		Cfg().libCfg[lib] = libcfg
 
 		if _, err := os.Stat(libPath); errors.Is(err, os.ErrNotExist) {
 			log.Fatalf("%v does not exist or cannot be found at %v, check the path in the config", libcfg.Name, libPath)
 		}
 
 		newLib := NewLibrary(lib, libPath)
+		newLib.ConnectDB()
 		newLib.DefaultRequest = NewRequest(lib).From("books")
 
 		if sort := Cfg().Opts["sort"]; sort != "" {
@@ -97,6 +102,24 @@ func InitLibraries(v *viper.Viper, libs map[string]string, web bool) {
 
 		Cfg().libs[lib] = newLib
 
-		newLib.getDBPreferences()
+		newLib.GetDBPreferences()
 	}
+}
+
+func parseHiddenCategories(d json.RawMessage) []string {
+	var hidden []string
+	err := json.Unmarshal(d, &hidden)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return hidden
+}
+
+func parseSavedSearches(d json.RawMessage) map[string]string {
+	var searches map[string]string
+	err := json.Unmarshal(d, &searches)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return searches
 }

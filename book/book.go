@@ -24,7 +24,7 @@ func ParseBooks(r []byte) (Books, error) {
 	var resp map[string]json.RawMessage
 	err = json.Unmarshal(r, &resp)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshal response error: %v\n", err)
+		return nil, fmt.Errorf("pkg book unmarshal response error: %v\n", err)
 	}
 
 	var rmeta map[string]string

@@ -178,9 +178,9 @@ func (bm BookMeta) StringMapToBook() *Book {
 
 func (b *Book) opfFields() []string {
 	fields := []string{"authors", "tags", "languages", "identifiers", "title", "published", "description", "series"}
-	for _, f := range Lib(b.Get("library").Value()).DB.CustomColumns() {
-		fields = append(fields, f)
-	}
+	//for _, f := range Lib(b.Get("library").Value()).DB.CustomColumns() {
+	//  fields = append(fields, f)
+	//}
 	return fields
 }
 

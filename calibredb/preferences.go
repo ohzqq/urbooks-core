@@ -1,9 +1,11 @@
 package calibredb
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"strings"
+	"text/template"
 
 	"golang.org/x/exp/slices"
 )
@@ -145,6 +147,15 @@ func (lib *Lib) getFieldMeta(f, v string) string {
 		}
 	}
 	return ""
+}
+
+func (lib *Lib) GetPreferences() json.RawMessage {
+	stmt := lib.renderSqlTmpl("Prefs")
+	row := lib.db.QueryRowx(stmt)
+	var dbPref []byte
+	row.Scan(&dbPref)
+
+	return json.RawMessage(dbPref)
 }
 
 func (lib *Lib) getPreferences() {
@@ -293,6 +304,48 @@ func newLibFields(lib string) *dbFieldTypes {
 	}
 }
 
+func (lib *Lib) AllDBFields() []string {
+	fields := DefaultCalibreFieldList()
+	for _, c := range lib.Fields.CustomCol {
+		fields = append(fields, c)
+	}
+	return fields
+}
+
+func (lib *Lib) RenderFieldMetaSql() string {
+	var meta []string
+	for _, field := range lib.AllDBFields() {
+		var sql bytes.Buffer
+		err := lib.bookTmpl.ExecuteTemplate(&sql, "fieldMeta", field)
+		if err != nil {
+			log.Println("executing template:", err)
+		}
+		meta = append(meta, sql.String())
+	}
+	return strings.Join(meta, ",")
+}
+
+func (lib *Lib) fieldMetaStmt() string {
+
+	tmpl := template.Must(template.New("").Parse(fieldMetaTmpl))
+	var stmt bytes.Buffer
+	err := tmpl.Execute(&stmt, lib.RenderFieldMetaSql())
+	if err != nil {
+		log.Println("executing template:", err)
+	}
+
+	return stmt.String()
+}
+
+const fieldMetaTmpl = `SELECT
+JSON_OBJECT(
+{{.}}
+) fieldMeta
+
+FROM preferences 
+WHERE key = 'field_metadata'
+`
+
 func GetTableColumns(f, lib string) map[string]string {
 	fields := map[string]map[string]string{
 		"authors": map[string]string{
@@ -335,7 +388,7 @@ func GetTableColumns(f, lib string) map[string]string {
 	return fields[f]
 }
 
-func CalibreFieldList() []string {
+func DefaultCalibreFieldList() []string {
 	var fields []string
 	for _, f := range defaultFields.MultiCats {
 		fields = append(fields, f)
@@ -359,7 +412,7 @@ func CalibreFieldList() []string {
 }
 
 func FieldList() []string {
-	fields := CalibreFieldList()
+	fields := DefaultCalibreFieldList()
 	for _, f := range defaultFields.urCols {
 		fields = append(fields, f)
 	}

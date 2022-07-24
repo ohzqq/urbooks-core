@@ -2,7 +2,9 @@ package urbooks
 
 import (
 	//"strings"
+	"encoding/json"
 	"log"
+
 	//"strconv"
 
 	"fmt"
@@ -14,6 +16,17 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+type Request struct {
+	path       []string
+	endpoint   string
+	prefix     string
+	resourceID string
+	file       string
+	query      url.Values
+	lib        string
+	library    *Library
+}
+
 func Get(u string) ([]byte, error) {
 	url, err := url.Parse(u)
 	if err != nil {
@@ -24,7 +37,7 @@ func Get(u string) ([]byte, error) {
 	if url.Query().Has("library") {
 		l := url.Query().Get("library")
 		if slices.Contains(Libraries(), l) {
-			lib = Lib(l)
+			lib = GetLib(l)
 		} else {
 			return []byte{}, fmt.Errorf("She %v doesn't even go here!", l)
 		}
@@ -36,21 +49,12 @@ func Get(u string) ([]byte, error) {
 	return lib.DB.Get(url.String()), nil
 }
 
-type Request struct {
-	path       []string
-	endpoint   string
-	prefix     string
-	resourceID string
-	file       string
-	query      url.Values
-	lib        string
-}
-
 func NewRequest(l string) *Request {
 	req := &Request{}
 	req.query = url.Values{}
 	req.query.Add("library", l)
 	req.lib = l
+	req.library = GetLib(l)
 	//fmt.Printf("%+V\n\n", req.query)
 	return req
 }
@@ -94,10 +98,30 @@ func (r *Request) Get(key string) string {
 }
 
 func (r *Request) Response() []byte {
-	lib := Lib(r.lib)
+	lib := GetLib(r.lib)
 	//fmt.Printf("%+v\n", lib)
 	return lib.DB.Get(r.String())
 }
+
+func (r *Request) GetResponse() Response {
+	//var resp response
+	resp := Response{}
+	err := json.Unmarshal(r.library.DB.Get(r.String()), &resp)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return resp
+}
+
+//func (r *Request) UnmarshalBooks() BookResponse {
+//  lib := GetLib(r.lib)
+//  resp := Response{}
+//  err := json.Unmarshal(lib.DB.Get(r.String()), &resp)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//  return resp
+//}
 
 func (r *Request) From(table string) *Request {
 	r.endpoint = table

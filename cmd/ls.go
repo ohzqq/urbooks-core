@@ -35,32 +35,25 @@ var lsCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmdLib = urbooks.Lib(lib)
-		req = buildRequest(args)
-		somebooks(req)
+		//req = buildRequest(args)
+		somebooks()
 		fmt.Printf("%+v\n", searchFields[8])
 	},
 }
 
-func buildRequest(args []string) *urbooks.Request {
-	return urbooks.NewRequest(lib).From("books").Limit("1")
-	//return cmdLib.DefaultRequest
-	//if len(args) != 0 {
-	//req = buildRequest(args)
-	//}
-	//return req
-}
+//func buildRequest(args []string) *urbooks.Request {
+//return cmdLib.Books().Limit("1")
+//return cmdLib.DefaultRequest
+//if len(args) != 0 {
+//req = buildRequest(args)
+//}
+//return req
+//}
 
-func somebooks(r *urbooks.Request) {
-	resp := makeReq(r)
-	fmt.Println(string(resp))
-	bookResp, err := urbooks.ParseBookResponse(resp)
-	if err != nil {
-		log.Fatal(err)
-	}
-	//fmt.Printf("%+v\n", bookResp)
-	for _, book := range bookResp.Books() {
-		//fmt.Println("toot")
-		fmt.Println(book.GetField("title").String())
+func somebooks() {
+	resp := cmdLib.NewRequest().From("books").Find("333").GetResponse()
+	for _, book := range resp.Books {
+		fmt.Printf("%+V\n", book.GetField("added").String())
 	}
 }
 

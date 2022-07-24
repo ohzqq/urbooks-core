@@ -17,18 +17,19 @@ import (
 )
 
 type Lib struct {
-	Name        string
-	Path        string
-	dbPath      string
-	Fields      *dbFieldTypes
-	fieldMeta   map[string]map[string]interface{}
-	Preferences *Preferences
-	CustCols    []map[string]string
-	db          *sqlx.DB
-	Request     *request
-	response    *response
-	mtx         sync.Mutex
-	bookTmpl    *template.Template
+	Name           string
+	Path           string
+	dbPath         string
+	Fields         *dbFieldTypes
+	fieldMeta      map[string]map[string]interface{}
+	shortFieldMeta map[string]map[string]bool
+	Preferences    *Preferences
+	CustCols       []map[string]string
+	db             *sqlx.DB
+	Request        *request
+	response       *response
+	mtx            sync.Mutex
+	bookTmpl       *template.Template
 }
 
 //go:embed sql/*
@@ -46,19 +47,18 @@ func NewLib(path string) *Lib {
 	lib.AllFields()
 	lib.bookTmpl = template.Must(template.New("book").Funcs(bookTmplFuncs).ParseFS(sqlTmpl, "sql/*"))
 
-	//fmt.Printf("%+v\n", lib.renderSqlTmpl("newbook"))
-	//fmt.Printf("%+v\n", lib.CustCols)
+	//fmt.Println(lib.renderSqlTmpl("Prefs"))
 	return &lib
 }
 
 var (
 	bookTmplFuncs = map[string]any{
-		"GetCalibreField":  GetCalibreField,
-		"GetJsonField":     GetJsonField,
-		"GetTableColumns":  GetTableColumns,
-		"FieldList":        FieldList,
-		"CalibreFieldList": CalibreFieldList,
-		"GetFieldMeta":     GetFieldMeta,
+		"GetCalibreField":         GetCalibreField,
+		"GetJsonField":            GetJsonField,
+		"GetTableColumns":         GetTableColumns,
+		"FieldList":               FieldList,
+		"DefaultCalibreFieldList": DefaultCalibreFieldList,
+		"GetFieldMeta":            GetFieldMeta,
 	}
 )
 
@@ -90,11 +90,15 @@ func (lib *Lib) Get(u string) []byte {
 		}
 	}
 
+	var data any
 	if lib.Request.cat == "preferences" {
-		return lib.Preferences.ToJSON()
+		data = lib.GetPreferences()
+		//return lib.GetPreferences()
+	} else {
+		data = lib.queryDB()
 	}
 
-	lib.queryDB()
+	lib.setResponseData(data)
 	json := lib.response.json()
 	return json
 }
@@ -103,6 +107,15 @@ func (lib *Lib) validEndpoint(point string) bool {
 	end := lib.Categories()
 	end = append(end, "preferences", "customColumns", "books")
 	return slices.Contains(end, point)
+}
+
+func (lib Lib) GetField(f string) *Field {
+	switch slices.Contains(lib.AllFields(), f) {
+	case true:
+		return lib.Preferences.FieldMeta[f]
+	default:
+		return &Field{Column: f, Label: f}
+	}
 }
 
 func (lib *Lib) Categories() []string {
@@ -132,7 +145,9 @@ func (lib *Lib) connectDB() *sqlx.DB {
 	return database
 }
 
-func (lib *Lib) queryDB() {
+type dbData []map[string]map[string]string
+
+func (lib *Lib) queryDB() any {
 	var (
 		query, args = lib.queryStmt()
 	)
@@ -144,13 +159,17 @@ func (lib *Lib) queryDB() {
 	}
 	defer rows.Close()
 
+	var data []map[string]field
 	for rows.Next() {
 		m := make(map[string]interface{})
 		if err := rows.MapScan(m); err != nil {
 			fmt.Errorf("Association %s", err)
 		}
-		lib.response.Data = append(lib.response.Data, convertFields(m))
+		data = append(data, convertFields(m))
+		//lib.response.Data = append(lib.response.Data, convertFields(m))
 	}
+	return data
+	//lib.response.Data = data
 }
 
 func (lib *Lib) numberOfItems() {

@@ -11,10 +11,10 @@ import (
 )
 
 type response struct {
-	Links         map[string]string  `json:"links"`
-	Data          []map[string]field `json:"data"`
-	Errors        []responseErr      `json:"errors"`
-	Meta          map[string]string  `json:"meta"`
+	Links         map[string]string `json:"links"`
+	Data          any               `json:"data"`
+	Errors        []responseErr     `json:"errors"`
+	Meta          map[string]string `json:"meta"`
 	booksInCat    string
 	mtx           sync.Mutex
 	numberOfItems int
@@ -51,6 +51,11 @@ func (lib *Lib) setResponseMeta() {
 	if lib.response.booksInCat != "" {
 		lib.response.addMeta("categoryLabel", lib.response.booksInCat)
 	}
+}
+
+func (lib *Lib) setResponseData(data any) *Lib {
+	lib.response.Data = data
+	return lib
 }
 
 func (lib *Lib) calculatePagination() {
