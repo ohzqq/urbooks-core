@@ -112,15 +112,6 @@ func (lib *Lib) validEndpoint(point string) bool {
 	return slices.Contains(end, point)
 }
 
-//func (lib Lib) GetField(f string) *Field {
-//  switch slices.Contains(lib.AllFields(), f) {
-//  case true:
-//    return lib.Preferences.FieldMeta[f]
-//  default:
-//    return &Field{Column: f, Label: f}
-//  }
-//}
-
 func (lib *Lib) Categories() []string {
 	var fields []string
 	for _, f := range defaultFields.MultiCats {

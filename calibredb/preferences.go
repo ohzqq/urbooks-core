@@ -208,9 +208,7 @@ func (lib *Lib) getPreferences() {
 	pref.library = lib.Name
 
 	lib.Preferences = &Preferences{
-		HiddenCategories: pref.parseHiddenCategories(),
-		SavedSearches:    pref.parseSavedSearches(),
-		raw:              pref,
+		raw: pref,
 	}
 
 	err = json.Unmarshal(pref.FieldMeta, &lib.fieldMeta)
