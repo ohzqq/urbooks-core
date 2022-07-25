@@ -217,47 +217,6 @@ func (lib *Lib) getPreferences() {
 	}
 }
 
-func (p Preferences) toJSON() []byte {
-	json, err := json.Marshal(p)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return json
-}
-
-func (p Preferences) ToJSON() []byte {
-	pref := map[string]json.RawMessage{
-		"HiddenCategories": p.raw.HiddenCategories,
-		"SavedSearches":    p.raw.SavedSearches,
-		"DisplayFields":    p.raw.DisplayFields,
-		"FieldMeta":        p.raw.FieldMeta,
-	}
-
-	json, err := json.Marshal(pref)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return json
-}
-
-func (p calibrePref) parseHiddenCategories() []string {
-	var hidden []string
-	err := json.Unmarshal(p.HiddenCategories, &hidden)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return hidden
-}
-
-func (p calibrePref) parseSavedSearches() map[string]string {
-	var searches map[string]string
-	err := json.Unmarshal(p.SavedSearches, &searches)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return searches
-}
-
 type dbFieldTypes struct {
 	Lib        string
 	MultiCats  []string

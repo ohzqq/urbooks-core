@@ -105,6 +105,24 @@ func (l *Library) GetBooks() *Library {
 	return l
 }
 
+//func (p dbPreferences) parseHiddenCategories() []string {
+//  var hidden []string
+//  err := json.Unmarshal(p.HiddenCategories, &hidden)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//  return hidden
+//}
+
+//func (p dbPreferences) parseSavedSearches() map[string]string {
+//  var searches map[string]string
+//  err := json.Unmarshal(p.SavedSearches, &searches)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//  return searches
+//}
+
 func (l *Library) NewRequest() *request {
 	l.request = &request{query: url.Values{}, library: l}
 	l.Query().Set("library", l.Name)
