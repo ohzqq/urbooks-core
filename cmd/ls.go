@@ -51,8 +51,9 @@ var lsCmd = &cobra.Command{
 
 func somebooks() {
 	cmdLib.From("books").Find("333").GetResponse()
-	for _, book := range cmdLib.Books {
-		fmt.Printf("%+V\n", book.GetField("added").String())
+	for _, b := range cmdLib.Books {
+		println(string(cmdLib.ToOPF(b)))
+		//fmt.Printf("%+V\n", book.GetField("added").String())
 	}
 }
 

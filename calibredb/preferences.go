@@ -35,13 +35,17 @@ var custColstmt = `
 SELECT 
 label label, 
 (SELECT 
+JSON_EXTRACT(val, "$." || "#" || label)
+FROM preferences 
+WHERE key = 'field_metadata'
+) meta,
+(SELECT 
 CASE IFNULL(JSON_EXTRACT(val, "$." || "#" || label || ".is_category"), 0)
 WHEN 0 THEN "false"
 WHEN 1 then "true"
 END
 FROM preferences 
-WHERE key 
-IN ('field_metadata')
+WHERE key = 'field_metadata'
 ) is_category,
 lower(id) id, 
 CASE IFNULL(JSON_EXTRACT(display, "$.is_names"), 0)
@@ -107,6 +111,17 @@ IN (
 )
 `
 
+const fieldMetaSql = `
+SELECT
+JSON_OBJECT(
+{{range .}}
+"{{.}}", JSON_EXTRACT(val, "$." || {{.}}) 
+{{end}}
+) fieldMeta
+FROM preferences 
+WHERE key = "field_metadata"
+`
+
 func GetFieldMeta(lib *Lib, f, v string) string {
 	return lib.getFieldMeta(f, v)
 }
@@ -147,6 +162,30 @@ func (lib *Lib) getFieldMeta(f, v string) string {
 		}
 	}
 	return ""
+}
+
+func (lib *Lib) GetPref(p string) json.RawMessage {
+	var stmt string
+	switch p {
+	case "field_meta":
+		stmt = lib.renderFieldMetaTmpl()
+	}
+
+	row := lib.db.QueryRowx(stmt)
+	var dbPref []byte
+	row.Scan(&dbPref)
+
+	return json.RawMessage(dbPref)
+}
+
+func (lib *Lib) renderFieldMetaTmpl() string {
+	var buf bytes.Buffer
+	err := lib.bookTmpl.ExecuteTemplate(&buf, "rangeFieldMeta", lib.Request.Fields)
+	if err != nil {
+		log.Println("executing template:", err)
+	}
+
+	return buf.String()
 }
 
 func (lib *Lib) GetPreferences() json.RawMessage {

@@ -103,6 +103,7 @@ func InitLibraries(v *viper.Viper, web bool) {
 		Cfg().libs[lib] = newLib
 
 		newLib.GetDBPreferences()
+		newLib.GetDBCustomColumns()
 	}
 }
 

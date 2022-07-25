@@ -2,6 +2,7 @@ package book
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 )
@@ -16,52 +17,20 @@ type Fields struct {
 
 type Field struct {
 	idx          int
-	Library      string   `json:"-"`
-	IsDisplayed  bool     `json:"-"`
-	IsNames      bool     `json:"-"`
-	IsMultiple   bool     `json:"-"`
-	CatID        string   `json:"-"`
-	IsJson       bool     `json:"-"`
-	JsonLabel    string   `json:"-"`
-	jsonData     []byte   `json:"-"`
-	stringData   string   `json:"-"`
-	data         any      `json:"-"`
-	Data         []byte   `json:"-"`
-	Value        string   `json:"-"`
-	Meta         Meta     `json:"-"`
-	IsColumn     bool     `json:"-"`
-	IsCollection bool     `json:"-"`
-	IsItem       bool     `json:"-"`
-	CategorySort string   `json:"category_sort"`
-	Colnum       int      `json:"colnum"`
-	Column       string   `json:"column"`
-	Datatype     string   `json:"datatype"`
-	Display      Display  `json:"display"`
-	IsCategory   bool     `json:"is_category"`
-	IsCustom     bool     `json:"is_custom"`
-	IsCsp        bool     `json:"is_csp"`
-	IsEditable   bool     `json:"is_editable"`
-	Multiple     Multiple `json:"is_multiple"`
-	Kind         string   `json:"kind"`
-	CalibreLabel string   `json:"label"`
-	LinkColumn   string   `json:"link_column"`
-	Name         string   `json:"name"`
-	RecIndex     int      `json:"rec_index"`
-	SearchTerms  []string `json:"search_terms"`
-	Table        string   `json:"table"`
-}
-
-type Display struct {
-	Description     string `json:"description"`
-	HeadingPosition string `json:"heading_position"`
-	InterpretAs     string `json:"long-text"`
-	IsNames         bool   `json:"is_names"`
-}
-
-type Multiple struct {
-	CacheToList string `json:"cache_to_list"`
-	ListToUi    string `json:"list_to_ui"`
-	UiToList    string `json:"ui_to_list"`
+	Library      string `json:"-"`
+	IsDisplayed  bool   `json:"-"`
+	IsNames      bool   `json:"-"`
+	IsMultiple   bool   `json:"-"`
+	CatID        string `json:"-"`
+	JsonLabel    string `json:"-"`
+	jsonData     []byte `json:"-"`
+	stringData   string `json:"-"`
+	data         any    `json:"-"`
+	Data         []byte `json:"-"`
+	Meta         Meta   `json:"-"`
+	CalibreLabel string `json:"label"`
+	IsCategory   bool   `json:"is_category"`
+	IsCustom     bool   `json:"is_custom"`
 }
 
 func NewFields() *Fields {
@@ -100,6 +69,33 @@ func (f *Fields) GetSeriesString() string {
 	return ""
 }
 
+func (f *Fields) SetField(name string, field *Field) *Fields {
+	old := f.GetField(name)
+	field.Meta = old.Meta
+	field.Data = old.Data
+	field.data = old.data
+	field.JsonLabel = old.JsonLabel
+	field.IsNames = old.IsNames
+	field.IsMultiple = old.IsMultiple
+	field.idx = old.idx
+	f.meta[f.GetFieldIndex(name)] = field
+	return f
+}
+
+func (f *Fields) SetFieldsFromDB(data []byte) *Fields {
+	meta := make(map[string]*Field)
+	err := json.Unmarshal(data, &meta)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for name, field := range meta {
+		f.SetField(name, field)
+	}
+
+	return f
+}
+
 func (f *Fields) GetField(name string) *Field {
 	idx := f.GetFieldIndex(name)
 	return f.meta[idx]
@@ -136,21 +132,18 @@ func NewField(label string) *Field {
 
 func NewCollection(label string) *Field {
 	field := NewField(label)
-	field.IsCollection = true
 	field.Meta = NewMetaCollection()
 	return field
 }
 
 func NewItem(label string) *Field {
 	field := NewField(label)
-	field.IsItem = true
 	field.Meta = NewMetaItem()
 	return field
 }
 
 func NewColumn(label string) *Field {
 	field := NewField(label)
-	field.IsColumn = true
 	field.Meta = NewMetaColumn()
 	return field
 }
@@ -172,11 +165,6 @@ func (f *Field) SetData(data any) *Field {
 
 func (f *Field) setStringData(data string) *Field {
 	f.stringData = data
-	return f
-}
-
-func (f *Field) SetIsEditable() *Field {
-	f.IsEditable = true
 	return f
 }
 
@@ -208,13 +196,10 @@ func (f *Field) SetIndex(idx int) *Field {
 func (f *Field) SetKind(kind string) *Field {
 	switch kind {
 	case "collection":
-		f.IsCollection = true
 		f.Meta = NewMetaCollection()
 	case "item":
-		f.IsItem = true
 		f.Meta = NewMetaItem()
 	case "column":
-		f.IsColumn = true
 		f.Meta = NewMetaColumn()
 	}
 	return f
@@ -237,11 +222,11 @@ func (f *Field) ParseData() *Field {
 func (f *Field) SetStringMeta(data string) *Field {
 	var meta Meta
 	switch {
-	case f.IsCollection:
+	case f.IsCollection():
 		meta = f.Collection().Split(data, f.IsNames)
-	case f.IsItem:
+	case f.IsItem():
 		meta = f.Item().Set("value", data)
-	case f.IsColumn:
+	case f.IsColumn():
 		meta = f.Col().Set(data)
 	}
 	f.Meta = meta
@@ -264,58 +249,46 @@ func (f *Field) GetMeta() *Field {
 	return f
 }
 
-func (f *Field) Item() *Item {
-	return f.Meta.(*Item)
+func (f *Field) IsCollection() bool {
+	if _, ok := f.Meta.(*Collection); ok {
+		return true
+	}
+	return false
+}
+
+func (f *Field) IsItem() bool {
+	if _, ok := f.Meta.(*Item); ok {
+		return true
+	}
+	return false
+}
+
+func (f *Field) IsColumn() bool {
+	if _, ok := f.Meta.(*Column); ok {
+		return true
+	}
+	return false
 }
 
 func (f *Field) Collection() *Collection {
 	return f.Meta.(*Collection)
 }
 
+func (f *Field) Item() *Item {
+	return f.Meta.(*Item)
+}
+
 func (f *Field) Col() *Column {
 	return f.Meta.(*Column)
 }
 
-//func (f *Field) UnmarshalJSON(d []byte) error {
-//  err := f.Meta.UnmarshalJSON(d)
-//  if err != nil {
-//    return err
-//  }
-//  return nil
-//}
-
-func (f *Fields) ParseDBFieldMeta(meta, display json.RawMessage) {
-	err := json.Unmarshal(display, &f.displayFields)
+func UnmarshalField(d []byte) (Field, error) {
+	field := Field{}
+	err := json.Unmarshal(d, &field)
 	if err != nil {
-		log.Fatal(err)
+		return field, fmt.Errorf("unmarshal field %v\n", err)
 	}
-
-	for _, field := range f.displayFields {
-		name := field[0].(string)
-		if ff := f.GetField(name); ff.CalibreLabel == name {
-			ff.IsDisplayed = field[1].(bool)
-		}
-	}
-
-	err = json.Unmarshal(meta, &f.DbMeta)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for name, meta := range f.DbMeta {
-		if meta.IsCustom {
-			meta.JsonLabel = name
-			f.AddField(meta)
-
-			if meta.Multiple != (Multiple{}) {
-				meta.IsMultiple = true
-				if del := meta.Multiple.UiToList; del == "&" {
-					meta.IsNames = true
-				}
-			}
-		}
-		f.DbMeta[name] = meta
-	}
+	return field, nil
 }
 
 const (
@@ -399,35 +372,27 @@ func defaultFields() []*Field {
 			SetIndex(authors).
 			SetIsCategory().
 			SetIsMultiple().
-			SetIsEditable().
 			SetIsNames(),
 		NewColumn("authorSort").
 			SetCalibreLabel("author_sort").
-			SetIndex(authorSort).
-			SetIsEditable(),
+			SetIndex(authorSort),
 		NewColumn("description").
 			SetCalibreLabel("comments").
-			SetIndex(description).
-			SetIsEditable(),
-		NewItem("cover").
-			SetIndex(cover).
-			SetIsEditable(),
+			SetIndex(description),
+		NewItem("cover").SetIndex(cover),
 		NewCollection("formats").
 			SetIndex(formats).
 			SetIsCategory().
-			SetIsMultiple().
-			SetIsEditable(),
+			SetIsMultiple(),
 		NewColumn("id").SetIndex(id),
 		NewCollection("identifiers").
 			SetIndex(identifiers).
 			SetIsCategory().
-			SetIsMultiple().
-			SetIsEditable(),
+			SetIsMultiple(),
 		NewCollection("languages").
 			SetIndex(languages).
 			SetIsCategory().
-			SetIsMultiple().
-			SetIsEditable(),
+			SetIsMultiple(),
 		NewColumn("library").SetIndex(library),
 		NewColumn("modified").
 			SetCalibreLabel("last_modified").
@@ -435,42 +400,29 @@ func defaultFields() []*Field {
 		NewColumn("path").SetIndex(path),
 		NewColumn("published").
 			SetCalibreLabel("pubdate").
-			SetIndex(published).
-			SetIsEditable(),
-		NewItem("publisher").
-			SetIndex(publisher).
-			SetIsEditable().
-			SetIsCategory(),
+			SetIndex(published),
+		NewItem("publisher").SetIndex(publisher),
 		NewColumn("rating").
 			SetIndex(rating).
-			SetIsCategory().
-			SetIsEditable(),
+			SetIsCategory(),
 		NewItem("series").
 			SetIndex(series).
-			SetIsCategory().
-			SetIsEditable(),
+			SetIsCategory(),
 		NewColumn("position").
 			SetCalibreLabel("series_index").
-			SetIndex(position).
-			SetIsEditable(),
+			SetIndex(position),
 		NewColumn("sortAs").
 			SetCalibreLabel("sort").
-			SetIndex(sortAs).
-			SetIsEditable(),
+			SetIndex(sortAs),
 		NewCollection("tags").
 			SetIndex(tags).
 			SetIsCategory().
-			SetIsMultiple().
-			SetIsEditable(),
+			SetIsMultiple(),
 		NewColumn("added").
 			SetCalibreLabel("timestamp").
 			SetIndex(added),
-		NewColumn("title").
-			SetIndex(title).
-			SetIsEditable(),
-		NewColumn("titleAndSeries").
-			SetIndex(titleAndSeries).
-			SetIsEditable(),
+		NewColumn("title").SetIndex(title),
+		NewColumn("titleAndSeries").SetIndex(titleAndSeries),
 		NewColumn("uri").SetIndex(uri),
 		NewColumn("uuid").SetIndex(uuid),
 		NewField("customColumns").

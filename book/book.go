@@ -75,7 +75,7 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 				}
 
 				for name, cdata := range custom {
-					col := NewField(name).SetIsCustom().SetIsEditable().SetData(cdata["data"])
+					col := NewField(name).SetIsCustom().SetData(cdata["data"])
 
 					meta := make(map[string]string)
 					err = json.Unmarshal(cdata["meta"], &meta)
@@ -86,10 +86,8 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 					switch meta["is_multiple"] {
 					case "true":
 						col.SetIsMultiple()
-						col.IsCollection = true
 						col.SetMeta(NewMetaCollection())
 					case "false":
-						col.IsColumn = true
 						col.SetMeta(NewMetaColumn())
 					}
 					col.ParseData()

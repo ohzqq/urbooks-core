@@ -15,7 +15,7 @@ var testCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cmdLib = urbooks.GetLib(lib)
 		somebooks()
-		//getPreferences(lib)
+		//getPreferences(cmdLib)
 		//resp := lib.GetResponse()
 		//req = urbooks.NewRequest(lib.Name).From("authors").Limit("1")
 		//req = buildRequest(args)
@@ -38,10 +38,19 @@ var testCmd = &cobra.Command{
 }
 
 func getPreferences(lib *urbooks.Library) {
-	//resp := lib.DB.Get("/preferences?library=test-library")
+	//val := url.Values{}
+	//val.Set("fields", "#duration")
+	//val.Set("library", lib.Name)
+	//u := url.URL{Path: "preferences", RawQuery: val.Encode()}
+	//resp := lib.DB.Get(u.String())
 	//println(string(resp))
-	lib.GetDBPreferences()
-	fmt.Printf("%+v\n", lib.Pref)
+	lib.GetDBCustomColumns()
+	fmt.Printf("%+v\n", lib.CustomColumns["#duration"])
+	//field, err := book.UnmarshalField([]byte(c["meta"]))
+	//if err != nil {
+	//log.Fatalf("cust col fail %v\n", err)
+	//}
+	//l.CustomColumns[c["label"]] = field
 }
 
 func init() {

@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	url     string
+	uri     string
 	batch   string
 	scraper = urbooks.NewAudibleScraper()
 )
@@ -26,8 +26,8 @@ var scrapeCmd = &cobra.Command{
 			scraper = scraper.Search()
 		case batch != "":
 			scraper = scraper.List(batch)
-		case url != "":
-			scraper = scraper.Get(url)
+		case uri != "":
+			scraper = scraper.Get(uri)
 		}
 
 		books := scraper.Scrape()
@@ -47,7 +47,7 @@ func init() {
 
 	scrapeCmd.Flags().BoolVar(&scraper.NoCovers, "nc", false, "don't download covers")
 
-	scrapeCmd.Flags().StringVarP(&url, "url", "u", "", "audible url")
+	scrapeCmd.Flags().StringVarP(&uri, "url", "u", "", "audible url")
 	scrapeCmd.Flags().StringVarP(&batch, "batch", "b", "", "batch scrape from audible search list")
 	scrapeCmd.MarkFlagsMutuallyExclusive("url", "batch")
 

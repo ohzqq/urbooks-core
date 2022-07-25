@@ -41,6 +41,7 @@ type Library struct {
 	pref           dbPreferences
 	Pref           dbPreferences
 	RawPref        map[string]json.RawMessage
+	CustomColumns  Fields
 	Books          book.Books
 	Category       *book.Category
 	*request
@@ -85,6 +86,20 @@ func (l *Library) GetDBPreferences() {
 	}
 }
 
+func (l *Library) GetDBCustomColumns() {
+	cols := make(Fields)
+	for _, c := range l.DB.CustCols {
+		data := []byte(c["meta"])
+		field := Field{}
+		err := json.Unmarshal(data, &field)
+		if err != nil {
+			log.Fatalf("cust col fail %v\n", err)
+		}
+		cols[c["label"]] = &field
+	}
+	l.CustomColumns = cols
+}
+
 func (l *Library) GetBooks() *Library {
 	l.request = l.NewRequest().From("books")
 	return l
@@ -101,6 +116,11 @@ func (l *Library) GetResponse() *Library {
 	switch l.endpoint {
 	case "books":
 		err := json.Unmarshal(l.Data, &l.Books)
+		if err != nil {
+			log.Fatal(err)
+		}
+	case "field_meta":
+		err := json.Unmarshal(l.Data, &l.CustomColumns)
 		if err != nil {
 			log.Fatal(err)
 		}

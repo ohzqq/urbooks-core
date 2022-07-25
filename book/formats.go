@@ -101,8 +101,8 @@ func (b *Book) Write() {
 func (m metaFmt) Render(b *Book) []byte {
 	var buf bytes.Buffer
 	switch m.name {
-	//case "opf":
-	//return b.ToOpf()
+	case "opf":
+		//return ToOpf(b)
 	default:
 		err := m.tmpl.Execute(&buf, b.StringMap())
 		if err != nil {

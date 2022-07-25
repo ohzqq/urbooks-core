@@ -29,8 +29,10 @@ func newResponse() *response {
 
 func (lib *Lib) setResponseURL() {
 	if lib.response.numberOfItems > 1 {
-		if !lib.Request.query.Has("currentPage") {
-			lib.Request.query.Set("currentPage", "1")
+		if lib.Request.cat != "preferences" {
+			if !lib.Request.query.Has("currentPage") {
+				lib.Request.query.Set("currentPage", "1")
+			}
 		}
 	}
 	url := url.URL{
@@ -42,9 +44,12 @@ func (lib *Lib) setResponseURL() {
 
 func (lib *Lib) setResponseMeta() {
 	lib.response.addMeta("library", lib.Name)
-	lib.response.addMeta("numberOfItems", strconv.Itoa(lib.response.numberOfItems))
-	lib.response.addMeta("currentPage", lib.Request.query.Get("currentPage"))
-	lib.response.addMeta("itemsPerPage", lib.Request.query.Get("itemsPerPage"))
+
+	if lib.Request.cat != "preferences" {
+		lib.response.addMeta("numberOfItems", strconv.Itoa(lib.response.numberOfItems))
+		lib.response.addMeta("currentPage", lib.Request.query.Get("currentPage"))
+		lib.response.addMeta("itemsPerPage", lib.Request.query.Get("itemsPerPage"))
+	}
 	lib.response.addMeta("endpoint", lib.Request.cat)
 	lib.response.addMeta("categoryLabel", lib.Request.cat)
 

@@ -1,7 +1,8 @@
 {{define "CustCol"}}
 JSON_OBJECT(
 {{range $col := .CustCols}}
-ltrim("{{$col.label}}", '#'), JSON_OBJECT(
+{{/* ltrim("{{$col.label}}", '#'), JSON_OBJECT( */}}
+"{{$col.label}}", JSON_OBJECT(
 'meta', IFNULL(
 (
 	SELECT JSON_OBJECT(

@@ -47,7 +47,7 @@ func NewLib(path string) *Lib {
 	lib.AllFields()
 	lib.bookTmpl = template.Must(template.New("book").Funcs(bookTmplFuncs).ParseFS(sqlTmpl, "sql/*"))
 
-	//fmt.Println(lib.renderSqlTmpl("Prefs"))
+	//fmt.Printf("%+v\n", lib.CustCols)
 	return &lib
 }
 
@@ -65,7 +65,7 @@ var (
 func (lib *Lib) Get(u string) []byte {
 	lib.mtx.Lock()
 	defer lib.mtx.Unlock()
-	//fmt.Printf("%+v\n", u)
+	fmt.Printf("%+v\n", u)
 	lib.response = newResponse()
 
 	var err error
@@ -92,7 +92,11 @@ func (lib *Lib) Get(u string) []byte {
 
 	var data any
 	if lib.Request.cat == "preferences" {
-		data = lib.GetPreferences()
+		if lib.Request.HasFields {
+			data = lib.GetPref("field_meta")
+		} else {
+			data = lib.GetPreferences()
+		}
 		//return lib.GetPreferences()
 	} else {
 		data = lib.queryDB()

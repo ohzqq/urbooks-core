@@ -137,6 +137,7 @@ func (lib *Lib) newRequest(u string) (*request, error) {
 	if req.query.Has("fields") {
 		req.HasFields = true
 		req.Fields = strings.Split(req.query.Get("fields"), ",")
+		fmt.Println(req.Fields)
 
 		if req.cat != "books" {
 			if len(req.Fields) == 1 {
@@ -164,22 +165,18 @@ func (lib *Lib) newRequest(u string) (*request, error) {
 		req.collection = true
 	}
 
-	if req.collection {
-		if req.bookQuery {
-			if !req.allItems {
-				var err error
-				req.itemsPerPage, err = strconv.Atoi(req.query.Get("itemsPerPage"))
-				if err != nil {
-					req.itemsPerPage = 50
-					req.query.Set("itemsPerPage", "50")
-				}
+	if req.collection && req.bookQuery && !req.allItems {
+		var err error
+		req.itemsPerPage, err = strconv.Atoi(req.query.Get("itemsPerPage"))
+		if err != nil {
+			req.itemsPerPage = 50
+			req.query.Set("itemsPerPage", "50")
+		}
 
-				req.currentPage, err = strconv.Atoi(req.query.Get("currentPage"))
-				if err != nil {
-					req.query.Set("currentPage", "1")
-					req.currentPage = 1
-				}
-			}
+		req.currentPage, err = strconv.Atoi(req.query.Get("currentPage"))
+		if err != nil {
+			req.query.Set("currentPage", "1")
+			req.currentPage = 1
 		}
 	}
 
