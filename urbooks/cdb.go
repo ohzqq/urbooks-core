@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ohzqq/avtools/avtools"
+	"github.com/ohzqq/urbooks-core/book"
 	"github.com/ohzqq/urbooks-core/calibredb"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/slices"
@@ -35,7 +36,7 @@ type cdbCmd struct {
 	input    string
 	verbose  bool
 	media    *avtools.Media
-	book     *Book
+	book     *book.Book
 	cdbCmd   string
 	localCmd string
 	tmp      *os.File
@@ -169,7 +170,7 @@ func (c *cdbCmd) Import(input, cover string) *cdbCmd {
 		media:   c.media,
 		lib:     c.lib,
 		verbose: c.verbose,
-		book:    MediaMetaToBook(c.lib.Name, c.media),
+		book:    book.MediaMetaToBook(c.lib.Name, c.media),
 	}
 	_, err = metaCmd.setMetadataCmd(id).Run()
 	switch {

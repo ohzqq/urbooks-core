@@ -6,9 +6,11 @@ import (
 	"html/template"
 	"log"
 	"os"
+	"regexp"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/gosimple/slug"
+	"github.com/ohzqq/avtools/avtools"
 )
 
 func ListFormats() []string {
@@ -131,6 +133,23 @@ func (b *Book) StringMap() map[string]string {
 		}
 	}
 	return m
+}
+
+func MediaMetaToBook(lib string, m *avtools.Media) *Book {
+	book := NewBook()
+	titleRegex := regexp.MustCompile(`(?P<title>.*) \[(?P<series>.*), Book (?P<position>.*)\]$`)
+	titleAndSeries := titleRegex.FindStringSubmatch(m.GetTag("title"))
+
+	book.GetField("title").SetData(titleAndSeries[titleRegex.SubexpIndex("title")])
+	book.GetField("series").
+		SetData(titleAndSeries[titleRegex.SubexpIndex("series")])
+	book.GetField("series").
+		SetData(titleAndSeries[titleRegex.SubexpIndex("position")])
+	book.GetField("authors").Collection().Split(m.GetTag("artist"), true)
+	book.GetField("narrators").Collection().Split(m.GetTag("composer"), true)
+	book.GetField("description").SetData(m.GetTag("comment"))
+	book.GetField("tags").Collection().Split(m.GetTag("genre"), false)
+	return book
 }
 
 func toMarkdown(str string) string {

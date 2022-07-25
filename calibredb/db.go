@@ -44,10 +44,9 @@ func NewLib(path string) *Lib {
 	lib.Fields = newLibFields(lib.Name)
 	lib.getPreferences()
 	lib.getCustCols()
-	lib.AllFields()
 	lib.bookTmpl = template.Must(template.New("book").Funcs(bookTmplFuncs).ParseFS(sqlTmpl, "sql/*"))
 
-	//fmt.Printf("%+v\n", lib.CustCols)
+	fmt.Printf("field meta %+v\n", lib.fieldMeta)
 	return &lib
 }
 
@@ -113,14 +112,14 @@ func (lib *Lib) validEndpoint(point string) bool {
 	return slices.Contains(end, point)
 }
 
-func (lib Lib) GetField(f string) *Field {
-	switch slices.Contains(lib.AllFields(), f) {
-	case true:
-		return lib.Preferences.FieldMeta[f]
-	default:
-		return &Field{Column: f, Label: f}
-	}
-}
+//func (lib Lib) GetField(f string) *Field {
+//  switch slices.Contains(lib.AllFields(), f) {
+//  case true:
+//    return lib.Preferences.FieldMeta[f]
+//  default:
+//    return &Field{Column: f, Label: f}
+//  }
+//}
 
 func (lib *Lib) Categories() []string {
 	var fields []string
@@ -398,15 +397,6 @@ func GetJsonField(f string) string {
 }
 
 //Fields
-func (lib Lib) AllFields() []string {
-	var fields []string
-	for key, _ := range lib.Preferences.FieldMeta {
-		if !strings.Contains(key, "@") {
-			fields = append(fields, key)
-		}
-	}
-	return fields
-}
 
 const customColumnsSql = `
 SELECT 

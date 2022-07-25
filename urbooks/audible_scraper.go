@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gosimple/slug"
+	"github.com/ohzqq/urbooks-core/book"
 	"github.com/ohzqq/urbooks-core/bubbles"
 
 	"github.com/PuerkitoBio/goquery"
@@ -23,7 +24,7 @@ type AudibleScraper struct {
 	Scraper     *geziyor.Geziyor
 	ScraperOpts *geziyor.Options
 	URLs        map[string]string
-	Books       []*Book
+	Books       []*book.Book
 	URL         *url.URL
 	searchQuery url.Values
 	AudibleURL  string
@@ -137,7 +138,7 @@ func (a *AudibleScraper) ParseURL() {
 	a.URL = aUrl
 }
 
-func (a *AudibleScraper) Scrape() []*Book {
+func (a *AudibleScraper) Scrape() []*book.Book {
 	var urls map[string]string
 	switch {
 	case a.IsSearch:
@@ -201,25 +202,24 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 
 func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 	return func(g *geziyor.Geziyor, r *client.Response) {
-		book := NewBook("")
+		book := book.NewBook()
 
 		title := strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text())
-		book.NewColumn("title").SetValue(title)
+		book.GetField("title").SetData(title)
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
 		if !a.NoCovers {
 			DownloadCover(slug.Make(title)+".jpg", coverURL)
 		}
 
-		authors := book.NewCategory("authors")
+		authors := book.GetField("authors").Collection()
 		r.HTMLDoc.Find(".authorLabel a").Each(func(_ int, s *goquery.Selection) {
-			authors.AddItem().SetValue(s.Text())
+			authors.AddItem().Set("value", s.Text())
 		})
 
-		narrators := book.NewCategory("narrators")
-		narrators.SetFieldMeta("isNames", "true")
+		narrators := book.NewField("#narrators").SetIsNames().SetIsCustom().SetIsMultiple().Collection()
 		r.HTMLDoc.Find(".narratorLabel a").Each(func(_ int, s *goquery.Selection) {
-			narrators.AddItem().SetValue(s.Text())
+			narrators.AddItem().Set("value", s.Text())
 		})
 
 		series := r.HTMLDoc.Find(".seriesLabel").Text()
@@ -227,23 +227,23 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 		n := 0
 		p := 1
 		for i := 0; i < len(splitSeries)/2; i++ {
-			s := book.NewItem("series")
-			s.SetValue(strings.TrimPrefix(strings.TrimSpace(splitSeries[n]), "Book "))
+			s := book.GetField("series").Item()
+			s.Set("value", strings.TrimPrefix(strings.TrimSpace(splitSeries[n]), "Book "))
 			s.Set("position", strings.TrimPrefix(strings.TrimSpace(splitSeries[p]), "Book "))
 			n = n + 2
 			p = p + 2
 		}
 
-		tags := book.NewCategory("tags")
+		tags := book.GetField("tags").Collection()
 		r.HTMLDoc.Find(".bc-chip-text").Each(func(_ int, s *goquery.Selection) {
-			tags.AddItem().SetValue(strings.TrimSpace(s.Text()))
+			tags.AddItem().Set("value", strings.TrimSpace(s.Text()))
 		})
 
 		desc, err := r.HTMLDoc.Find(".productPublisherSummary span.bc-text").Html()
 		if err != nil {
 			log.Fatal(err)
 		}
-		book.NewColumn("description").SetValue(desc)
+		book.GetField("description").SetData(desc)
 
 		a.Books = append(a.Books, book)
 	}

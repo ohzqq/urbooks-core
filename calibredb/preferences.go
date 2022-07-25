@@ -10,27 +10,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type Preferences struct {
-	raw              calibrePref
-	HiddenCategories []string          `json:"hiddenCategories"`
-	FieldMeta        Fields            `json:"fieldMetadata"`
-	SavedSearches    map[string]string `json:"savedSearches"`
-}
-
-type calibrePref struct {
-	dbPreferences
-	library   string
-	meta      Fields
-	AllFields []string
-}
-
-type dbPreferences struct {
-	HiddenCategories json.RawMessage `json:"tag_browser_hidden_categories"`
-	DisplayFields    json.RawMessage `json:"book_display_fields"`
-	SavedSearches    json.RawMessage `json:"saved_searches"`
-	FieldMeta        json.RawMessage `json:"field_metadata"`
-}
-
 var custColstmt = `
 SELECT 
 label label, 
@@ -96,21 +75,6 @@ func (lib *Lib) getCustCols() {
 	//fmt.Printf("%+v\n", lib.CustCols)
 }
 
-const prefSql = `
-SELECT
-JSON_GROUP_OBJECT(
-key, JSON(val)
-) as pref
-FROM preferences 
-WHERE key 
-IN (
-	'saved_searches', 
-	'field_metadata', 
-	'book_display_fields', 
-	'tag_browser_hidden_categories'
-)
-`
-
 const fieldMetaSql = `
 SELECT
 JSON_OBJECT(
@@ -164,6 +128,12 @@ func (lib *Lib) getFieldMeta(f, v string) string {
 	return ""
 }
 
+type Preferences struct {
+	raw              calibrePref
+	HiddenCategories []string          `json:"hiddenCategories"`
+	SavedSearches    map[string]string `json:"savedSearches"`
+}
+
 func (lib *Lib) GetPref(p string) json.RawMessage {
 	var stmt string
 	switch p {
@@ -197,6 +167,34 @@ func (lib *Lib) GetPreferences() json.RawMessage {
 	return json.RawMessage(dbPref)
 }
 
+type calibrePref struct {
+	dbPreferences
+	library   string
+	AllFields []string
+}
+
+type dbPreferences struct {
+	HiddenCategories json.RawMessage `json:"tag_browser_hidden_categories"`
+	DisplayFields    json.RawMessage `json:"book_display_fields"`
+	SavedSearches    json.RawMessage `json:"saved_searches"`
+	FieldMeta        json.RawMessage `json:"field_metadata"`
+}
+
+const prefSql = `
+SELECT
+JSON_GROUP_OBJECT(
+key, JSON(val)
+) as pref
+FROM preferences 
+WHERE key 
+IN (
+	'saved_searches', 
+	'field_metadata', 
+	'book_display_fields', 
+	'tag_browser_hidden_categories'
+)
+`
+
 func (lib *Lib) getPreferences() {
 	row := lib.db.QueryRowx(prefSql)
 	var dbPref []byte
@@ -209,11 +207,9 @@ func (lib *Lib) getPreferences() {
 	}
 	pref.library = lib.Name
 
-	meta := pref.parseFieldMeta()
 	lib.Preferences = &Preferences{
 		HiddenCategories: pref.parseHiddenCategories(),
 		SavedSearches:    pref.parseSavedSearches(),
-		FieldMeta:        meta,
 		raw:              pref,
 	}
 
@@ -264,50 +260,6 @@ func (p calibrePref) parseSavedSearches() map[string]string {
 	return searches
 }
 
-type Fields map[string]*Field
-
-type Field struct {
-	Library      string            `json:"-"`
-	TableColumns map[string]string `json:"-"`
-	//IsDisplayed  bool              `json:"-"`
-	IsNames      bool     `json:"-"`
-	HasJoin      bool     `json:"-"`
-	IsMultiple   bool     `json:"-"`
-	CatID        string   `json:"-"`
-	CategorySort string   `json:"category_sort"`
-	Colnum       int      `json:"colnum"`
-	Column       string   `json:"column"`
-	Datatype     string   `json:"datatype"`
-	Display      Display  `json:"display"`
-	IsCategory   bool     `json:"is_category"`
-	IsCustom     bool     `json:"is_custom"`
-	IsCsp        bool     `json:"is_csp"`
-	IsEditable   bool     `json:"is_editable"`
-	Multiple     Multiple `json:"is_multiple"`
-	Kind         string   `json:"kind"`
-	Label        string   `json:"label"`
-	LinkColumn   string   `json:"link_column"`
-	Name         string   `json:"name"`
-	RecIndex     int      `json:"rec_index"`
-	SearchTerms  []string `json:"search_terms"`
-	Table        string   `json:"table"`
-	Value        any      `json:"#value#"`
-	Extra        any      `json:"#extra#"`
-}
-
-type Display struct {
-	Description     string `json:"description"`
-	HeadingPosition string `json:"heading_position"`
-	InterpretAs     string `json:"long-text"`
-	IsNames         bool   `json:"is_names"`
-}
-
-type Multiple struct {
-	CacheToList string `json:"cache_to_list"`
-	ListToUi    string `json:"list_to_ui"`
-	UiToList    string `json:"ui_to_list"`
-}
-
 type dbFieldTypes struct {
 	Lib        string
 	MultiCats  []string
@@ -343,7 +295,7 @@ func newLibFields(lib string) *dbFieldTypes {
 	}
 }
 
-func (lib *Lib) AllDBFields() []string {
+func (lib *Lib) AllFields() []string {
 	fields := DefaultCalibreFieldList()
 	for _, c := range lib.Fields.CustomCol {
 		fields = append(fields, c)
@@ -353,7 +305,7 @@ func (lib *Lib) AllDBFields() []string {
 
 func (lib *Lib) RenderFieldMetaSql() string {
 	var meta []string
-	for _, field := range lib.AllDBFields() {
+	for _, field := range lib.AllFields() {
 		var sql bytes.Buffer
 		err := lib.bookTmpl.ExecuteTemplate(&sql, "fieldMeta", field)
 		if err != nil {
@@ -457,154 +409,3 @@ func FieldList() []string {
 	}
 	return fields
 }
-
-//func FieldType() string {
-//}
-
-func (f Field) Type() string {
-	switch {
-	case f.IsCategory && !f.IsMultiple:
-		return "item"
-	case f.IsCategory && f.IsMultiple:
-		return "category"
-	default:
-		return "column"
-	}
-}
-
-func (f Field) ToJson() []byte {
-	js, err := json.Marshal(f)
-	if err != nil {
-		log.Fatalf("json failed to marshal a calibred.Field, %v", err)
-	}
-	return js
-}
-
-func (f Field) IsCat() bool {
-	return f.IsCategory && f.IsMultiple
-}
-
-func (f Field) IsItem() bool {
-	return f.IsCategory && !f.IsMultiple
-}
-
-func (f Field) IsCol() bool {
-	return !f.IsCategory && !f.IsMultiple
-}
-
-//func (p *calibrePref) parseFieldMeta() Fields {
-//  var fields Fields
-//  err := json.Unmarshal(p.FieldMeta, &fields)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//  delete(fields, "au_map")
-//  delete(fields, "size")
-//  delete(fields, "marked")
-//  delete(fields, "news")
-//  delete(fields, "ondevice")
-//  delete(fields, "search")
-//  delete(fields, "series_sort")
-
-//  for key, _ := range fields {
-//    p.AllFields = append(p.AllFields, key)
-//  }
-
-//  //var dFields [][]interface{}
-//  //err = json.Unmarshal(p.DisplayFields, &dFields)
-//  //if err != nil {
-//  //  log.Fatal(err)
-//  //}
-
-//  //for _, f := range dFields {
-//  //  name := f[0].(string)
-//  //  if slices.Contains(p.AllFields, name) {
-//  //    fields[name].IsDisplayed = f[1].(bool)
-//  //  }
-//  //}
-
-//  var fmeta = make(Fields)
-//  for name, meta := range fields {
-//    meta.Library = p.library
-
-//    if strings.Contains(name, "#") {
-//      name = strings.Replace(name, "#", "", 1)
-//    }
-
-//    if meta.Multiple != (Multiple{}) {
-//      meta.IsMultiple = true
-//      //if del := meta.Multiple.UiToList; del == "&" {
-//      //meta.IsNames = true
-//      //}
-//    }
-
-//    switch name {
-//    case "authors":
-//      meta.TableColumns = map[string]string{
-//        "value": "name",
-//        "uri":   `"` + GetJsonField(name) + `/"` + " || id",
-//      }
-//    case "languages":
-//      meta.TableColumns = map[string]string{
-//        "value": "lang_code",
-//        "uri":   `"` + GetJsonField(name) + `/"` + " || id",
-//      }
-//    case "tags":
-//      meta.TableColumns = map[string]string{
-//        "value": "name",
-//        "uri":   `"` + GetJsonField(name) + `/"` + " || id",
-//      }
-//    case "formats":
-//      meta.TableColumns = map[string]string{
-//        "basename":  "name",
-//        "extension": "lower(format)",
-//        "value":     `name || '.' || lower(format)`,
-//        "size":      "lower(uncompressed_size)",
-//        "uri":       `"books/" || books.id`,
-//        "path":      `"` + p.library + `" || "/" || books.path || "/" || name || '.' || lower(format)`,
-//      }
-//      meta.CategorySort = "format"
-//      meta.Table = "data"
-//      meta.Column = "format"
-//    case "identifiers":
-//      meta.TableColumns = map[string]string{
-//        "value": "val",
-//        "type":  "type",
-//      }
-//      meta.Column = "val"
-//      meta.CategorySort = "type"
-//      meta.Table = "identifiers"
-//    case "comments":
-//      meta.Table = "comments"
-//    case "publisher":
-//      meta.TableColumns = map[string]string{
-//        "value": "name",
-//        "uri":   `"` + GetJsonField(name) + `/"` + " || id",
-//      }
-//    case "rating":
-//      meta.TableColumns = map[string]string{
-//        "value": "rating",
-//      }
-//    case "series":
-//      meta.TableColumns = map[string]string{
-//        "value":    "name",
-//        "position": "lower(series_index)",
-//        "uri":      `"` + GetJsonField(name) + `/"` + " || id",
-//      }
-//    case "cover":
-//      meta.IsCustom = false
-//    case "library":
-//      meta.IsCustom = false
-//    }
-
-//    fmeta[GetJsonField(name)] = meta
-//  }
-
-//  fmeta["uri"] = &Field{
-//    Column: "uri",
-//    Name:   "uri",
-//    Label:  "uri",
-//  }
-
-//  return fmeta
-//}
