@@ -137,6 +137,7 @@ func (l *Library) GetResponse() *Library {
 		if err != nil {
 			log.Fatal(err)
 		}
+		//println(string(l.Data))
 	case "field_meta":
 		err := json.Unmarshal(l.Data, &l.CustomColumns)
 		if err != nil {

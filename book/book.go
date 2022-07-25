@@ -99,6 +99,7 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 						col.SetIsNames()
 					}
 
+					println(col.String())
 					book.AddField(col)
 				}
 			}
@@ -143,7 +144,7 @@ func (b Book) GetFile(f string) *Item {
 		for _, item := range formats.Collection().EachItem() {
 			if slices.Contains(AudioFormats(), item.Get("extension")) {
 				q := url.Values{}
-				q.Set("library", b.lib)
+				q.Set("library", b.GetField("library").String())
 				q.Set("format", item.Get("extension"))
 				u := url.URL{Path: item.Get("uri"), RawQuery: q.Encode()}
 				item.Set("url", u.String())
