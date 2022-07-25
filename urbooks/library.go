@@ -36,14 +36,14 @@ type Library struct {
 	Cfg            *libCfg
 	Name           string
 	Path           string
-	DefaultRequest *Request
+	DefaultRequest *request
 	DB             *calibredb.Lib
 	pref           dbPreferences
 	Pref           dbPreferences
 	RawPref        map[string]json.RawMessage
 	Books          book.Books
 	Category       *book.Category
-	*Request
+	*request
 	Response
 }
 
@@ -86,17 +86,18 @@ func (l *Library) GetDBPreferences() {
 }
 
 func (l *Library) GetBooks() *Library {
-	l.Request = NewRequest(l.Name).From("books")
+	l.request = l.NewRequest().From("books")
 	return l
 }
 
-func (l *Library) NewRequest() *Library {
-	l.Request = NewRequest(l.Name)
-	return l
+func (l *Library) NewRequest() *request {
+	l.request = &request{query: url.Values{}, library: l}
+	l.Query().Set("library", l.Name)
+	return l.request
 }
 
 func (l *Library) GetResponse() *Library {
-	l.Response = GetResponse(l.Request)
+	l.Response = GetResponse(l.request)
 	switch l.endpoint {
 	case "books":
 		err := json.Unmarshal(l.Data, &l.Books)
@@ -113,13 +114,12 @@ func (l *Library) GetResponse() *Library {
 }
 
 func (l *Library) From(table string) *Library {
-	l.Request = &Request{query: url.Values{}, library: l}
-	l.endpoint = table
+	l.NewRequest().Set("endpoint", table)
 	return l
 }
 
 func (l *Library) Find(ids string) *Library {
-	l.query.Add("ids", ids)
+	l.Query().Set("ids", ids)
 	return l
 }
 
@@ -129,31 +129,31 @@ func (l *Library) ID(id string) *Library {
 }
 
 func (l *Library) Fields(fields string) *Library {
-	l.query.Add("fields", fields)
+	l.Query().Set("fields", fields)
 	return l
 }
 
 func (l *Library) Limit(limit string) *Library {
-	l.query.Add("itemsPerPage", limit)
+	l.Query().Set("itemsPerPage", limit)
 	return l
 }
 
 func (l *Library) Page(page string) *Library {
-	l.query.Add("currentPage", page)
+	l.Query().Set("currentPage", page)
 	return l
 }
 
 func (l *Library) Sort(sort string) *Library {
-	l.query.Add("sort", sort)
+	l.Query().Set("sort", sort)
 	return l
 }
 
 func (l *Library) Order(order string) *Library {
-	l.query.Add("order", order)
+	l.Query().Set("order", order)
 	return l
 }
 
 func (l *Library) Desc() *Library {
-	l.query.Add("order", "desc")
+	l.Query().Set("order", "desc")
 	return l
 }

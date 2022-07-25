@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/ohzqq/urbooks-core/urbooks"
 	"github.com/spf13/cobra"
@@ -23,8 +22,8 @@ const (
 )
 
 var (
-	cmdLib       *urbooks.Library
-	req          *urbooks.Request
+	cmdLib *urbooks.Library
+	//req          *urbooks.request
 	searchFields = make([]string, 11)
 )
 
@@ -36,7 +35,7 @@ var lsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cmdLib = urbooks.Lib(lib)
 		//req = buildRequest(args)
-		somebooks()
+		//somebooks()
 		fmt.Printf("%+v\n", searchFields[8])
 	},
 }
@@ -51,24 +50,24 @@ var lsCmd = &cobra.Command{
 //}
 
 func somebooks() {
-	resp := cmdLib.NewRequest().From("books").Find("333").GetResponse()
-	for _, book := range resp.Books {
+	cmdLib.From("books").Find("333").GetResponse()
+	for _, book := range cmdLib.Books {
 		fmt.Printf("%+V\n", book.GetField("added").String())
 	}
 }
 
-func somecat(r *urbooks.Request) {
-	resp := makeReq(r)
-	fmt.Println(string(resp))
-}
+//func somecat(r *urbooks.request) {
+//  resp := makeReq(r)
+//  fmt.Println(string(resp))
+//}
 
-func makeReq(r *urbooks.Request) []byte {
-	resp, err := urbooks.Get(r.String())
-	if err != nil {
-		log.Fatal(err)
-	}
-	return resp
-}
+//func makeReq(r *urbooks.request) []byte {
+//  resp, err := urbooks.Get(r.String())
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//  return resp
+//}
 
 func init() {
 	rootCmd.AddCommand(lsCmd)

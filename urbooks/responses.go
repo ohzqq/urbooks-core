@@ -18,7 +18,7 @@ type Response struct {
 	Data           json.RawMessage `json:"data"`
 }
 
-func GetResponse(r *Request) Response {
+func GetResponse(r *request) Response {
 	resp := Response{}
 	err := json.Unmarshal(r.library.DB.Get(r.String()), &resp)
 	if err != nil {
