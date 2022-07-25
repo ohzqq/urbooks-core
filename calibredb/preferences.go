@@ -492,119 +492,119 @@ func (f Field) IsCol() bool {
 	return !f.IsCategory && !f.IsMultiple
 }
 
-func (p *calibrePref) parseFieldMeta() Fields {
-	var fields Fields
-	err := json.Unmarshal(p.FieldMeta, &fields)
-	if err != nil {
-		log.Fatal(err)
-	}
-	delete(fields, "au_map")
-	delete(fields, "size")
-	delete(fields, "marked")
-	delete(fields, "news")
-	delete(fields, "ondevice")
-	delete(fields, "search")
-	delete(fields, "series_sort")
+//func (p *calibrePref) parseFieldMeta() Fields {
+//  var fields Fields
+//  err := json.Unmarshal(p.FieldMeta, &fields)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//  delete(fields, "au_map")
+//  delete(fields, "size")
+//  delete(fields, "marked")
+//  delete(fields, "news")
+//  delete(fields, "ondevice")
+//  delete(fields, "search")
+//  delete(fields, "series_sort")
 
-	for key, _ := range fields {
-		p.AllFields = append(p.AllFields, key)
-	}
+//  for key, _ := range fields {
+//    p.AllFields = append(p.AllFields, key)
+//  }
 
-	//var dFields [][]interface{}
-	//err = json.Unmarshal(p.DisplayFields, &dFields)
-	//if err != nil {
-	//  log.Fatal(err)
-	//}
+//  //var dFields [][]interface{}
+//  //err = json.Unmarshal(p.DisplayFields, &dFields)
+//  //if err != nil {
+//  //  log.Fatal(err)
+//  //}
 
-	//for _, f := range dFields {
-	//  name := f[0].(string)
-	//  if slices.Contains(p.AllFields, name) {
-	//    fields[name].IsDisplayed = f[1].(bool)
-	//  }
-	//}
+//  //for _, f := range dFields {
+//  //  name := f[0].(string)
+//  //  if slices.Contains(p.AllFields, name) {
+//  //    fields[name].IsDisplayed = f[1].(bool)
+//  //  }
+//  //}
 
-	var fmeta = make(Fields)
-	for name, meta := range fields {
-		meta.Library = p.library
+//  var fmeta = make(Fields)
+//  for name, meta := range fields {
+//    meta.Library = p.library
 
-		if strings.Contains(name, "#") {
-			name = strings.Replace(name, "#", "", 1)
-		}
+//    if strings.Contains(name, "#") {
+//      name = strings.Replace(name, "#", "", 1)
+//    }
 
-		if meta.Multiple != (Multiple{}) {
-			meta.IsMultiple = true
-			//if del := meta.Multiple.UiToList; del == "&" {
-			//meta.IsNames = true
-			//}
-		}
+//    if meta.Multiple != (Multiple{}) {
+//      meta.IsMultiple = true
+//      //if del := meta.Multiple.UiToList; del == "&" {
+//      //meta.IsNames = true
+//      //}
+//    }
 
-		switch name {
-		case "authors":
-			meta.TableColumns = map[string]string{
-				"value": "name",
-				"uri":   `"` + GetJsonField(name) + `/"` + " || id",
-			}
-		case "languages":
-			meta.TableColumns = map[string]string{
-				"value": "lang_code",
-				"uri":   `"` + GetJsonField(name) + `/"` + " || id",
-			}
-		case "tags":
-			meta.TableColumns = map[string]string{
-				"value": "name",
-				"uri":   `"` + GetJsonField(name) + `/"` + " || id",
-			}
-		case "formats":
-			meta.TableColumns = map[string]string{
-				"basename":  "name",
-				"extension": "lower(format)",
-				"value":     `name || '.' || lower(format)`,
-				"size":      "lower(uncompressed_size)",
-				"uri":       `"books/" || books.id`,
-				"path":      `"` + p.library + `" || "/" || books.path || "/" || name || '.' || lower(format)`,
-			}
-			meta.CategorySort = "format"
-			meta.Table = "data"
-			meta.Column = "format"
-		case "identifiers":
-			meta.TableColumns = map[string]string{
-				"value": "val",
-				"type":  "type",
-			}
-			meta.Column = "val"
-			meta.CategorySort = "type"
-			meta.Table = "identifiers"
-		case "comments":
-			meta.Table = "comments"
-		case "publisher":
-			meta.TableColumns = map[string]string{
-				"value": "name",
-				"uri":   `"` + GetJsonField(name) + `/"` + " || id",
-			}
-		case "rating":
-			meta.TableColumns = map[string]string{
-				"value": "rating",
-			}
-		case "series":
-			meta.TableColumns = map[string]string{
-				"value":    "name",
-				"position": "lower(series_index)",
-				"uri":      `"` + GetJsonField(name) + `/"` + " || id",
-			}
-		case "cover":
-			meta.IsCustom = false
-		case "library":
-			meta.IsCustom = false
-		}
+//    switch name {
+//    case "authors":
+//      meta.TableColumns = map[string]string{
+//        "value": "name",
+//        "uri":   `"` + GetJsonField(name) + `/"` + " || id",
+//      }
+//    case "languages":
+//      meta.TableColumns = map[string]string{
+//        "value": "lang_code",
+//        "uri":   `"` + GetJsonField(name) + `/"` + " || id",
+//      }
+//    case "tags":
+//      meta.TableColumns = map[string]string{
+//        "value": "name",
+//        "uri":   `"` + GetJsonField(name) + `/"` + " || id",
+//      }
+//    case "formats":
+//      meta.TableColumns = map[string]string{
+//        "basename":  "name",
+//        "extension": "lower(format)",
+//        "value":     `name || '.' || lower(format)`,
+//        "size":      "lower(uncompressed_size)",
+//        "uri":       `"books/" || books.id`,
+//        "path":      `"` + p.library + `" || "/" || books.path || "/" || name || '.' || lower(format)`,
+//      }
+//      meta.CategorySort = "format"
+//      meta.Table = "data"
+//      meta.Column = "format"
+//    case "identifiers":
+//      meta.TableColumns = map[string]string{
+//        "value": "val",
+//        "type":  "type",
+//      }
+//      meta.Column = "val"
+//      meta.CategorySort = "type"
+//      meta.Table = "identifiers"
+//    case "comments":
+//      meta.Table = "comments"
+//    case "publisher":
+//      meta.TableColumns = map[string]string{
+//        "value": "name",
+//        "uri":   `"` + GetJsonField(name) + `/"` + " || id",
+//      }
+//    case "rating":
+//      meta.TableColumns = map[string]string{
+//        "value": "rating",
+//      }
+//    case "series":
+//      meta.TableColumns = map[string]string{
+//        "value":    "name",
+//        "position": "lower(series_index)",
+//        "uri":      `"` + GetJsonField(name) + `/"` + " || id",
+//      }
+//    case "cover":
+//      meta.IsCustom = false
+//    case "library":
+//      meta.IsCustom = false
+//    }
 
-		fmeta[GetJsonField(name)] = meta
-	}
+//    fmeta[GetJsonField(name)] = meta
+//  }
 
-	fmeta["uri"] = &Field{
-		Column: "uri",
-		Name:   "uri",
-		Label:  "uri",
-	}
+//  fmeta["uri"] = &Field{
+//    Column: "uri",
+//    Name:   "uri",
+//    Label:  "uri",
+//  }
 
-	return fmeta
-}
+//  return fmeta
+//}
