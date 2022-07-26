@@ -3,7 +3,6 @@ package book
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -11,9 +10,11 @@ type Fields struct {
 	displayFields [][]interface{}
 	lib           string
 	DbMeta        map[string]*Field
+	data          fields
 	meta          []*Field
-	idx           map[string]int
 }
+
+type fields map[string]*Field
 
 type Field struct {
 	idx          int
@@ -35,8 +36,7 @@ type Field struct {
 
 func NewFields() *Fields {
 	return &Fields{
-		meta: defaultFields(),
-		idx:  defaultFieldsIdx(),
+		data: defaultCalibreFields(),
 	}
 }
 
@@ -46,9 +46,12 @@ func (f *Fields) NewField(label string) *Field {
 	return field
 }
 
+func (f *Fields) GetField(name string) *Field {
+	return f.data[name]
+}
+
 func (f *Fields) AddField(field *Field) *Fields {
-	f.idx[field.CalibreLabel] = len(f.meta)
-	f.meta = append(f.meta, field)
+	f.data[field.Label()] = field
 	return f
 }
 
@@ -70,35 +73,8 @@ func (f *Fields) GetSeriesString() string {
 }
 
 func (f *Fields) SetField(name string, field *Field) *Fields {
-	old := f.GetField(name)
-	field.Meta = old.Meta
-	field.Data = old.Data
-	field.data = old.data
-	field.JsonLabel = old.JsonLabel
-	field.IsNames = old.IsNames
-	field.IsMultiple = old.IsMultiple
-	field.idx = old.idx
-	f.meta[f.GetFieldIndex(name)] = field
+	f.data[name] = field
 	return f
-}
-
-func (f *Fields) SetFieldsFromDB(data []byte) *Fields {
-	meta := make(map[string]*Field)
-	err := json.Unmarshal(data, &meta)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for name, field := range meta {
-		f.SetField(name, field)
-	}
-
-	return f
-}
-
-func (f *Fields) GetField(name string) *Field {
-	idx := f.GetFieldIndex(name)
-	return f.meta[idx]
 }
 
 func (f *Fields) SetMeta(name string, meta Meta) *Fields {
@@ -106,18 +82,14 @@ func (f *Fields) SetMeta(name string, meta Meta) *Fields {
 	return f
 }
 
-func (f *Fields) GetFieldIndex(name string) int {
-	return f.idx[name]
-}
-
-func (f *Fields) EachField() []*Field {
-	return f.meta
+func (f *Fields) EachField() fields {
+	return f.data
 }
 
 func (f *Fields) ListFields() []string {
 	var fields []string
 	for _, field := range f.EachField() {
-		fields = append(fields, field.JsonLabel)
+		fields = append(fields, field.Label())
 	}
 	return fields
 }
@@ -146,6 +118,10 @@ func NewColumn(label string) *Field {
 	field := NewField(label)
 	field.Meta = NewMetaColumn()
 	return field
+}
+
+func (f Field) Label() string {
+	return f.JsonLabel
 }
 
 func (f *Field) SetCalibreLabel(label string) *Field {
@@ -191,22 +167,6 @@ func (f *Field) SetIsCategory() *Field {
 func (f *Field) SetIndex(idx int) *Field {
 	f.idx = idx
 	return f
-}
-
-func (f *Field) SetKind(kind string) *Field {
-	switch kind {
-	case "collection":
-		f.Meta = NewMetaCollection()
-	case "item":
-		f.Meta = NewMetaItem()
-	case "column":
-		f.Meta = NewMetaColumn()
-	}
-	return f
-}
-
-func (f *Field) GetIndex() int {
-	return f.idx
 }
 
 func (f *Field) SetMeta(m Meta) *Field {
@@ -298,135 +258,64 @@ const (
 	category = iota
 )
 
-const (
-	authors        = iota
-	authorSort     = iota
-	description    = iota
-	cover          = iota
-	formats        = iota
-	id             = iota
-	identifiers    = iota
-	languages      = iota
-	library        = iota
-	modified       = iota
-	path           = iota
-	published      = iota
-	publisher      = iota
-	rating         = iota
-	series         = iota
-	position       = iota
-	sortAs         = iota
-	tags           = iota
-	added          = iota
-	title          = iota
-	titleAndSeries = iota
-	uri            = iota
-	uuid           = iota
-	custCols       = iota
-)
-
 func GetDefaultField(name string) *Field {
-	return defaultFields()[defaultFieldsIdx()[name]]
+	return defaultCalibreFields()[name]
 }
 
 func ListDefaultFields() []string {
 	var fields []string
-	for _, field := range defaultFields() {
-		fields = append(fields, field.JsonLabel)
+	for label, _ := range defaultCalibreFields() {
+		fields = append(fields, label)
 	}
 	return fields
 }
 
-func defaultFieldsIdx() map[string]int {
-	return map[string]int{
-		"authors":        authors,
-		"authorSort":     authorSort,
-		"description":    description,
-		"cover":          cover,
-		"formats":        formats,
-		"id":             id,
-		"identifiers":    identifiers,
-		"languages":      languages,
-		"library":        library,
-		"modified":       modified,
-		"path":           path,
-		"published":      published,
-		"publisher":      publisher,
-		"rating":         rating,
-		"series":         series,
-		"position":       position,
-		"sortAs":         sortAs,
-		"tags":           tags,
-		"added":          added,
-		"title":          title,
-		"titleAndSeries": titleAndSeries,
-		"uri":            uri,
-		"uuid":           uuid,
-		"customColumns":  custCols,
-	}
-}
-
-func defaultFields() []*Field {
-	return []*Field{
-		NewCollection("authors").
-			SetIndex(authors).
+func defaultCalibreFields() fields {
+	return fields{
+		"authors": NewCollection("authors").
 			SetIsCategory().
 			SetIsMultiple().
 			SetIsNames(),
-		NewColumn("authorSort").
-			SetCalibreLabel("author_sort").
-			SetIndex(authorSort),
-		NewColumn("description").
-			SetCalibreLabel("comments").
-			SetIndex(description),
-		NewItem("cover").SetIndex(cover),
-		NewCollection("formats").
-			SetIndex(formats).
+		"authorSort": NewColumn("authorSort").
+			SetCalibreLabel("author_sort"),
+		"description": NewColumn("description").
+			SetCalibreLabel("comments"),
+		"cover": NewItem("cover"),
+		"formats": NewCollection("formats").
 			SetIsCategory().
 			SetIsMultiple(),
-		NewColumn("id").SetIndex(id),
-		NewCollection("identifiers").
-			SetIndex(identifiers).
+		"id": NewColumn("id"),
+		"identifiers": NewCollection("identifiers").
 			SetIsCategory().
 			SetIsMultiple(),
-		NewCollection("languages").
-			SetIndex(languages).
+		"languages": NewCollection("languages").
 			SetIsCategory().
 			SetIsMultiple(),
-		NewColumn("library").SetIndex(library),
-		NewColumn("modified").
-			SetCalibreLabel("last_modified").
-			SetIndex(modified),
-		NewColumn("path").SetIndex(path),
-		NewColumn("published").
-			SetCalibreLabel("pubdate").
-			SetIndex(published),
-		NewItem("publisher").SetIndex(publisher),
-		NewColumn("rating").
-			SetIndex(rating).
+		"library": NewColumn("library"),
+		"modified": NewColumn("modified").
+			SetCalibreLabel("last_modified"),
+		"path": NewColumn("path"),
+		"published": NewColumn("published").
+			SetCalibreLabel("pubdate"),
+		"publisher": NewItem("publisher"),
+		"rating": NewColumn("rating").
 			SetIsCategory(),
-		NewItem("series").
-			SetIndex(series).
+		"series": NewItem("series").
 			SetIsCategory(),
-		NewColumn("position").
-			SetCalibreLabel("series_index").
-			SetIndex(position),
-		NewColumn("sortAs").
-			SetCalibreLabel("sort").
-			SetIndex(sortAs),
-		NewCollection("tags").
-			SetIndex(tags).
+		"position": NewColumn("position").
+			SetCalibreLabel("series_index"),
+		"sortAs": NewColumn("sortAs").
+			SetCalibreLabel("sort"),
+		"tags": NewCollection("tags").
 			SetIsCategory().
 			SetIsMultiple(),
-		NewColumn("added").
-			SetCalibreLabel("timestamp").
-			SetIndex(added),
-		NewColumn("title").SetIndex(title),
-		NewColumn("titleAndSeries").SetIndex(titleAndSeries),
-		NewColumn("uri").SetIndex(uri),
-		NewColumn("uuid").SetIndex(uuid),
-		NewField("customColumns").
-			SetCalibreLabel("custom_columns").
-			SetIndex(custCols),
+		"added": NewColumn("added").
+			SetCalibreLabel("timestamp"),
+		"title":          NewColumn("title"),
+		"titleAndSeries": NewColumn("titleAndSeries"),
+		"uri":            NewColumn("uri"),
+		"uuid":           NewColumn("uuid"),
+		"customColumns": NewField("customColumns").
+			SetCalibreLabel("custom_columns"),
 	}
 }

@@ -99,7 +99,6 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 						col.SetIsNames()
 					}
 
-					println(col.String())
 					book.AddField(col)
 				}
 			}

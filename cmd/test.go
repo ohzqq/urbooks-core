@@ -45,7 +45,7 @@ func getPreferences(lib *urbooks.Library) {
 	//resp := lib.DB.Get(u.String())
 	//println(string(resp))
 	lib.GetDBCustomColumns()
-	fmt.Printf("%+v\n", lib.CustomColumns["duration"])
+	fmt.Printf("duration %+v\n", lib.CustomColumns["duration"])
 	//field, err := book.UnmarshalField([]byte(c["meta"]))
 	//if err != nil {
 	//log.Fatalf("cust col fail %v\n", err)
