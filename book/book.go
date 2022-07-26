@@ -141,6 +141,34 @@ func NewBook() *Book {
 	return &Book{Fields: NewFields()}
 }
 
+func (b *Book) GetSeriesString() string {
+	s := b.GetField("series")
+	if !s.IsNull() {
+		p := "1.0"
+		if s.String() != "" {
+			if pos := b.GetField("position").String(); pos != "" {
+				p = pos
+			}
+			if pos := s.GetMeta().Item().Get("position"); pos != "" {
+				p = pos
+			}
+		}
+		return s.String() + `, Book ` + p
+	}
+	return ""
+}
+
+func (b *Book) GetTitleAndSeries() string {
+	title := b.GetField("title").String()
+	if t := b.GetField("titleAndSeries"); !t.IsNull() {
+		return t.String()
+	}
+	if s := b.GetSeriesString(); s != "" {
+		return title + " [" + s + "]"
+	}
+	return title
+}
+
 func (b Book) GetFile(f string) *Item {
 	formats := b.GetField("formats")
 	switch f {

@@ -3,10 +3,12 @@ package book
 import (
 	"bytes"
 	"fmt"
+	"html"
 	"html/template"
 	"log"
 	"os"
 	"regexp"
+	"strings"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/gosimple/slug"
@@ -31,14 +33,19 @@ type metaFmt struct {
 }
 
 var funcMap = template.FuncMap{
-	"toMarkdown": toMarkdown,
+	"toMarkdown":   toMarkdown,
+	"stringToHTML": stringToHTML,
+}
+
+func stringToHTML(s string) template.HTML {
+	return template.HTML(html.UnescapeString(s))
 }
 
 var MetaFmt = []metaFmt{
 	metaFmt{
 		name: "ffmeta",
 		ext:  ".ini",
-		tmpl: template.Must(template.New("ffmeta").Parse(ffmetaTmpl)),
+		tmpl: template.Must(template.New("ffmeta").Funcs(funcMap).Parse(ffmetaTmpl)),
 	},
 	metaFmt{
 		name: "markdown",
@@ -117,19 +124,14 @@ func (m metaFmt) Render(b *Book) []byte {
 func (b *Book) StringMap() map[string]string {
 	m := make(map[string]string)
 	for _, field := range b.EachField() {
-		key := field.JsonLabel
-		//if field.IsCustom {
-		//  key = "#" + key
-		//}
+		key := strings.TrimPrefix(field.Label(), "#")
 
 		if key != "customColumns" {
-			m[key] = field.Meta.String(field)
+			m[key] = field.String()
 		}
 
-		if key == "series" {
-			if pos := field.GetMeta().Item().Get("position"); pos != "" {
-				m["position"] = pos
-			}
+		if key == "titleAndSeries" && field.IsNull() {
+			m["titleAndSeries"] = b.GetTitleAndSeries()
 		}
 	}
 	return m
@@ -162,12 +164,12 @@ func toMarkdown(str string) string {
 }
 
 const ffmetaTmpl = `;FFMETADATA
-title={{.titleAndSeries}}
-album={{.titleAndSeries}}
-artist={{.authors}}
-composer={{.narrators}}
-genre={{.tags}}
-comment={{.description}}
+title={{stringToHTML .titleAndSeries}}
+album={{stringToHTML .titleAndSeries}}
+artist={{stringToHTML .authors}}
+composer={{stringToHTML .narrators}}
+genre={{stringToHTML .tags}}
+comment={{stringToHTML .description}}
 `
 
 const mdTmpl = `

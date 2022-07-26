@@ -56,26 +56,9 @@ func (f *Fields) GetField(name string) *Field {
 	return f.data[name]
 }
 
-func (f *Fields) AddField(field *Field) *Fields {
+func (f *Fields) AddField(field *Field) *Field {
 	f.data[field.Label()] = field
-	return f
-}
-
-func (f *Fields) GetSeriesString() string {
-	s := f.GetField("series")
-	if !s.IsNull() {
-		p := "1.0"
-		if s.String() != "" {
-			if pos := f.GetField("position").String(); pos != "" {
-				p = pos
-			}
-			if pos := s.GetMeta().Item().Get("position"); pos != "" {
-				p = pos
-			}
-		}
-		return s.String() + `, Book ` + p
-	}
-	return ""
+	return field
 }
 
 func (f *Fields) SetField(name string, field *Field) *Fields {
@@ -148,6 +131,11 @@ func (f *Field) setJsonData(data []byte) *Field {
 
 func (f *Field) SetData(data any) *Field {
 	f.data = data
+	switch d := data.(type) {
+	case string:
+		f.SetStringMeta(d)
+	}
+	f.Meta.ParseData(f)
 	return f
 }
 

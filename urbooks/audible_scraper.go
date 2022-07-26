@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/gosimple/slug"
@@ -141,10 +142,12 @@ func (a *AudibleScraper) ParseURL() {
 func (a *AudibleScraper) Scrape() []*book.Book {
 	var urls map[string]string
 	switch {
+	case a.IsSingle:
+		urls = map[string]string{"self": a.AudibleURL}
 	case a.IsSearch:
 		switch len(a.URLs) {
 		case 0:
-			fmt.Println("No results")
+			fmt.Println("No search results")
 		case 1:
 			for _, u := range a.URLs {
 				urls = map[string]string{"self": u}
@@ -157,8 +160,6 @@ func (a *AudibleScraper) Scrape() []*book.Book {
 		}
 	case a.IsList:
 		urls = a.getListURLs(a.AudibleURL)
-	case a.IsSingle:
-		urls = map[string]string{"self": a.AudibleURL}
 	}
 
 	for _, u := range urls {
@@ -202,39 +203,62 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 
 func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 	return func(g *geziyor.Geziyor, r *client.Response) {
-		book := book.NewBook()
+		b := book.NewBook()
+
+		trimNewlines := regexp.MustCompile(`\n`)
+		schema := strings.TrimSpace(r.HTMLDoc.Find("#bottom-0").First().Text())
+		split := trimNewlines.ReplaceAllString(schema, "")
+		before, _, found := strings.Cut(split, "][")
+		if found {
+			before = before + "]"
+		}
+		//test := book.UnmarshalBookSchema([]byte(before))
 
 		title := strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text())
-		book.GetField("title").SetData(title)
+		b.GetField("title").SetData(title)
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
 		if !a.NoCovers {
 			DownloadCover(slug.Make(title)+".jpg", coverURL)
 		}
 
-		authors := book.GetField("authors").Collection()
+		authors := b.GetField("authors").Collection()
 		r.HTMLDoc.Find(".authorLabel a").Each(func(_ int, s *goquery.Selection) {
-			authors.AddItem().Set("value", s.Text())
+			if text := s.Text(); text != "" {
+				authors.AddItem().Set("value", text)
+			}
 		})
 
-		narrators := book.NewField("#narrators").SetIsNames().SetIsCustom().SetIsMultiple().Collection()
+		b.AddField(book.NewCollection("#narrators"))
+		narrators := b.GetField("#narrators").SetIsNames().SetIsMultiple().Collection()
 		r.HTMLDoc.Find(".narratorLabel a").Each(func(_ int, s *goquery.Selection) {
-			narrators.AddItem().Set("value", s.Text())
+			if text := s.Text(); text != "" {
+				narrators.AddItem().Set("value", text)
+			}
 		})
 
-		series := r.HTMLDoc.Find(".seriesLabel").Text()
-		splitSeries := strings.Split(strings.TrimPrefix(strings.TrimSpace(series), "Series:"), ",")
+		series := strings.TrimPrefix(strings.TrimSpace(r.HTMLDoc.Find(".seriesLabel").Text()), "Series:")
+		seriesSplitter := trimNewlines.ReplaceAllString(series, "")
+		//seriesSplitter := strings.Split(strings.ReplaceAll(series, `, Book`, ""), ",")
+		posex := regexp.MustCompile(`^(\w+), Book (\d+)$`).FindAllString(strings.TrimSpace(series), -1)
+		fmt.Printf("%+v\n", posex)
+		for _, s := range seriesSplitter {
+			//posex := regexp.MustCompile(`^(\w+) (\d+)$`).FindAllString(strings.TrimSpace(s), -1)
+			fmt.Printf("%+v\n", s)
+		}
+
+		splitSeries := strings.Split(series, ",")
 		n := 0
 		p := 1
 		for i := 0; i < len(splitSeries)/2; i++ {
-			s := book.GetField("series").Item()
+			s := b.GetField("series").Item()
 			s.Set("value", strings.TrimPrefix(strings.TrimSpace(splitSeries[n]), "Book "))
 			s.Set("position", strings.TrimPrefix(strings.TrimSpace(splitSeries[p]), "Book "))
 			n = n + 2
 			p = p + 2
 		}
 
-		tags := book.GetField("tags").Collection()
+		tags := b.GetField("tags").Collection()
 		r.HTMLDoc.Find(".bc-chip-text").Each(func(_ int, s *goquery.Selection) {
 			tags.AddItem().Set("value", strings.TrimSpace(s.Text()))
 		})
@@ -243,9 +267,9 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 		if err != nil {
 			log.Fatal(err)
 		}
-		book.GetField("description").SetData(desc)
+		b.GetField("description").SetData(desc)
 
-		a.Books = append(a.Books, book)
+		a.Books = append(a.Books, b)
 	}
 }
 

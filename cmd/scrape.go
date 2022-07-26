@@ -22,22 +22,22 @@ var scrapeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		scraper.Keywords = strings.Join(args, " ")
 		switch {
-		case scraper.Authors != "" || scraper.Narrators != "" || scraper.Title != "" || scraper.Keywords != "":
-			scraper = scraper.Search()
 		case batch != "":
 			scraper = scraper.List(batch)
 		case uri != "":
 			scraper = scraper.Get(uri)
+		case scraper.Authors != "" || scraper.Narrators != "" || scraper.Title != "" || scraper.Keywords != "":
+			scraper = scraper.Search()
 		}
 
 		books := scraper.Scrape()
 
 		if books == nil {
-			fmt.Println("no results")
+			fmt.Println("cli no results")
 		}
 
 		for _, book := range books {
-			book.ConvertTo("ffmeta").Write()
+			book.ConvertTo("ffmeta").Print()
 		}
 	},
 }
