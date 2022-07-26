@@ -56,7 +56,7 @@ func somebooks() {
 		println(string(book.BookToRssChannel(b).Marshal()))
 		//fmt.Printf("%+v\n", book.BookToRssChannel(b))
 		//println(string(cmdLib.ToOPF(b)))
-		fmt.Printf("%+V\n", b.GetField("narrators").String())
+		fmt.Printf("narrators %+V\n", b.GetField("narrators").String())
 	}
 }
 
