@@ -3,7 +3,10 @@ package book
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
 
 type Fields struct {
@@ -11,7 +14,7 @@ type Fields struct {
 	lib           string
 	DbMeta        map[string]*Field
 	data          fields
-	meta          []*Field
+	customColumns []string
 }
 
 type fields map[string]*Field
@@ -47,6 +50,9 @@ func (f *Fields) NewField(label string) *Field {
 }
 
 func (f *Fields) GetField(name string) *Field {
+	if !strings.HasPrefix(name, "#") && slices.Contains(f.customColumns, "#"+name) {
+		name = "#" + name
+	}
 	return f.data[name]
 }
 
@@ -118,6 +124,12 @@ func NewColumn(label string) *Field {
 	field := NewField(label)
 	field.Meta = NewMetaColumn()
 	return field
+}
+
+func (f *Field) rawQuery() string {
+	q := url.Values{}
+	q.Set("library", f.Library)
+	return q.Encode()
 }
 
 func (f Field) Label() string {

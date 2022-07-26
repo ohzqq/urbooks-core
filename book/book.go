@@ -13,6 +13,12 @@ import (
 
 type Books []*Book
 
+type Book struct {
+	lib string
+	fmt metaFmt
+	*Fields
+}
+
 func ParseBooks(r []byte) (Books, error) {
 	var err error
 
@@ -76,6 +82,7 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 
 				for name, cdata := range custom {
 					col := NewField(name).SetIsCustom().SetData(cdata["data"])
+					book.customColumns = append(book.customColumns, name)
 
 					meta := make(map[string]string)
 					err = json.Unmarshal(cdata["meta"], &meta)
@@ -105,6 +112,12 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 		}
 		books.AddBook(book)
 	}
+
+	for _, b := range books.EachBook() {
+		for _, field := range b.EachField() {
+			field.Library = b.GetField("library").String()
+		}
+	}
 	return nil
 }
 
@@ -115,12 +128,6 @@ func (b *Books) AddBook(book *Book) *Books {
 
 func (b *Books) EachBook() []*Book {
 	return *b
-}
-
-type Book struct {
-	lib string
-	fmt metaFmt
-	*Fields
 }
 
 type Meta interface {
@@ -222,9 +229,7 @@ func (c *Collection) Split(value string, isNames bool) *Collection {
 }
 
 func (c *Collection) URL(f *Field) string {
-	q := url.Values{}
-	q.Set("library", f.Library)
-	u := url.URL{Path: f.JsonLabel, RawQuery: q.Encode()}
+	u := url.URL{Path: f.Label(), RawQuery: f.rawQuery()}
 	return u.String()
 }
 
@@ -270,7 +275,8 @@ func (i *Item) String(f *Field) string {
 }
 
 func (i *Item) URL(f *Field) string {
-	return i.Get("uri")
+	u := url.URL{Path: i.Get("uri"), RawQuery: f.rawQuery()}
+	return u.String()
 }
 
 func (i *Item) IsNull() bool {
@@ -318,6 +324,10 @@ func NewMetaColumn() *Column {
 }
 
 func (c *Column) String(f *Field) string {
+	if f.Label() == "uri" {
+		u := url.URL{Path: string(*c), RawQuery: f.rawQuery()}
+		return u.String()
+	}
 	return string(*c)
 }
 

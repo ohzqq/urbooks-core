@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/ohzqq/urbooks-core/book"
 	"github.com/ohzqq/urbooks-core/urbooks"
 	"github.com/spf13/cobra"
 )
@@ -52,13 +53,10 @@ var lsCmd = &cobra.Command{
 func somebooks() {
 	cmdLib.From("books").Find("333").GetResponse()
 	for _, b := range cmdLib.Books {
-		for name, _ := range b.EachField() {
-			println(name)
-		}
-		//println(string(book.BookToRssChannel(b).Marshal()))
+		println(string(book.BookToRssChannel(b).Marshal()))
 		//fmt.Printf("%+v\n", book.BookToRssChannel(b))
 		//println(string(cmdLib.ToOPF(b)))
-		fmt.Printf("narrators %+V\n", b.GetField("#narrators").String())
+		fmt.Printf("uri %+V\n", b.GetField("authors").URL())
 	}
 }
 

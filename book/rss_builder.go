@@ -71,9 +71,16 @@ func BookToRssChannel(b *Book) *RSS {
 	return rss
 }
 
-//func BookToRssItem(b *Book) *RssItem {
-
-//}
+func BookToRssItem(b *Book) *RssItem {
+	shared := sharedRss(b)
+	item := NewRssItem()
+	item.SetShared(shared)
+	item.SetGuid(b.GetField("uri").String())
+	item.SetDuration(b.GetField("duration").String())
+	item.SetAuthor(b.GetField("authors").String())
+	item.SetEnclosure(b.GetFile("audio"))
+	return item
+}
 
 func sharedRss(b *Book) *SharedRss {
 	rss := NewRssObject()
