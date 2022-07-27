@@ -203,7 +203,7 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 
 func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 	return func(g *geziyor.Geziyor, r *client.Response) {
-		b := book.NewBook()
+		//b := book.NewBook()
 
 		trimNewlines := regexp.MustCompile(`\n`)
 		schema := strings.TrimSpace(r.HTMLDoc.Find("#bottom-0").First().Text())
@@ -212,62 +212,63 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 		if found {
 			before = before + "]"
 		}
-		//test := book.UnmarshalBookSchema([]byte(before))
+		b := book.UnmarshalBookSchema([]byte(before))
+		//fmt.Printf("%+V\n", test)
 
-		title := strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text())
-		b.GetField("title").SetData(title)
+		var title string
+		if f := b.GetField("title"); f.IsNull() {
+			title = strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text())
+			f.SetData(title)
+		}
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
 		if !a.NoCovers {
 			DownloadCover(slug.Make(title)+".jpg", coverURL)
 		}
 
-		authors := b.GetField("authors").Collection()
-		r.HTMLDoc.Find(".authorLabel a").Each(func(_ int, s *goquery.Selection) {
-			if text := s.Text(); text != "" {
-				authors.AddItem().Set("value", text)
+		if f := b.GetField("authors"); f.IsNull() {
+			authors := f.Collection()
+			r.HTMLDoc.Find(".authorLabel a").Each(func(_ int, s *goquery.Selection) {
+				if text := s.Text(); text != "" {
+					authors.AddItem().Set("value", text)
+				}
+			})
+		}
+
+		if f := b.GetField("#narrators"); f.IsNull() {
+			b.AddField(book.NewCollection("#narrators"))
+			narrators := b.GetField("#narrators").SetIsNames().SetIsMultiple().Collection()
+			r.HTMLDoc.Find(".narratorLabel a").Each(func(_ int, s *goquery.Selection) {
+				if text := s.Text(); text != "" {
+					narrators.AddItem().Set("value", text)
+				}
+			})
+		}
+
+		seriesHtml := strings.TrimPrefix(strings.TrimSpace(r.HTMLDoc.Find(".seriesLabel").Text()), "Series:")
+		allSeries := regexp.MustCompile(`(\w+\s?){1,}, (Book \d+)`).FindAllString(seriesHtml, -1)
+		if len(allSeries) > 0 {
+			series := b.GetField("series").Item()
+			position := b.GetField("position")
+			split := strings.Split(allSeries[0], ", Book ")
+			series.Set("value", split[0]).Set("position", split[1])
+			position.SetData(split[1])
+		}
+
+		if f := b.GetField("tags"); f.IsNull() {
+			tags := f.Collection()
+			r.HTMLDoc.Find(".bc-chip-text").Each(func(_ int, s *goquery.Selection) {
+				tags.AddItem().Set("value", strings.TrimSpace(s.Text()))
+			})
+		}
+
+		if f := b.GetField("description"); f.IsNull() {
+			desc, err := r.HTMLDoc.Find(".productPublisherSummary span.bc-text").Html()
+			if err != nil {
+				log.Fatal(err)
 			}
-		})
-
-		b.AddField(book.NewCollection("#narrators"))
-		narrators := b.GetField("#narrators").SetIsNames().SetIsMultiple().Collection()
-		r.HTMLDoc.Find(".narratorLabel a").Each(func(_ int, s *goquery.Selection) {
-			if text := s.Text(); text != "" {
-				narrators.AddItem().Set("value", text)
-			}
-		})
-
-		series := strings.TrimPrefix(strings.TrimSpace(r.HTMLDoc.Find(".seriesLabel").Text()), "Series:")
-		seriesSplitter := trimNewlines.ReplaceAllString(series, "")
-		//seriesSplitter := strings.Split(strings.ReplaceAll(series, `, Book`, ""), ",")
-		posex := regexp.MustCompile(`^(\w+), Book (\d+)$`).FindAllString(strings.TrimSpace(series), -1)
-		fmt.Printf("%+v\n", posex)
-		for _, s := range seriesSplitter {
-			//posex := regexp.MustCompile(`^(\w+) (\d+)$`).FindAllString(strings.TrimSpace(s), -1)
-			fmt.Printf("%+v\n", s)
+			f.SetData(desc)
 		}
-
-		splitSeries := strings.Split(series, ",")
-		n := 0
-		p := 1
-		for i := 0; i < len(splitSeries)/2; i++ {
-			s := b.GetField("series").Item()
-			s.Set("value", strings.TrimPrefix(strings.TrimSpace(splitSeries[n]), "Book "))
-			s.Set("position", strings.TrimPrefix(strings.TrimSpace(splitSeries[p]), "Book "))
-			n = n + 2
-			p = p + 2
-		}
-
-		tags := b.GetField("tags").Collection()
-		r.HTMLDoc.Find(".bc-chip-text").Each(func(_ int, s *goquery.Selection) {
-			tags.AddItem().Set("value", strings.TrimSpace(s.Text()))
-		})
-
-		desc, err := r.HTMLDoc.Find(".productPublisherSummary span.bc-text").Html()
-		if err != nil {
-			log.Fatal(err)
-		}
-		b.GetField("description").SetData(desc)
 
 		a.Books = append(a.Books, b)
 	}
