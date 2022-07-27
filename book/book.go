@@ -63,13 +63,13 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 		book := NewBook()
 		for key, value := range b {
 			field := book.GetField(key)
-			field.SetData(value)
 
 			if key != field.JsonLabel {
 				return fmt.Errorf("json: %v\n field meta: %v\n", key, field.JsonLabel)
 			}
 
 			if key != "customColumns" {
+				field.SetData(value)
 				field.ParseData()
 			}
 
@@ -81,7 +81,7 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 				}
 
 				for name, cdata := range custom {
-					col := NewField(name).SetIsCustom().SetData(cdata["data"])
+					col := book.AddField(NewField(name).SetIsCustom())
 					book.customColumns = append(book.customColumns, name)
 
 					meta := make(map[string]string)
@@ -97,6 +97,7 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 					case "false":
 						col.SetMeta(NewMetaColumn())
 					}
+					col.SetData(cdata["data"])
 					col.ParseData()
 					//if err != nil {
 					//  return err
@@ -106,7 +107,6 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 						col.SetIsNames()
 					}
 
-					book.AddField(col)
 				}
 			}
 		}

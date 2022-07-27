@@ -134,6 +134,7 @@ func (f *Field) SetData(data any) *Field {
 	switch d := data.(type) {
 	case string:
 		f.SetStringMeta(d)
+		//case json.RawMessage:
 	}
 	f.Meta.ParseData(f)
 	return f
