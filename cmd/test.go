@@ -48,7 +48,10 @@ func apicall() {
 	resp := api.Search()
 	//for _, asin := range resp {
 	//println(asin)
-	fmt.Printf("%+V\n", api.Product(resp[0]))
+	b := api.Product(resp[0])
+	b.ConvertTo("ffmeta").Write()
+	urbooks.DownloadCover(b.GetField("title").String(), b.GetField("cover").Item().Get("url"))
+	//fmt.Printf("%+V\n", b.GetField("cover").Item().Get("url"))
 	//}
 }
 

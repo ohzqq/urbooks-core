@@ -135,6 +135,7 @@ type Meta interface {
 	URL(f *Field) string
 	IsNull() bool
 	ParseData(f *Field)
+	ParseMeta(f *Field) Meta
 }
 
 func NewBook() *Book {
@@ -269,6 +270,11 @@ func (c *Collection) ParseData(f *Field) {
 	switch d := f.data.(type) {
 	case string:
 		c.Split(d, f.IsNames)
+	case []string:
+
+		for _, val := range d {
+			c.AddItem().Set("value", val)
+		}
 	case json.RawMessage:
 		if len(d) > 0 {
 			if err := json.Unmarshal(d, &c.data); err != nil {
@@ -276,6 +282,20 @@ func (c *Collection) ParseData(f *Field) {
 			}
 		}
 	}
+}
+
+func (c *Collection) ParseMeta(f *Field) Meta {
+	switch d := f.data.(type) {
+	case string:
+		c.Split(d, f.IsNames)
+	case json.RawMessage:
+		if len(d) > 0 {
+			if err := json.Unmarshal(d, &c.data); err != nil {
+				log.Fatalf("poot failed: %v\n", err)
+			}
+		}
+	}
+	return c
 }
 
 type Item struct {
@@ -334,6 +354,19 @@ func (i *Item) ParseData(f *Field) {
 	}
 }
 
+func (i *Item) ParseMeta(f *Field) Meta {
+	switch d := f.data.(type) {
+	case string:
+		i = i.Set("value", d)
+	case json.RawMessage:
+		err := i.UnmarshalJSON(d)
+		if err != nil {
+			fmt.Printf("item failed: %v\n", err)
+		}
+	}
+	return i
+}
+
 func (i *Item) UnmarshalJSON(b []byte) error {
 	if len(b) > 0 {
 		if err := json.Unmarshal(b, &i.data); err != nil {
@@ -378,6 +411,20 @@ func (c *Column) ParseData(f *Field) {
 			}
 		}
 	}
+}
+
+func (c *Column) ParseMeta(f *Field) Meta {
+	switch d := f.data.(type) {
+	case string:
+		c.Set(d)
+	case json.RawMessage:
+		if len(d) > 0 {
+			if err := json.Unmarshal(d, &c); err != nil {
+				fmt.Printf("%v failed: %v\n", d, err)
+			}
+		}
+	}
+	return c
 }
 
 func (c *Column) Set(v string) *Column {

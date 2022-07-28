@@ -1,4 +1,4 @@
-package urbooks
+package audible
 
 import (
 	"encoding/json"
@@ -67,9 +67,8 @@ func (q *AudibleQuery) Product(asin string) *book.Book {
 	q.url.Path = path.Join(audibleApi, asin)
 
 	result := q.Get()
-	b := book.UnmarshalAudibleApiProduct(result["product"])
 
-	return b
+	return book.UnmarshalAudibleApiProduct(result["product"])
 }
 
 func (q *AudibleQuery) Search() []string {

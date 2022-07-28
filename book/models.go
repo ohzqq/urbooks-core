@@ -57,19 +57,22 @@ func UnmarshalAudibleApiProduct(d []byte) *Book {
 				break
 			}
 
-			var contributors *Collection
+			var contributors *Field
 			switch f {
 			case "narrators":
 				contributors = book.AddField(NewCollection("#narrators")).
 					SetIsNames().
-					SetIsMultiple().
-					Collection()
+					SetIsMultiple()
+				//Collection()
 			case "authors":
-				contributors = book.GetField(f).Collection()
+				contributors = book.GetField(f)
 			}
+			var cc []string
 			for _, contributor := range c {
-				contributors.AddItem().Set("value", contributor["name"])
+				cc = append(cc, contributor["name"])
+				//contributors.AddItem().Set("value", contributor["name"])
 			}
+			contributors.SetData(cc)
 		case "title", "release_date", "publisher_summary", "language", "publisher_name":
 			var val string
 			err := json.Unmarshal(dd, &val)

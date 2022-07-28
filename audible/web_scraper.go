@@ -1,16 +1,12 @@
-package urbooks
+package audible
 
 import (
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 
-	"github.com/gosimple/slug"
 	"github.com/ohzqq/urbooks-core/book"
 	"github.com/ohzqq/urbooks-core/bubbles"
 
@@ -203,17 +199,7 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 
 func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 	return func(g *geziyor.Geziyor, r *client.Response) {
-		//b := book.NewBook()
-
-		trimNewlines := regexp.MustCompile(`\n`)
-		schema := strings.TrimSpace(r.HTMLDoc.Find("#bottom-0").First().Text())
-		split := trimNewlines.ReplaceAllString(schema, "")
-		before, _, found := strings.Cut(split, "][")
-		if found {
-			before = before + "]"
-		}
-		b := book.UnmarshalBookSchema([]byte(before))
-		//fmt.Printf("%+V\n", test)
+		b := book.NewBook()
 
 		var title string
 		if f := b.GetField("title"); f.IsNull() {
@@ -223,7 +209,7 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
 		if !a.NoCovers {
-			DownloadCover(slug.Make(title)+".jpg", coverURL)
+			DownloadCover(title, coverURL)
 		}
 
 		if f := b.GetField("authors"); f.IsNull() {
@@ -248,10 +234,12 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 		seriesHtml := strings.TrimPrefix(strings.TrimSpace(r.HTMLDoc.Find(".seriesLabel").Text()), "Series:")
 		allSeries := regexp.MustCompile(`(\w+\s?){1,}, (Book \d+)`).FindAllString(seriesHtml, -1)
 		if len(allSeries) > 0 {
-			series := b.GetField("series").Item()
-			position := b.GetField("position")
 			split := strings.Split(allSeries[0], ", Book ")
+
+			series := b.GetField("series").Item()
 			series.Set("value", split[0]).Set("position", split[1])
+
+			position := b.GetField("position")
 			position.SetData(split[1])
 		}
 
@@ -271,28 +259,5 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 		}
 
 		a.Books = append(a.Books, b)
-	}
-}
-
-func DownloadCover(name, u string) {
-	response, err := http.Get(u)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != 200 {
-		log.Fatal(response.StatusCode)
-	}
-
-	file, err := os.Create(name)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, response.Body)
-	if err != nil {
-		log.Fatal(err)
 	}
 }
