@@ -1,17 +1,16 @@
 package cmd
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/ohzqq/urbooks-core/urbooks"
+	"github.com/ohzqq/urbooks-core/audible"
 	"github.com/spf13/cobra"
 )
 
 var (
 	uri     string
 	batch   string
-	scraper = urbooks.NewAudibleScraper()
+	scraper = audible.NewWebScraper()
 )
 
 // scrapeCmd represents the scrape command
@@ -21,24 +20,24 @@ var scrapeCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		scraper.Keywords = strings.Join(args, " ")
-		switch {
-		case batch != "":
-			scraper = scraper.List(batch)
-		case uri != "":
-			scraper = scraper.Get(uri)
-		case scraper.Authors != "" || scraper.Narrators != "" || scraper.Title != "" || scraper.Keywords != "":
-			scraper = scraper.Search()
-		}
+		//switch {
+		//case batch != "":
+		//  scraper = scraper.List(batch)
+		//case uri != "":
+		//  scraper = scraper.Get(uri)
+		//case scraper.Authors != "" || scraper.Narrators != "" || scraper.Title != "" || scraper.Keywords != "":
+		//  scraper = scraper.Search()
+		//}
 
-		books := scraper.Scrape()
+		//books := scraper.Scrape()
 
-		if books == nil {
-			fmt.Println("cli no results")
-		}
+		//if books == nil {
+		//fmt.Println("cli no results")
+		//}
 
-		for _, book := range books {
-			book.ConvertTo("ffmeta").Write()
-		}
+		//for _, book := range books {
+		//book.ConvertTo("ffmeta").Write()
+		//}
 	},
 }
 

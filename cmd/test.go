@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ohzqq/urbooks-core/audible"
 	"github.com/ohzqq/urbooks-core/urbooks"
 	"github.com/spf13/cobra"
 )
 
 var (
-	api = urbooks.NewAudibleQuery()
+	api = audible.NewAudibleRequest()
 )
 
 // testCmd represents the test command
@@ -45,12 +46,14 @@ var testCmd = &cobra.Command{
 }
 
 func apicall() {
-	resp := api.Search()
+	u := api.Search()
+	fmt.Printf("%+V\n", u)
+	//resp := api.Search()
 	//for _, asin := range resp {
 	//println(asin)
-	b := api.Product(resp[0])
-	b.ConvertTo("ffmeta").Write()
-	urbooks.DownloadCover(b.GetField("title").String(), b.GetField("cover").Item().Get("url"))
+	//b := api.Product(resp[0])
+	//b.ConvertTo("ffmeta").Write()
+	//urbooks.DownloadCover(b.GetField("title").String(), b.GetField("cover").Item().Get("url"))
 	//fmt.Printf("%+V\n", b.GetField("cover").Item().Get("url"))
 	//}
 }

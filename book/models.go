@@ -33,7 +33,7 @@ func UnmarshalAudibleApiProduct(d []byte) *Book {
 	var data map[string]json.RawMessage
 	err := json.Unmarshal(d, &data)
 	if err != nil {
-		log.Fatalf("issue unmarshalling schema.org book %v\n", err)
+		log.Fatalf("issue unmarshalling audible api book %v\n", err)
 	}
 
 	book := NewBook()

@@ -11,36 +11,44 @@ import (
 	"github.com/ohzqq/urbooks-core/book"
 )
 
-const audibleApi = `api.audible.com/1.0/catalog/products`
+const (
+	apiHost = `api.audible`
+	apiPath = `/1.0/catalog/products`
+)
 
-type AudibleQuery struct {
-	client    *http.Client
-	url       *url.URL
-	Authors   string
-	Keywords  string
-	Narrators string
-	Title     string
+type ApiRequest struct {
+	client *http.Client
+	url    *queryUrl
+	asin   []string
 }
 
 var audibleClient = &http.Client{}
 
-func NewAudibleClient() *http.Client {
-	return &http.Client{}
-}
-
-func NewAudibleQuery() *AudibleQuery {
+func NewAudibleRequest() *AudibleQuery {
 	return &AudibleQuery{
 		url: &url.URL{
 			Scheme: "https",
-			Path:   audibleApi,
+			Host:   apiHost,
+			Path:   apiPath,
 		},
-		client: audibleClient,
+		suffix: ".com",
+		isApi:  true,
+		api: &ApiRequest{
+			client: audibleClient,
+		},
 	}
 }
 
-func (q *AudibleQuery) Get() map[string]json.RawMessage {
-	println(q.url.String())
-	resp, err := audibleClient.Get(q.url.String())
+func newRequestUrl() *url.URL {
+	return &url.URL{
+		Scheme: "https",
+		Host:   apiHost,
+		Path:   apiPath,
+	}
+}
+
+func (a *ApiRequest) makeRequest(u string) map[string]json.RawMessage {
+	resp, err := audibleClient.Get(u)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -60,39 +68,21 @@ func (q *AudibleQuery) Get() map[string]json.RawMessage {
 	return result
 }
 
-func (q *AudibleQuery) Product(asin string) *book.Book {
-	query := url.Values{}
-	query.Set("response_groups", "media,product_desc,contributors,series,product_extended_attrs,product_attrs")
-	q.url.RawQuery = query.Encode()
-	q.url.Path = path.Join(audibleApi, asin)
+func (a *ApiRequest) getBook(req *queryUrl) *book.Book {
+	req.values.Set("response_groups", "media,product_desc,contributors,series,product_extended_attrs,product_attrs")
 
-	result := q.Get()
+	req.Path = path.Join(apiPath, req.asin)
+	req.Host = apiHost
 
+	result := a.makeRequest(req.string())
 	return book.UnmarshalAudibleApiProduct(result["product"])
 }
 
-func (q *AudibleQuery) Search() []string {
-	query := url.Values{}
+func (a *ApiRequest) search(req string) []*book.Book {
+}
 
-	if a := q.Authors; a != "" {
-		query.Set("author", a)
-	}
-
-	if n := q.Narrators; n != "" {
-		query.Set("narrator", n)
-	}
-
-	if k := q.Keywords; k != "" {
-		query.Set("keywords", k)
-	}
-
-	if t := q.Title; t != "" {
-		query.Set("title", t)
-	}
-
-	q.url.RawQuery = query.Encode()
-
-	result := q.Get()
+func (a *ApiRequest) searchResults(req string) []string {
+	result := a.makeRequest(req)
 
 	var total int
 	err := json.Unmarshal(result["total_results"], &total)

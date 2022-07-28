@@ -15,95 +15,47 @@ import (
 	"github.com/geziyor/geziyor/client"
 )
 
-const audible = "audible.ca"
+const audible = "www.audible"
 
-type AudibleScraper struct {
+type WebScraper struct {
 	Scraper     *geziyor.Geziyor
 	ScraperOpts *geziyor.Options
+	url         *url.URL
 	URLs        map[string]string
 	Books       []*book.Book
-	URL         *url.URL
 	searchQuery url.Values
-	AudibleURL  string
-	Suffix      string
-	IsList      bool
-	IsSearch    bool
-	IsSingle    bool
-	NoCovers    bool
-	Keywords    string
-	Authors     string
-	Narrators   string
-	Title       string
+
+	AudibleURL string
+	Suffix     string
+	IsList     bool
+	IsSearch   bool
+	IsSingle   bool
 }
 
-func NewAudibleSearch() *AudibleScraper {
-	return &AudibleScraper{searchQuery: make(url.Values)}
-}
-
-func (s *AudibleScraper) SetKeywords(words string) *AudibleScraper {
-	s.Keywords = words
-	return s
-}
-
-func (s *AudibleScraper) SetAuthors(words string) *AudibleScraper {
-	s.Authors = words
-	return s
-}
-
-func (s *AudibleScraper) SetNarrators(words string) *AudibleScraper {
-	s.Narrators = words
-	return s
-}
-
-func (s *AudibleScraper) SetTitle(words string) *AudibleScraper {
-	s.Title = words
-	return s
-}
-
-func (s *AudibleScraper) SetNoCovers() *AudibleScraper {
-	s.NoCovers = true
-	return s
-}
-
-func (s *AudibleScraper) String() string {
-	url := &url.URL{
-		Scheme: "https",
-		Host:   audible,
-		Path:   "/search",
+func NewWebScraper() *AudibleQuery {
+	return &AudibleQuery{
+		url: &url.URL{
+			Scheme: "https",
+			Host:   audible,
+			Path:   "/search",
+		},
+		isWeb:   true,
+		scraper: newScraper(),
 	}
-
-	if s.Keywords != "" {
-		s.searchQuery.Set("keywords", s.Keywords)
-	}
-
-	if s.Authors != "" {
-		s.searchQuery.Set("searchAuthor", s.Authors)
-	}
-
-	if s.Narrators != "" {
-		s.searchQuery.Set("searchNarrator", s.Narrators)
-	}
-
-	if s.Title != "" {
-		s.searchQuery.Set("title", s.Title)
-	}
-
-	url.RawQuery = s.searchQuery.Encode()
-	return url.String()
 }
 
-func (s *AudibleScraper) Search() *AudibleScraper {
-	a := NewAudibleScraper().Get(s.String())
-	if s.NoCovers {
-		a.SetNoCovers()
-	}
-	a.IsSearch = true
-	a.URLs = a.getListURLs(a.AudibleURL)
-	return a
-}
+//func (s *WebScraper) Search() *WebScraper {
+//  a := NewWebScraper().Get(s.buildUrl())
+//  if s.NoCovers {
+//    a.SetNoCovers()
+//  }
+//  a.IsSearch = true
+//  a.URLs = a.getListURLs(a.AudibleURL)
+//  return a
+//}
 
-func NewAudibleScraper() *AudibleScraper {
-	return &AudibleScraper{
+func newScraper() *WebScraper {
+	return &WebScraper{
 		ScraperOpts: &geziyor.Options{
 			ConcurrentRequests: 1,
 			LogDisabled:        true,
@@ -113,29 +65,49 @@ func NewAudibleScraper() *AudibleScraper {
 	}
 }
 
-func (a *AudibleScraper) Get(audible string) *AudibleScraper {
+func (a *WebScraper) Get(audible string) *WebScraper {
 	a.AudibleURL = audible
 	a.IsSingle = true
-	a.ParseURL()
+	//a.ParseURL()
 	return a
 }
 
-func (a *AudibleScraper) List(audible string) *AudibleScraper {
+func (a *WebScraper) List(audible string) *WebScraper {
 	a.AudibleURL = audible
 	a.IsList = true
-	a.ParseURL()
+	//a.ParseURL()
 	return a
 }
 
-func (a *AudibleScraper) ParseURL() {
-	aUrl, err := url.Parse(a.AudibleURL)
-	if err != nil {
-		log.Fatal(err)
+//func (a *WebScraper) ParseURL() {
+//  aUrl, err := url.Parse(a.AudibleURL)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//  a.url = aUrl
+//}
+
+func (a *WebScraper) getBook(u string) *book.Book {
+	s := a.Get(u)
+	books := s.Scrape()
+	fmt.Printf("%+v\n", books)
+	//books := a.scrapeUrls([]string{u})
+	if len(books) > 0 {
+		return books[0]
 	}
-	a.URL = aUrl
+	return nil
 }
 
-func (a *AudibleScraper) Scrape() []*book.Book {
+func (a *WebScraper) scrapeUrls(urls []string) []*book.Book {
+	for _, u := range urls {
+		a.ScraperOpts.StartURLs = []string{u}
+		a.ScraperOpts.ParseFunc = a.scrapeBook()
+		geziyor.NewGeziyor(a.ScraperOpts).Start()
+	}
+	return a.Books
+}
+
+func (a *WebScraper) Scrape() []*book.Book {
 	var urls map[string]string
 	switch {
 	case a.IsSingle:
@@ -166,7 +138,7 @@ func (a *AudibleScraper) Scrape() []*book.Book {
 	return a.Books
 }
 
-func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
+func (a *WebScraper) getListURLs(aUrl string) map[string]string {
 	urls := make(map[string]string)
 	a.ScraperOpts.StartURLs = []string{aUrl}
 	a.ScraperOpts.ParseFunc = func(g *geziyor.Geziyor, r *client.Response) {
@@ -184,8 +156,8 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 					log.Fatal(err)
 				}
 				linkURL := url.URL{
-					Scheme: a.URL.Scheme,
-					Host:   a.URL.Host,
+					Scheme: "https",
+					Host:   a.url.Host,
 					Path:   pd.Path,
 				}
 				text := fmt.Sprintf("%s by %s", link.Text(), strings.Join(authors, ", "))
@@ -197,7 +169,7 @@ func (a *AudibleScraper) getListURLs(aUrl string) map[string]string {
 	return urls
 }
 
-func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
+func (a *WebScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 	return func(g *geziyor.Geziyor, r *client.Response) {
 		b := book.NewBook()
 
@@ -208,9 +180,9 @@ func (a *AudibleScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Respons
 		}
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
-		if !a.NoCovers {
-			DownloadCover(title, coverURL)
-		}
+		//if !a.NoCovers {
+		DownloadCover(title, coverURL)
+		//}
 
 		if f := b.GetField("authors"); f.IsNull() {
 			authors := f.Collection()
