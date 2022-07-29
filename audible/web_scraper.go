@@ -15,7 +15,7 @@ import (
 	"github.com/geziyor/geziyor/client"
 )
 
-const audible = "www.audible"
+const audibleHost = "www.audible"
 
 type WebScraper struct {
 	Scraper     *geziyor.Geziyor
@@ -34,11 +34,6 @@ type WebScraper struct {
 
 func NewWebScraper() *AudibleQuery {
 	return &AudibleQuery{
-		url: &url.URL{
-			Scheme: "https",
-			Host:   audible,
-			Path:   "/search",
-		},
 		IsWeb:   true,
 		scraper: newScraper(),
 	}
@@ -169,17 +164,12 @@ func (a *WebScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 	return func(g *geziyor.Geziyor, r *client.Response) {
 		b := book.NewBook()
 
-		var title string
-		if f := b.GetField("title"); f.IsNull() {
-			title = strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text())
-			f.SetData(title)
-		}
-		println(title)
+		title := b.GetField("title")
+		t := strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text())
+		title.SetData(t)
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
-		//if !a.NoCovers {
-		DownloadCover(title, coverURL)
-		//}
+		b.GetField("cover").Item().Set("url", coverURL)
 
 		if f := b.GetField("authors"); f.IsNull() {
 			authors := f.Collection()

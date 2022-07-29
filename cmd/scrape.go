@@ -11,6 +11,7 @@ import (
 var (
 	audibleUrl string
 	batchUrl   string
+	noCovers   bool
 	query      = audible.NewQuery()
 	scraper    = audible.NewWebScraper()
 	api        = audible.NewRequest()
@@ -48,21 +49,21 @@ func apicall() {
 	var books []*book.Book
 	if audibleUrl != "" {
 		query.SetUrl(audibleUrl)
-		query.IsWeb = true
-		books = append(books, query.GetBookMeta())
+		books = append(books, query.GetBook())
 	}
 
 	if batchUrl != "" {
-		println("get batch!")
 		query.IsBatch = true
-		query.IsWeb = true
 		query.SetUrl(batchUrl)
 		books = query.GetBookBatch()
 	}
 
 	for _, b := range books {
-		fmt.Printf("%+V\n", b.GetField("#narrators").String())
+		if !noCovers {
+			fmt.Printf("%+V\n", b.GetField("title").String())
+		}
 	}
+
 	//resp := api.Search()
 	//for _, asin := range resp {
 	//println(asin)
@@ -76,7 +77,7 @@ func apicall() {
 func init() {
 	rootCmd.AddCommand(scrapeCmd)
 
-	scrapeCmd.Flags().BoolVar(&query.NoCovers, "nc", false, "don't download covers")
+	scrapeCmd.Flags().BoolVar(&noCovers, "nc", false, "don't download covers")
 
 	scrapeCmd.Flags().StringVarP(&audibleUrl, "url", "u", "", "audible url")
 	scrapeCmd.Flags().StringVarP(&batchUrl, "batch", "b", "", "batch scrape from audible search list")

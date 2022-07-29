@@ -6,14 +6,14 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"path"
 
 	"github.com/ohzqq/urbooks-core/book"
 )
 
 const (
-	apiHost = `api.audible`
-	apiPath = `/1.0/catalog/products`
+	apiHost        = `api.audible`
+	apiPath        = `/1.0/catalog/products`
+	responseGroups = `media,product_desc,contributors,series,product_extended_attrs,product_attrs`
 )
 
 type ApiRequest struct {
@@ -26,11 +26,6 @@ var audibleClient = &http.Client{}
 
 func NewRequest() *AudibleQuery {
 	return &AudibleQuery{
-		url: &url.URL{
-			Scheme: "https",
-			Host:   apiHost,
-			Path:   apiPath,
-		},
 		query: &query{
 			suffix: ".com",
 		},
@@ -44,19 +39,6 @@ func NewRequest() *AudibleQuery {
 func NewApiRequest() *ApiRequest {
 	return &ApiRequest{
 		client: audibleClient,
-		url: &url.URL{
-			Scheme: "https",
-			Host:   apiHost,
-			Path:   apiPath,
-		},
-	}
-}
-
-func newRequestUrl() *url.URL {
-	return &url.URL{
-		Scheme: "https",
-		Host:   apiHost,
-		Path:   apiPath,
 	}
 }
 
@@ -81,13 +63,8 @@ func (a *ApiRequest) makeRequest(u string) map[string]json.RawMessage {
 	return result
 }
 
-func (a *ApiRequest) getBook(req *query) *book.Book {
-	req.values.Set("response_groups", "media,product_desc,contributors,series,product_extended_attrs,product_attrs")
-
-	req.Path = path.Join(apiPath, req.asin)
-	req.Host = apiHost
-
-	result := a.makeRequest(req.string())
+func (a *ApiRequest) getBook(req string) *book.Book {
+	result := a.makeRequest(req)
 	return book.UnmarshalAudibleApiProduct(result["product"])
 }
 
