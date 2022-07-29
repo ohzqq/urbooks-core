@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/ohzqq/urbooks-core/book"
-	"github.com/ohzqq/urbooks-core/bubbles"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/geziyor/geziyor"
@@ -32,23 +31,6 @@ type WebScraper struct {
 	IsSingle   bool
 }
 
-func NewWebScraper() *AudibleQuery {
-	return &AudibleQuery{
-		IsWeb:   true,
-		scraper: newScraper(),
-	}
-}
-
-//func (s *WebScraper) Search() *WebScraper {
-//  a := NewWebScraper().Get(s.buildUrl())
-//  if s.NoCovers {
-//    a.SetNoCovers()
-//  }
-//  a.IsSearch = true
-//  a.URLs = a.getListURLs(a.AudibleURL)
-//  return a
-//}
-
 func newScraper() *WebScraper {
 	return &WebScraper{
 		ScraperOpts: &geziyor.Options{
@@ -60,32 +42,7 @@ func newScraper() *WebScraper {
 	}
 }
 
-func (a *WebScraper) Get(audible string) *WebScraper {
-	a.AudibleURL = audible
-	a.IsSingle = true
-	//a.ParseURL()
-	return a
-}
-
-func (a *WebScraper) List(audible string) *WebScraper {
-	a.AudibleURL = audible
-	a.IsList = true
-	//a.ParseURL()
-	return a
-}
-
-//func (a *WebScraper) ParseURL() {
-//  aUrl, err := url.Parse(a.AudibleURL)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//  a.url = aUrl
-//}
-
 func (a *WebScraper) getBook(u string) *book.Book {
-	//s := a.Get(u)
-	//books := s.Scrape()
-	//fmt.Printf("%+v\n", books)
 	books := a.scrapeUrls(u)
 	if len(books) > 0 {
 		return books[0]
@@ -94,37 +51,6 @@ func (a *WebScraper) getBook(u string) *book.Book {
 }
 
 func (a *WebScraper) scrapeUrls(urls ...string) []*book.Book {
-	for _, u := range urls {
-		a.ScraperOpts.StartURLs = []string{u}
-		a.ScraperOpts.ParseFunc = a.scrapeBook()
-		geziyor.NewGeziyor(a.ScraperOpts).Start()
-	}
-	return a.Books
-}
-
-func (a *WebScraper) Scrape() []*book.Book {
-	var urls map[string]string
-	switch {
-	case a.IsSingle:
-		urls = map[string]string{"self": a.AudibleURL}
-	case a.IsSearch:
-		switch len(a.URLs) {
-		case 0:
-			fmt.Println("No search results")
-		case 1:
-			for _, u := range a.URLs {
-				urls = map[string]string{"self": u}
-			}
-			break
-		default:
-			choice := bubbles.NewPrompt("search results: pick one", a.URLs).Choose()
-			a.IsSearch = false
-			urls = map[string]string{"self": choice}
-		}
-	case a.IsList:
-		urls = a.getListURLs(a.AudibleURL)
-	}
-
 	for _, u := range urls {
 		a.ScraperOpts.StartURLs = []string{u}
 		a.ScraperOpts.ParseFunc = a.scrapeBook()

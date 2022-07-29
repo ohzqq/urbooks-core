@@ -1,35 +1,13 @@
 package audible
 
 import (
-	"io"
 	"log"
-	"net/http"
 	"net/url"
-	"os"
 	"path"
 	"strings"
 
-	"github.com/gosimple/slug"
 	"github.com/ohzqq/urbooks-core/book"
 )
-
-type AudibleQuery struct {
-	cliArgs
-	query   *query
-	api     *ApiRequest
-	scraper *WebScraper
-	IsApi   bool
-	IsWeb   bool
-}
-
-type cliArgs struct {
-	Url       string
-	Authors   string
-	Keywords  string
-	Narrators string
-	Title     string
-	IsBatch   bool
-}
 
 type query struct {
 	*url.URL
@@ -51,16 +29,6 @@ func newQuery() *query {
 	}
 }
 
-func NewQuery() *AudibleQuery {
-	audible := &AudibleQuery{
-		IsApi:   true,
-		api:     NewApiRequest(),
-		scraper: newScraper(),
-		query:   newApiQuery(),
-	}
-	return audible
-}
-
 func newApiQuery() *query {
 	query := newQuery()
 	query.Host = apiHost
@@ -74,6 +42,49 @@ func newScraperQuery() *query {
 	query.Path = "/search"
 	query.suffix = ".ca"
 	return query
+}
+
+func (q *query) string() string {
+	if !strings.HasSuffix(q.Host, q.suffix) {
+		q.Host = q.Host + q.suffix
+	}
+
+	if q.asin != "" {
+		q.values.Set("response_groups", responseGroups)
+		q.Path = path.Join(apiPath, q.asin)
+	}
+
+	q.RawQuery = q.values.Encode()
+
+	return q.String()
+}
+
+type AudibleQuery struct {
+	cliArgs
+	query   *query
+	api     *ApiRequest
+	scraper *WebScraper
+	IsApi   bool
+	IsWeb   bool
+}
+
+type cliArgs struct {
+	Url       string
+	Authors   string
+	Keywords  string
+	Narrators string
+	Title     string
+	IsBatch   bool
+}
+
+func NewQuery() *AudibleQuery {
+	audible := &AudibleQuery{
+		IsApi:   true,
+		api:     NewApiRequest(),
+		scraper: newScraper(),
+		query:   newApiQuery(),
+	}
+	return audible
 }
 
 func (q *AudibleQuery) GetBook() *book.Book {
@@ -108,7 +119,7 @@ func (q *AudibleQuery) GetBookBatch() []*book.Book {
 func (q *AudibleQuery) Search() []*book.Book {
 	if q.IsWeb {
 		q.query = newScraperQuery()
-		q.query.setValues(q.parseCliSearch())
+		q.query.values = q.parseCliSearch()
 		var urls []string
 		scraped := q.scraper.getListURLs(q.query.string())
 		for _, u := range scraped {
@@ -120,7 +131,7 @@ func (q *AudibleQuery) Search() []*book.Book {
 
 	var b []*book.Book
 	if q.IsApi {
-		q.query.setValues(q.parseCliSearch())
+		q.query.values = q.parseCliSearch()
 		results := q.api.searchResults(q.query.string())
 		for _, result := range results {
 			q.query.asin = result
@@ -179,73 +190,6 @@ func (q *AudibleQuery) parseCliUrl() *AudibleQuery {
 	return q
 }
 
-func (q *query) string() string {
-	if !strings.HasSuffix(q.Host, q.suffix) {
-		q.Host = q.Host + q.suffix
-	}
-
-	if q.asin != "" {
-		q.values.Set("response_groups", responseGroups)
-		q.Path = path.Join(apiPath, q.asin)
-	}
-
-	q.RawQuery = q.values.Encode()
-
-	return q.String()
-}
-
-func (q *query) setValues(val url.Values) *query {
-	q.values = val
-	return q
-}
-
-func (q *AudibleQuery) buildQuery() url.Values {
-	var query = url.Values{}
-
-	if a := q.Authors; a != "" {
-		if q.IsApi {
-			q.query.values.Set("author", a)
-		}
-		if q.IsWeb {
-			q.query.values.Set("searchAuthor", a)
-		}
-	}
-
-	if n := q.Narrators; n != "" {
-		if q.IsApi {
-			q.query.values.Set("narrator", n)
-		}
-		if q.IsWeb {
-			q.query.values.Set("searchNarrator", n)
-		}
-	}
-
-	if k := q.Keywords; k != "" {
-		q.query.values.Set("keywords", k)
-	}
-
-	if t := q.Title; t != "" {
-		q.query.values.Set("title", t)
-	}
-
-	return query
-}
-
-func getAsin(path string) string {
-	paths := strings.Split(path, "/")
-	return paths[len(paths)-1]
-}
-
-func (q *AudibleQuery) buildUrl() string {
-	if !strings.HasSuffix(q.query.Host, q.query.suffix) {
-		q.query.Host = q.query.Host + q.query.suffix
-	}
-
-	q.query.RawQuery = q.buildQuery().Encode()
-
-	return q.query.String()
-}
-
 func (args *cliArgs) SetKeywords(words []string) *cliArgs {
 	args.Keywords = strings.Join(words, " ")
 	return args
@@ -269,53 +213,4 @@ func (args *cliArgs) SetNarrators(words string) *cliArgs {
 func (args *cliArgs) SetTitle(words string) *cliArgs {
 	args.Title = words
 	return args
-}
-
-func DownloadCover(name, u string) {
-	response, err := http.Get(u)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != 200 {
-		log.Fatal(response.StatusCode)
-	}
-
-	file, err := os.Create(slug.Make(name) + ".jpg")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, response.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-var countryCodes = map[string]string{
-	"us": ".com",
-	"ca": ".ca",
-	"uk": ".co.uk",
-	"au": ".co.uk",
-	"fr": "fr",
-}
-
-func countrySuffix(code string) string {
-	switch code {
-	case "uk", "au", "jp", "in":
-		return ".co." + code
-	default:
-		return "." + code
-	}
-}
-
-func countryCode(suffix string) string {
-	switch suffix {
-	case "com":
-		return "us"
-	default:
-		return suffix
-	}
 }
