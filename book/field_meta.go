@@ -172,16 +172,6 @@ func (f *Field) SetIndex(idx int) *Field {
 
 func (f *Field) SetMeta(data any) *Field {
 	f.data = data
-	//var meta Meta
-	//switch d := data.(type) {
-	//case f.IsCollection():
-	//  meta = f.Collection().Split(data, f.IsNames)
-	//case f.IsItem():
-	//  meta = f.Item().Set("value", data)
-	//case f.IsColumn():
-	//  meta = f.Col().Set(data)
-	//}
-
 	f.Meta = f.Meta.ParseMeta(f)
 	return f
 }

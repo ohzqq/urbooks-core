@@ -30,7 +30,7 @@ var (
 // lsCmd represents the ls command
 var lsCmd = &cobra.Command{
 	Use:   "ls",
-	Short: "A brief description of your command",
+	Short: "list books in library",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmdLib = urbooks.Lib(lib)

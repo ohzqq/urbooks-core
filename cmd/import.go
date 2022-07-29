@@ -10,7 +10,7 @@ var cover string
 // importCmd represents the import command
 var importCmd = &cobra.Command{
 	Use:   "import",
-	Short: "A brief description of your command",
+	Short: "import books to calibre",
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

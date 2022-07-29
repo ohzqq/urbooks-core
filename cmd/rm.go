@@ -12,7 +12,7 @@ import (
 // rmCmd represents the rm command
 var rmCmd = &cobra.Command{
 	Use:   "rm",
-	Short: "A brief description of your command",
+	Short: "remove a book from library",
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
