@@ -51,11 +51,11 @@ func apicall() {
 		query.SetUrl(audibleUrl)
 		books = append(books, query.GetBook())
 	case batchUrl != "":
-		query.IsWeb = true
 		query.IsBatch = true
 		query.SetUrl(batchUrl)
 		books = query.GetBookBatch()
 	case query.Keywords != "":
+		//query.IsWeb = true
 		books = query.Search()
 	}
 

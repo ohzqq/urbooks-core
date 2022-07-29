@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/url"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/ohzqq/urbooks-core/book"
@@ -134,18 +135,19 @@ func (q *AudibleQuery) GetBookBatch() []*book.Book {
 func (q *AudibleQuery) Search() []*book.Book {
 	var b []*book.Book
 
-	if q.IsWeb {
+	switch {
+	case q.IsWeb:
 		q.query = newScraperQuery()
 		q.query.values = q.parseCliSearch()
 		var urls []string
 		for _, u := range q.scraper.getListURLs(q.query.string()) {
+			q.query.values = url.Values{}
 			q.query.Path = u
+			println(q.query.string())
 			urls = append(urls, q.query.string())
 		}
 		b = q.scraper.scrapeUrls(urls...)
-	}
-
-	if q.IsApi {
+	case q.IsApi:
 		q.query.values = q.parseCliSearch()
 		results := q.api.searchResults(q.query.string())
 		for _, result := range results {
@@ -154,19 +156,31 @@ func (q *AudibleQuery) Search() []*book.Book {
 		}
 	}
 
+	if len(b) > 1 {
+		b = q.selectResults(b)
+	}
+
 	return b
 }
 
-func (q *AudibleQuery) selectResults(books []*book.Book) string {
+func (q *AudibleQuery) selectResults(books []*book.Book) []*book.Book {
+	var selected []*book.Book
 	choices := make(map[string]string)
-	for _, b := range books {
-		title := b.GetField("title").String()
-		authors := b.GetField("authors").String()
+	idx := make(map[string]*book.Book)
+
+	for i, c := range books {
+		title := c.GetField("title").String()
+		authors := c.GetField("authors").String()
 		text := fmt.Sprintf("%s by %s", title, authors)
-		choices[text] = text
+		num := strconv.Itoa(i)
+		choices[text] = num
+		idx[num] = c
 	}
+
 	choice := bubbles.NewPrompt("search results: pick one", choices).Choose()
-	return choice
+
+	selected = append(selected, idx[choice])
+	return selected
 }
 
 func (q *AudibleQuery) parseCliSearch() url.Values {
