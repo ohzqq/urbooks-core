@@ -48,12 +48,14 @@ func apicall() {
 	var books []*book.Book
 	if audibleUrl != "" {
 		query.SetUrl(audibleUrl)
+		query.IsWeb = true
 		books = append(books, query.GetBookMeta())
 	}
 
 	if batchUrl != "" {
 		println("get batch!")
 		query.IsBatch = true
+		query.IsWeb = true
 		query.SetUrl(batchUrl)
 		books = query.GetBookBatch()
 	}

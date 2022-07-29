@@ -88,10 +88,10 @@ func (a *WebScraper) List(audible string) *WebScraper {
 //}
 
 func (a *WebScraper) getBook(u string) *book.Book {
-	s := a.Get(u)
-	books := s.Scrape()
-	fmt.Printf("%+v\n", books)
-	//books := a.scrapeUrls([]string{u})
+	//s := a.Get(u)
+	//books := s.Scrape()
+	//fmt.Printf("%+v\n", books)
+	books := a.scrapeUrls([]string{u})
 	if len(books) > 0 {
 		return books[0]
 	}
@@ -139,7 +139,6 @@ func (a *WebScraper) Scrape() []*book.Book {
 }
 
 func (a *WebScraper) getListURLs(aUrl string) map[string]string {
-	println("get list urls!")
 	urls := make(map[string]string)
 	a.ScraperOpts.StartURLs = []string{aUrl}
 	a.ScraperOpts.ParseFunc = func(g *geziyor.Geziyor, r *client.Response) {
@@ -156,13 +155,9 @@ func (a *WebScraper) getListURLs(aUrl string) map[string]string {
 				if err != nil {
 					log.Fatal(err)
 				}
-				linkURL := url.URL{
-					Scheme: "https",
-					Host:   a.url.Host,
-					Path:   pd.Path,
-				}
+
 				text := fmt.Sprintf("%s by %s", link.Text(), strings.Join(authors, ", "))
-				urls[text] = linkURL.String()
+				urls[text] = pd.Path
 			}
 		})
 	}
@@ -179,6 +174,7 @@ func (a *WebScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 			title = strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text())
 			f.SetData(title)
 		}
+		println(title)
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
 		//if !a.NoCovers {
@@ -194,15 +190,13 @@ func (a *WebScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 			})
 		}
 
-		if f := b.GetField("#narrators"); f.IsNull() {
-			b.AddField(book.NewCollection("#narrators"))
-			narrators := b.GetField("#narrators").SetIsNames().SetIsMultiple().Collection()
-			r.HTMLDoc.Find(".narratorLabel a").Each(func(_ int, s *goquery.Selection) {
-				if text := s.Text(); text != "" {
-					narrators.AddItem().Set("value", text)
-				}
-			})
-		}
+		b.AddField(book.NewCollection("#narrators"))
+		narrators := b.GetField("#narrators").SetIsNames().SetIsMultiple().Collection()
+		r.HTMLDoc.Find(".narratorLabel a").Each(func(_ int, s *goquery.Selection) {
+			if text := s.Text(); text != "" {
+				narrators.AddItem().Set("value", text)
+			}
+		})
 
 		seriesHtml := strings.TrimPrefix(strings.TrimSpace(r.HTMLDoc.Find(".seriesLabel").Text()), "Series:")
 		allSeries := regexp.MustCompile(`(\w+\s?){1,}, (Book \d+)`).FindAllString(seriesHtml, -1)
@@ -216,20 +210,17 @@ func (a *WebScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 			position.SetData(split[1])
 		}
 
-		if f := b.GetField("tags"); f.IsNull() {
-			tags := f.Collection()
-			r.HTMLDoc.Find(".bc-chip-text").Each(func(_ int, s *goquery.Selection) {
-				tags.AddItem().Set("value", strings.TrimSpace(s.Text()))
-			})
-		}
+		tags := b.GetField("tags").Collection()
+		r.HTMLDoc.Find(".bc-chip-text").Each(func(_ int, s *goquery.Selection) {
+			tags.AddItem().Set("value", strings.TrimSpace(s.Text()))
+		})
 
-		if f := b.GetField("description"); f.IsNull() {
-			desc, err := r.HTMLDoc.Find(".productPublisherSummary span.bc-text").Html()
-			if err != nil {
-				log.Fatal(err)
-			}
-			f.SetData(desc)
+		description := b.GetField("description")
+		desc, err := r.HTMLDoc.Find(".productPublisherSummary span.bc-text").Html()
+		if err != nil {
+			log.Fatal(err)
 		}
+		description.SetData(desc)
 
 		a.Books = append(a.Books, b)
 	}

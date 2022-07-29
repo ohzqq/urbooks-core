@@ -76,7 +76,7 @@ func (q *AudibleQuery) GetBookMeta() *book.Book {
 	}
 
 	if q.IsWeb {
-		b = q.scraper.getBook(q.query.String())
+		b = q.scraper.getBook(q.Url)
 	}
 
 	return b
@@ -84,10 +84,12 @@ func (q *AudibleQuery) GetBookMeta() *book.Book {
 
 func (q *AudibleQuery) GetBookBatch() []*book.Book {
 	var b []*book.Book
-	if q.IsWeb {
-		urls := q.scraper.getListURLs(q.Url)
-		for t, u := range urls {
-			fmt.Printf("title: %v, url: %v\n", t, u)
+	q.ParseArgs()
+	urls := q.scraper.getListURLs(q.Url)
+	if q.IsApi {
+		for _, u := range urls {
+			q.query.asin = q.getAsin(u)
+			b = append(b, q.api.getBook(q.query))
 		}
 	}
 	return b
@@ -141,6 +143,11 @@ func (q *AudibleQuery) buildQuery() url.Values {
 	return query
 }
 
+func (q *AudibleQuery) getAsin(path string) string {
+	paths := strings.Split(path, "/")
+	return paths[len(paths)-1]
+}
+
 func (q *AudibleQuery) parseUrl(u string) *query {
 	aUrl, err := url.Parse(u)
 	if err != nil {
@@ -150,8 +157,7 @@ func (q *AudibleQuery) parseUrl(u string) *query {
 	q.query.URL = aUrl
 
 	if !q.IsBatch {
-		paths := strings.Split(q.query.Path, "/")
-		q.query.asin = paths[len(paths)-1]
+		q.query.asin = q.getAsin(aUrl.Path)
 	}
 
 	host := strings.Split(aUrl.Host, ".")
