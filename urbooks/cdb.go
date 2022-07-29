@@ -251,11 +251,12 @@ func (c *cdbCmd) setMetadataCmd(id string) *cdbCmd {
 	c.appendArgs(id)
 
 	book := c.book.StringMap()
-	delete(book, "library")
 
-	for field, value := range book {
+	for field, val := range book {
 		f := calibredb.GetCalibreField(field) + ":"
-		c.appendArgs("-f", f+value)
+		if strings.HasPrefix(field, "#") || slices.Contains(calibredbSetMetadataFields, field) {
+			c.appendArgs("-f", f+val)
+		}
 	}
 
 	return c
@@ -307,4 +308,21 @@ func (c calibreCfg) IsOnline() bool {
 	}
 	defer conn.Close()
 	return true
+}
+
+var calibredbSetMetadataFields = []string{
+	"authorSort",
+	"authors",
+	"description",
+	"identifiers",
+	"languages",
+	"published",
+	"publisher",
+	"rating",
+	"series",
+	"position",
+	"sortAs",
+	"tags",
+	"added",
+	"title",
 }

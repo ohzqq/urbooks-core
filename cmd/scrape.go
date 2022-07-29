@@ -22,24 +22,7 @@ var scrapeCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		query.SetKeywords(args)
-		//switch {
-		//case batch != "":
-		//  scraper = scraper.List(batch)
-		//case uri != "":
-		//  scraper = scraper.Get(uri)
-		//case scraper.Authors != "" || scraper.Narrators != "" || scraper.Title != "" || scraper.Keywords != "":
-		//  scraper = scraper.Search()
-		//}
-
-		//books := scraper.Scrape()
-
-		//if books == nil {
-		//fmt.Println("cli no results")
-		//}
-
-		//for _, book := range books {
-		//book.ConvertTo("ffmeta").Write()
-		//}
+		apicall()
 	},
 }
 
@@ -55,24 +38,17 @@ func apicall() {
 		query.SetUrl(batchUrl)
 		books = query.GetBookBatch()
 	case query.Keywords != "":
-		//query.IsWeb = true
 		books = query.Search()
 	}
 
 	for _, b := range books {
+		fmt.Printf("%+V\n", b.StringMap())
+		//b.ConvertTo("opf").Write()
+		//b.ConvertTo("ffmeta").Write()
 		if !noCovers {
-			fmt.Printf("%+V\n", b.GetFile("cover").Get("url"))
+			audible.DownloadCover(b.GetField("title").String(), b.GetFile("cover").Get("url"))
 		}
 	}
-
-	//resp := api.Search()
-	//for _, asin := range resp {
-	//println(asin)
-	//b := api.Product(resp[0])
-	//b.ConvertTo("ffmeta").Write()
-	//urbooks.DownloadCover(b.GetField("title").String(), b.GetField("cover").Item().Get("url"))
-	//fmt.Printf("%+V\n", b.GetField("cover").Item().Get("url"))
-	//}
 }
 
 func init() {

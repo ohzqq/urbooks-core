@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"strings"
 
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/gosimple/slug"
@@ -111,7 +110,7 @@ func (m metaFmt) Render(b *Book) []byte {
 	var buf bytes.Buffer
 	switch m.name {
 	case "opf":
-		//return ToOpf(b)
+		return ToOpf(b).Marshal()
 	default:
 		err := m.tmpl.Execute(&buf, b.StringMap())
 		if err != nil {
@@ -124,9 +123,10 @@ func (m metaFmt) Render(b *Book) []byte {
 func (b *Book) StringMap() map[string]string {
 	m := make(map[string]string)
 	for _, field := range b.EachField() {
-		key := strings.TrimPrefix(field.Label(), "#")
+		key := field.Label()
+		//key := strings.TrimPrefix(field.Label(), "#")
 
-		if key != "customColumns" {
+		if key != "customColumns" && !field.IsNull() {
 			m[key] = field.String()
 		}
 
@@ -148,7 +148,7 @@ func MediaMetaToBook(lib string, m *avtools.Media) *Book {
 	book.GetField("series").
 		SetData(titleAndSeries[titleRegex.SubexpIndex("position")])
 	book.GetField("authors").Collection().Split(m.GetTag("artist"), true)
-	book.GetField("narrators").Collection().Split(m.GetTag("composer"), true)
+	//book.GetField("#narrators").Collection().Split(m.GetTag("composer"), true)
 	book.GetField("description").SetData(m.GetTag("comment"))
 	book.GetField("tags").Collection().Split(m.GetTag("genre"), false)
 	return book
