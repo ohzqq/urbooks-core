@@ -52,6 +52,7 @@ func apicall() {
 	}
 
 	if batchUrl != "" {
+		println("get batch!")
 		query.IsBatch = true
 		query.SetUrl(batchUrl)
 		books = query.GetBookBatch()
