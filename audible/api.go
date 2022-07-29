@@ -18,23 +18,36 @@ const (
 
 type ApiRequest struct {
 	client *http.Client
-	url    *queryUrl
+	url    *url.URL
 	asin   []string
 }
 
 var audibleClient = &http.Client{}
 
-func NewAudibleRequest() *AudibleQuery {
+func NewRequest() *AudibleQuery {
 	return &AudibleQuery{
 		url: &url.URL{
 			Scheme: "https",
 			Host:   apiHost,
 			Path:   apiPath,
 		},
-		suffix: ".com",
-		isApi:  true,
+		query: &query{
+			suffix: ".com",
+		},
+		IsApi: true,
 		api: &ApiRequest{
 			client: audibleClient,
+		},
+	}
+}
+
+func NewApiRequest() *ApiRequest {
+	return &ApiRequest{
+		client: audibleClient,
+		url: &url.URL{
+			Scheme: "https",
+			Host:   apiHost,
+			Path:   apiPath,
 		},
 	}
 }
@@ -68,7 +81,7 @@ func (a *ApiRequest) makeRequest(u string) map[string]json.RawMessage {
 	return result
 }
 
-func (a *ApiRequest) getBook(req *queryUrl) *book.Book {
+func (a *ApiRequest) getBook(req *query) *book.Book {
 	req.values.Set("response_groups", "media,product_desc,contributors,series,product_extended_attrs,product_attrs")
 
 	req.Path = path.Join(apiPath, req.asin)
@@ -78,8 +91,8 @@ func (a *ApiRequest) getBook(req *queryUrl) *book.Book {
 	return book.UnmarshalAudibleApiProduct(result["product"])
 }
 
-func (a *ApiRequest) search(req string) []*book.Book {
-}
+//func (a *ApiRequest) search(req string) []*book.Book {
+//}
 
 func (a *ApiRequest) searchResults(req string) []string {
 	result := a.makeRequest(req)

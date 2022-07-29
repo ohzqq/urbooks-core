@@ -2,16 +2,12 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/ohzqq/urbooks-core/audible"
 	"github.com/ohzqq/urbooks-core/urbooks"
 	"github.com/spf13/cobra"
 )
 
-var (
-	api = audible.NewAudibleRequest()
-)
+var ()
 
 // testCmd represents the test command
 var testCmd = &cobra.Command{
@@ -19,7 +15,7 @@ var testCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		api.Keywords = strings.Join(args, " ")
+		query.SetKeywords(args)
 		apicall()
 		//cmdLib = urbooks.GetLib(lib)
 		//somebooks()
@@ -45,19 +41,6 @@ var testCmd = &cobra.Command{
 	},
 }
 
-func apicall() {
-	u := api.Search()
-	fmt.Printf("%+V\n", u)
-	//resp := api.Search()
-	//for _, asin := range resp {
-	//println(asin)
-	//b := api.Product(resp[0])
-	//b.ConvertTo("ffmeta").Write()
-	//urbooks.DownloadCover(b.GetField("title").String(), b.GetField("cover").Item().Get("url"))
-	//fmt.Printf("%+V\n", b.GetField("cover").Item().Get("url"))
-	//}
-}
-
 func getPreferences(lib *urbooks.Library) {
 	//val := url.Values{}
 	//val.Set("fields", "#duration")
@@ -78,19 +61,19 @@ func init() {
 	rootCmd.AddCommand(testCmd)
 	//testCmd.Flags().BoolVar(&api.NoCovers, "nc", false, "don't download covers")
 
-	testCmd.Flags().StringVarP(&uri, "url", "u", "", "audible url")
-	testCmd.Flags().StringVarP(&batch, "batch", "b", "", "batch scrape from audible search list")
+	testCmd.Flags().StringVarP(&audibleUrl, "url", "u", "", "audible url")
+	testCmd.Flags().StringVarP(&batchUrl, "batch", "b", "", "batch scrape from audible search list")
 	testCmd.MarkFlagsMutuallyExclusive("url", "batch")
 
-	testCmd.Flags().StringVarP(&api.Authors, "authors", "a", "", "book authors")
+	testCmd.Flags().StringVarP(&query.Authors, "authors", "a", "", "book authors")
 	testCmd.MarkFlagsMutuallyExclusive("authors", "url")
 	testCmd.MarkFlagsMutuallyExclusive("authors", "batch")
 
-	testCmd.Flags().StringVarP(&api.Narrators, "narrators", "n", "", "book narrators")
+	testCmd.Flags().StringVarP(&query.Narrators, "narrators", "n", "", "book narrators")
 	testCmd.MarkFlagsMutuallyExclusive("narrators", "url")
 	testCmd.MarkFlagsMutuallyExclusive("narrators", "batch")
 
-	testCmd.Flags().StringVarP(&api.Title, "title", "t", "", "book title")
+	testCmd.Flags().StringVarP(&query.Title, "title", "t", "", "book title")
 	testCmd.MarkFlagsMutuallyExclusive("title", "url")
 	testCmd.MarkFlagsMutuallyExclusive("title", "batch")
 

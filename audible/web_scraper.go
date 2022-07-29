@@ -39,7 +39,7 @@ func NewWebScraper() *AudibleQuery {
 			Host:   audible,
 			Path:   "/search",
 		},
-		isWeb:   true,
+		IsWeb:   true,
 		scraper: newScraper(),
 	}
 }
@@ -139,6 +139,7 @@ func (a *WebScraper) Scrape() []*book.Book {
 }
 
 func (a *WebScraper) getListURLs(aUrl string) map[string]string {
+	println("get list urls!")
 	urls := make(map[string]string)
 	a.ScraperOpts.StartURLs = []string{aUrl}
 	a.ScraperOpts.ParseFunc = func(g *geziyor.Geziyor, r *client.Response) {

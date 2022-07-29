@@ -14,30 +14,34 @@ import (
 )
 
 type AudibleQuery struct {
-	url *url.URL
-	//url         *queryUrl
-	countryCode string
-	suffix      string
-	api         *ApiRequest
-	scraper     *WebScraper
-	isApi       bool
-	isWeb       bool
-	Authors     string
-	Keywords    string
-	Narrators   string
-	Title       string
-	NoCovers    bool
+	cliArgs
+	url     *url.URL
+	query   *query
+	api     *ApiRequest
+	scraper *WebScraper
+	IsApi   bool
+	IsWeb   bool
 }
 
-type queryUrl struct {
+type cliArgs struct {
+	Url       string
+	Authors   string
+	Keywords  string
+	Narrators string
+	Title     string
+	NoCovers  bool
+	IsBatch   bool
+}
+
+type query struct {
 	*url.URL
-	countryCode string
 	suffix      string
+	countryCode string
 	values      url.Values
 	asin        string
 }
 
-func (q *queryUrl) string() string {
+func (q *query) string() string {
 	if !strings.HasSuffix(q.Host, q.suffix) {
 		q.Host = q.Host + q.suffix
 	}
@@ -47,85 +51,81 @@ func (q *queryUrl) string() string {
 	return q.String()
 }
 
-func NewAudibleQuery() *AudibleQuery {
+func NewQuery() *AudibleQuery {
 	return &AudibleQuery{
+		IsApi:   true,
+		api:     NewApiRequest(),
+		scraper: newScraper(),
 		url: &url.URL{
 			Scheme: "https",
+		},
+		query: &query{
+			values: url.Values{},
+			suffix: ".com",
 		},
 	}
 }
 
-func (q *AudibleQuery) Get(u string) *book.Book {
+func (q *AudibleQuery) GetBookMeta() *book.Book {
+	q.ParseArgs()
+
 	var b *book.Book
 
-	req := q.parseUrl(u)
-	if q.isApi {
-		b = q.api.getBook(req)
+	if q.IsApi {
+		b = q.api.getBook(q.query)
 	}
 
-	if q.isWeb {
-		b = q.scraper.getBook(u)
+	if q.IsWeb {
+		b = q.scraper.getBook(q.query.String())
 	}
 
 	return b
 }
 
+func (q *AudibleQuery) GetBookBatch() []*book.Book {
+	var b []*book.Book
+	if q.IsWeb {
+		urls := q.scraper.getListURLs(q.Url)
+		for t, u := range urls {
+			fmt.Printf("title: %v, url: %v\n", t, u)
+		}
+	}
+	return b
+}
+
 func (q *AudibleQuery) Search() *AudibleQuery {
-	if q.isApi {
+	if q.IsApi {
 		results := q.api.searchResults(q.buildUrl())
 		fmt.Printf("%+v\n", results)
 	}
 	return q
 }
 
-func (q *AudibleQuery) parseUrl(u string) *queryUrl {
-	aUrl, err := url.Parse(u)
-	if err != nil {
-		log.Fatal(err)
+func (q *AudibleQuery) ParseArgs() *AudibleQuery {
+	if q.Url != "" {
+		q.query = q.parseUrl(q.Url)
+		return q
 	}
-
-	query := &queryUrl{
-		URL:    aUrl,
-		values: url.Values{},
-	}
-
-	paths := strings.Split(query.Path, "/")
-	query.asin = paths[len(paths)-1]
-
-	host := strings.Split(aUrl.Host, ".")
-	query.countryCode = host[len(host)-1]
-	query.suffix = countrySuffix(query.countryCode)
-
-	return query
-}
-
-func (q *AudibleQuery) buildUrl() string {
-	if !strings.HasSuffix(q.url.Host, q.suffix) {
-		q.url.Host = q.url.Host + q.suffix
-	}
-
-	q.url.RawQuery = q.buildQuery().Encode()
-
-	return q.url.String()
+	return q
 }
 
 func (q *AudibleQuery) buildQuery() url.Values {
 	var query = url.Values{}
 
 	if a := q.Authors; a != "" {
-		if q.isApi {
+		if q.IsApi {
 			query.Set("author", a)
 		}
-		if q.isWeb {
+		if q.IsWeb {
 			query.Set("searchAuthor", a)
 		}
 	}
 
 	if n := q.Narrators; n != "" {
-		if q.isApi {
+		if q.IsApi {
 			query.Set("narrator", n)
 		}
-		if q.isWeb {
+		if q.IsWeb {
 			query.Set("searchNarrator", n)
 		}
 	}
@@ -141,29 +141,100 @@ func (q *AudibleQuery) buildQuery() url.Values {
 	return query
 }
 
-func (a *AudibleQuery) SetKeywords(words string) *AudibleQuery {
-	a.Keywords = words
-	return a
+func (q *AudibleQuery) parseUrl(u string) *query {
+	aUrl, err := url.Parse(u)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	q.query.URL = aUrl
+
+	if !q.IsBatch {
+		paths := strings.Split(q.query.Path, "/")
+		q.query.asin = paths[len(paths)-1]
+	}
+
+	host := strings.Split(aUrl.Host, ".")
+	q.query.countryCode = host[len(host)-1]
+	q.query.suffix = countrySuffix(q.query.countryCode)
+
+	return q.query
 }
 
-func (a *AudibleQuery) SetAuthors(words string) *AudibleQuery {
-	a.Authors = words
-	return a
+func (q *AudibleQuery) buildSearchUrl() string {
+	if !strings.HasSuffix(q.url.Host, q.query.suffix) {
+		q.url.Host = q.url.Host + q.query.suffix
+	}
+
+	if a := q.Authors; a != "" {
+		if q.IsApi {
+			q.query.values.Set("author", a)
+		}
+		if q.IsWeb {
+			q.query.values.Set("searchAuthor", a)
+		}
+	}
+
+	if n := q.Narrators; n != "" {
+		if q.IsApi {
+			q.query.values.Set("narrator", n)
+		}
+		if q.IsWeb {
+			q.query.values.Set("searchNarrator", n)
+		}
+	}
+
+	if k := q.Keywords; k != "" {
+		q.query.values.Set("keywords", k)
+	}
+
+	if t := q.Title; t != "" {
+		q.query.values.Set("title", t)
+	}
+
+	q.query.URL.RawQuery = q.query.values.Encode()
+
+	return q.url.String()
 }
 
-func (a *AudibleQuery) SetNarrators(words string) *AudibleQuery {
-	a.Narrators = words
-	return a
+func (q *AudibleQuery) buildUrl() string {
+	if !strings.HasSuffix(q.url.Host, q.query.suffix) {
+		q.url.Host = q.url.Host + q.query.suffix
+	}
+
+	q.url.RawQuery = q.buildQuery().Encode()
+
+	return q.url.String()
 }
 
-func (a *AudibleQuery) SetTitle(words string) *AudibleQuery {
-	a.Title = words
-	return a
+func (args *cliArgs) SetKeywords(words []string) *cliArgs {
+	args.Keywords = strings.Join(words, " ")
+	return args
 }
 
-func (a *AudibleQuery) SetNoCovers() *AudibleQuery {
-	a.NoCovers = true
-	return a
+func (args *cliArgs) SetUrl(u string) *cliArgs {
+	args.Url = u
+	return args
+}
+
+func (args *cliArgs) SetAuthors(words string) *cliArgs {
+	args.Authors = words
+	return args
+}
+
+func (args *cliArgs) SetNarrators(words string) *cliArgs {
+	args.Narrators = words
+	return args
+}
+
+func (args *cliArgs) SetTitle(words string) *cliArgs {
+	args.Title = words
+	return args
+}
+
+func (args *cliArgs) SetNoCovers() *cliArgs {
+	args.NoCovers = true
+	return args
 }
 
 func DownloadCover(name, u string) {
