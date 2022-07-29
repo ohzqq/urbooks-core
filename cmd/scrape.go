@@ -47,15 +47,17 @@ var scrapeCmd = &cobra.Command{
 
 func apicall() {
 	var books []*book.Book
-	if audibleUrl != "" {
+
+	switch {
+	case audibleUrl != "":
 		query.SetUrl(audibleUrl)
 		books = append(books, query.GetBook())
-	}
-
-	if batchUrl != "" {
+	case batchUrl != "":
 		query.IsBatch = true
 		query.SetUrl(batchUrl)
 		books = query.GetBookBatch()
+	case query.Keywords != "":
+		books = query.Search()
 	}
 
 	for _, b := range books {

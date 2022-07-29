@@ -1,7 +1,6 @@
 package audible
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -38,6 +37,8 @@ type query struct {
 	countryCode string
 	values      url.Values
 	asin        string
+	IsApi       bool
+	IsWeb       bool
 }
 
 func newQuery() *query {
@@ -57,9 +58,6 @@ func NewQuery() *AudibleQuery {
 		scraper: newScraper(),
 		query:   newApiQuery(),
 	}
-	if audible.IsWeb {
-		audible.query = newScraperQuery()
-	}
 	return audible
 }
 
@@ -74,7 +72,62 @@ func newScraperQuery() *query {
 	query := newQuery()
 	query.Host = audibleHost
 	query.Path = "/search"
+	query.suffix = ".ca"
 	return query
+}
+
+func (q *AudibleQuery) GetBook() *book.Book {
+	q.parseCliUrl()
+
+	var b *book.Book
+
+	if q.IsApi {
+		b = q.api.getBook(q.query.string())
+	}
+
+	if q.IsWeb {
+		b = q.scraper.getBook(q.Url)
+	}
+
+	return b
+}
+
+func (q *AudibleQuery) GetBookBatch() []*book.Book {
+	q.parseCliUrl()
+	var b []*book.Book
+	urls := q.scraper.getListURLs(q.Url)
+	if q.IsApi {
+		for _, u := range urls {
+			q.query.asin = getAsin(u)
+			b = append(b, q.api.getBook(q.query.string()))
+		}
+	}
+	return b
+}
+
+func (q *AudibleQuery) Search() []*book.Book {
+	if q.IsWeb {
+		q.query = newScraperQuery()
+		q.query.setValues(q.parseCliSearch())
+		var urls []string
+		scraped := q.scraper.getListURLs(q.query.string())
+		for _, u := range scraped {
+			q.query.Path = u
+			urls = append(urls, q.query.string())
+		}
+		return q.scraper.scrapeUrls(urls...)
+	}
+
+	var b []*book.Book
+	if q.IsApi {
+		q.query.setValues(q.parseCliSearch())
+		results := q.api.searchResults(q.query.string())
+		for _, result := range results {
+			q.query.asin = result
+			b = append(b, q.api.getBook(q.query.string()))
+		}
+	}
+	return b
 }
 
 func (q *AudibleQuery) parseCliSearch() url.Values {
@@ -143,44 +196,6 @@ func (q *query) string() string {
 
 func (q *query) setValues(val url.Values) *query {
 	q.values = val
-	return q
-}
-
-func (q *AudibleQuery) GetBook() *book.Book {
-	q.parseCliUrl()
-
-	var b *book.Book
-
-	if q.IsApi {
-		b = q.api.getBook(q.query.string())
-	}
-
-	if q.IsWeb {
-		b = q.scraper.getBook(q.Url)
-	}
-
-	return b
-}
-
-func (q *AudibleQuery) GetBookBatch() []*book.Book {
-	q.parseCliUrl()
-	var b []*book.Book
-	urls := q.scraper.getListURLs(q.Url)
-	if q.IsApi {
-		for _, u := range urls {
-			q.query.asin = getAsin(u)
-			b = append(b, q.api.getBook(q.query.string()))
-		}
-	}
-	return b
-}
-
-func (q *AudibleQuery) Search() *AudibleQuery {
-	q.query.setValues(q.parseCliSearch())
-	if q.IsApi {
-		results := q.api.searchResults(q.buildUrl())
-		fmt.Printf("%+v\n", results)
-	}
 	return q
 }
 

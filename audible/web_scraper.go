@@ -86,14 +86,14 @@ func (a *WebScraper) getBook(u string) *book.Book {
 	//s := a.Get(u)
 	//books := s.Scrape()
 	//fmt.Printf("%+v\n", books)
-	books := a.scrapeUrls([]string{u})
+	books := a.scrapeUrls(u)
 	if len(books) > 0 {
 		return books[0]
 	}
 	return nil
 }
 
-func (a *WebScraper) scrapeUrls(urls []string) []*book.Book {
+func (a *WebScraper) scrapeUrls(urls ...string) []*book.Book {
 	for _, u := range urls {
 		a.ScraperOpts.StartURLs = []string{u}
 		a.ScraperOpts.ParseFunc = a.scrapeBook()
