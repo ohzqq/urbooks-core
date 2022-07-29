@@ -105,13 +105,26 @@ func (q *AudibleQuery) GetBook() *book.Book {
 
 func (q *AudibleQuery) GetBookBatch() []*book.Book {
 	q.parseCliUrl()
-	var b []*book.Book
+
 	urls := q.scraper.getListURLs(q.Url)
+
+	var b []*book.Book
+
 	if q.IsApi {
 		for _, u := range urls {
 			q.query.asin = getAsin(u)
 			b = append(b, q.api.getBook(q.query.string()))
 		}
+	}
+
+	if q.IsWeb {
+		var webUrls []string
+		for _, u := range urls {
+			q.query = newScraperQuery()
+			q.query.Path = u
+			webUrls = append(webUrls, q.query.string())
+		}
+		return q.scraper.scrapeUrls(webUrls...)
 	}
 	return b
 }
@@ -121,8 +134,7 @@ func (q *AudibleQuery) Search() []*book.Book {
 		q.query = newScraperQuery()
 		q.query.values = q.parseCliSearch()
 		var urls []string
-		scraped := q.scraper.getListURLs(q.query.string())
-		for _, u := range scraped {
+		for _, u := range q.scraper.getListURLs(q.query.string()) {
 			q.query.Path = u
 			urls = append(urls, q.query.string())
 		}
@@ -140,6 +152,12 @@ func (q *AudibleQuery) Search() []*book.Book {
 	}
 	return b
 }
+
+//func (q *AudibleQuery) selectResults() {
+//  choice := bubbles.NewPrompt("search results: pick one", a.URLs).Choose()
+//  a.IsSearch = false
+//  urls = map[string]string{"self": choice}
+//}
 
 func (q *AudibleQuery) parseCliSearch() url.Values {
 	var query = url.Values{}

@@ -1,7 +1,6 @@
 package audible
 
 import (
-	"fmt"
 	"log"
 	"net/url"
 	"regexp"
@@ -59,30 +58,33 @@ func (a *WebScraper) scrapeUrls(urls ...string) []*book.Book {
 	return a.Books
 }
 
-func (a *WebScraper) getListURLs(aUrl string) map[string]string {
-	urls := make(map[string]string)
+func (a *WebScraper) getListURLs(aUrl string) []string {
+	var urls []string
+	//urls := make(map[string]string)
 	a.ScraperOpts.StartURLs = []string{aUrl}
 	a.ScraperOpts.ParseFunc = func(g *geziyor.Geziyor, r *client.Response) {
 		metaList := r.HTMLDoc.Find("li.productListItem")
 		metaList.Each(func(_ int, s *goquery.Selection) {
 			link := s.Find("li.bc-list-item h3.bc-heading a")
-			var authors []string
-			s.Find(".authorLabel a").Each(func(_ int, a *goquery.Selection) {
-				authors = append(authors, a.Text())
-			})
+			//var authors []string
+			//s.Find(".authorLabel a").Each(func(_ int, a *goquery.Selection) {
+			//  authors = append(authors, a.Text())
+			//})
 			href, _ := link.Attr("href")
 			if href != "" {
 				pd, err := url.Parse(href)
 				if err != nil {
 					log.Fatal(err)
 				}
+				urls = append(urls, pd.Path)
 
-				text := fmt.Sprintf("%s by %s", link.Text(), strings.Join(authors, ", "))
-				urls[text] = pd.Path
+				//text := fmt.Sprintf("%s by %s", link.Text(), strings.Join(authors, ", "))
+				//urls[text] = pd.Path
 			}
 		})
 	}
 	geziyor.NewGeziyor(a.ScraperOpts).Start()
+
 	return urls
 }
 
