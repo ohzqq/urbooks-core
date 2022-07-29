@@ -1,12 +1,14 @@
 package audible
 
 import (
+	"fmt"
 	"log"
 	"net/url"
 	"path"
 	"strings"
 
 	"github.com/ohzqq/urbooks-core/book"
+	"github.com/ohzqq/urbooks-core/bubbles"
 )
 
 type query struct {
@@ -130,6 +132,8 @@ func (q *AudibleQuery) GetBookBatch() []*book.Book {
 }
 
 func (q *AudibleQuery) Search() []*book.Book {
+	var b []*book.Book
+
 	if q.IsWeb {
 		q.query = newScraperQuery()
 		q.query.values = q.parseCliSearch()
@@ -138,10 +142,9 @@ func (q *AudibleQuery) Search() []*book.Book {
 			q.query.Path = u
 			urls = append(urls, q.query.string())
 		}
-		return q.scraper.scrapeUrls(urls...)
+		b = q.scraper.scrapeUrls(urls...)
 	}
 
-	var b []*book.Book
 	if q.IsApi {
 		q.query.values = q.parseCliSearch()
 		results := q.api.searchResults(q.query.string())
@@ -150,14 +153,21 @@ func (q *AudibleQuery) Search() []*book.Book {
 			b = append(b, q.api.getBook(q.query.string()))
 		}
 	}
+
 	return b
 }
 
-//func (q *AudibleQuery) selectResults() {
-//  choice := bubbles.NewPrompt("search results: pick one", a.URLs).Choose()
-//  a.IsSearch = false
-//  urls = map[string]string{"self": choice}
-//}
+func (q *AudibleQuery) selectResults(books []*book.Book) string {
+	choices := make(map[string]string)
+	for _, b := range books {
+		title := b.GetField("title").String()
+		authors := b.GetField("authors").String()
+		text := fmt.Sprintf("%s by %s", title, authors)
+		choices[text] = text
+	}
+	choice := bubbles.NewPrompt("search results: pick one", choices).Choose()
+	return choice
+}
 
 func (q *AudibleQuery) parseCliSearch() url.Values {
 	var query = url.Values{}
