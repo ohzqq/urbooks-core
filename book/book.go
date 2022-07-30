@@ -415,7 +415,8 @@ func (c *Column) ParseData(f *Field) {
 func (c *Column) ParseMeta(f *Field) Meta {
 	switch d := f.data.(type) {
 	case string:
-		c.Set(d)
+		s := Column(d)
+		return &s
 	case json.RawMessage:
 		if len(d) > 0 {
 			if err := json.Unmarshal(d, &c); err != nil {

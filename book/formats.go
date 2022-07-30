@@ -125,7 +125,6 @@ func (b *Book) StringMap() map[string]string {
 	m := make(map[string]string)
 	for _, field := range b.EachField() {
 		key := field.Label()
-		//key := strings.TrimPrefix(field.Label(), "#")
 
 		if key != "customColumns" && !field.IsNull() {
 			m[key] = field.String()

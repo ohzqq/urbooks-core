@@ -52,7 +52,7 @@ func UnmarshalAudibleApiProduct(d []byte) *Book {
 					book.GetField("series").Item().
 						Set("value", series["title"]).
 						Set("position", series["sequence"])
-					book.GetField("position").SetData(series["sequence"])
+					book.GetField("position").SetMeta(series["sequence"])
 				}
 				break
 			}
@@ -60,10 +60,7 @@ func UnmarshalAudibleApiProduct(d []byte) *Book {
 			var contributors *Field
 			switch f {
 			case "narrators":
-				contributors = book.AddField(NewCollection("#narrators")).
-					SetIsNames().
-					SetIsMultiple()
-				//Collection()
+				contributors = book.AddField(NewCollection("#narrators")).SetIsNames()
 			case "authors":
 				contributors = book.GetField(f)
 			}
@@ -72,7 +69,7 @@ func UnmarshalAudibleApiProduct(d []byte) *Book {
 				cc = append(cc, contributor["name"])
 				//contributors.AddItem().Set("value", contributor["name"])
 			}
-			contributors.SetData(cc)
+			contributors.SetMeta(cc)
 		case "title", "release_date", "publisher_summary", "language", "publisher_name":
 			var val string
 			err := json.Unmarshal(dd, &val)
@@ -81,15 +78,15 @@ func UnmarshalAudibleApiProduct(d []byte) *Book {
 			}
 			switch f {
 			case "title":
-				book.GetField("title").SetData(val)
+				book.GetField("title").SetMeta(val)
 			case "release_date":
-				book.GetField("published").SetData(val)
+				book.GetField("published").SetMeta(val)
 			case "publisher_summary":
-				book.GetField("description").SetData(val)
+				book.GetField("description").SetMeta(val)
 			case "language":
-				book.GetField("languages").Collection().AddItem().Set("value", val)
+				book.GetField("languages").SetMeta(val)
 			case "publisher_name":
-				book.GetField("publisher").Item().Set("value", val)
+				book.GetField("publisher").SetMeta(val)
 			}
 		case "product_images":
 			var val = make(map[string]string)

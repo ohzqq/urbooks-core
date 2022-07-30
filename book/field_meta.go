@@ -141,14 +141,14 @@ func (f *Field) setJsonData(data []byte) *Field {
 }
 
 func (f *Field) SetData(data any) *Field {
-	//f.data = data
+	f.data = data
 	//switch d := data.(type) {
 	//case string:
 	//  f.SetStringMeta(d)
 	//  //case json.RawMessage:
 	//}
-	//f.ParseData()
-	f.SetMeta(data)
+	f.Meta.ParseData(f)
+	//f.SetMeta(data)
 	//f.Meta = f.Meta.ParseMeta(f)
 	return f
 }
@@ -191,20 +191,6 @@ func (f *Field) SetIndex(idx int) *Field {
 func (f *Field) SetMeta(data any) *Field {
 	f.data = data
 	f.Meta = f.Meta.ParseMeta(f)
-	return f
-}
-
-func (f *Field) SetStringMeta(data string) *Field {
-	var meta Meta
-	switch {
-	case f.IsCollection():
-		meta = f.Collection().Split(data, f.IsNames)
-	case f.IsItem():
-		meta = f.Item().Set("value", data)
-	case f.IsColumn():
-		meta = f.Col().Set(data)
-	}
-	f.Meta = meta
 	return f
 }
 
