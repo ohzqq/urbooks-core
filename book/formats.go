@@ -156,20 +156,20 @@ func (b *Book) ToIni() {
 }
 
 func MediaMetaToBook(lib string, m *avtools.Media) *Book {
-	book := NewBook()
+	b := NewBook()
 	titleRegex := regexp.MustCompile(`(?P<title>.*) \[(?P<series>.*), Book (?P<position>.*)\]$`)
 	titleAndSeries := titleRegex.FindStringSubmatch(m.GetTag("title"))
 
-	book.GetField("title").SetData(titleAndSeries[titleRegex.SubexpIndex("title")])
-	book.GetField("series").
-		SetData(titleAndSeries[titleRegex.SubexpIndex("series")])
-	book.GetField("series").
-		SetData(titleAndSeries[titleRegex.SubexpIndex("position")])
-	book.GetField("authors").Collection().Split(m.GetTag("artist"), true)
-	//book.GetField("#narrators").Collection().Split(m.GetTag("composer"), true)
-	book.GetField("description").SetData(m.GetTag("comment"))
-	book.GetField("tags").Collection().Split(m.GetTag("genre"), false)
-	return book
+	b.GetField("title").SetMeta(titleAndSeries[titleRegex.SubexpIndex("title")])
+	b.GetField("series").
+		SetMeta(titleAndSeries[titleRegex.SubexpIndex("series")])
+	b.GetField("series").
+		SetMeta(titleAndSeries[titleRegex.SubexpIndex("position")])
+	b.GetField("authors").SetMeta(m.GetTag("artist"))
+	b.AddField(NewCollection("#narrators")).SetIsNames().SetMeta(m.GetTag("composer"))
+	b.GetField("description").SetMeta(m.GetTag("comment"))
+	b.GetField("tags").SetMeta(m.GetTag("genre"))
+	return b
 }
 
 func toMarkdown(str string) string {

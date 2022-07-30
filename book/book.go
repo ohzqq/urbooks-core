@@ -102,7 +102,7 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 					}
 				}
 			default:
-				field.SetData(value)
+				field.SetMeta(value)
 				field.ParseData()
 			}
 		}

@@ -94,7 +94,7 @@ func (a *WebScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 
 		title := b.GetField("title")
 		t := strings.TrimSpace(r.HTMLDoc.Find("li.bc-list-item h1.bc-heading").Text())
-		title.SetData(t)
+		title.SetMeta(t)
 
 		coverURL, _ := r.HTMLDoc.Find(".hero-content img.bc-pub-block").Attr("src")
 		b.GetField("cover").Item().Set("url", coverURL)
@@ -125,7 +125,7 @@ func (a *WebScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 			series.Set("value", split[0]).Set("position", split[1])
 
 			position := b.GetField("position")
-			position.SetData(split[1])
+			position.SetMeta(split[1])
 		}
 
 		tags := b.GetField("tags").Collection()
@@ -138,7 +138,7 @@ func (a *WebScraper) scrapeBook() func(g *geziyor.Geziyor, r *client.Response) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		description.SetData(desc)
+		description.SetMeta(desc)
 
 		a.Books = append(a.Books, b)
 	}
