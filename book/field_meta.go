@@ -141,13 +141,14 @@ func (f *Field) setJsonData(data []byte) *Field {
 }
 
 func (f *Field) SetData(data any) *Field {
-	f.data = data
+	//f.data = data
 	//switch d := data.(type) {
 	//case string:
 	//  f.SetStringMeta(d)
 	//  //case json.RawMessage:
 	//}
-	f.ParseData()
+	//f.ParseData()
+	f.SetMeta(data)
 	//f.Meta = f.Meta.ParseMeta(f)
 	return f
 }
