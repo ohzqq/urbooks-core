@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/ohzqq/urbooks-core/audible"
 	"github.com/ohzqq/urbooks-core/book"
 	"github.com/spf13/cobra"
@@ -42,9 +40,7 @@ func apicall() {
 	}
 
 	for _, b := range books {
-		fmt.Printf("%+V\n", b.StringMap(false))
-		//b.ConvertTo("opf").Write()
-		//b.ConvertTo("ffmeta").Write()
+		b.ConvertTo("ini").Write()
 		if !noCovers {
 			audible.DownloadCover(b.GetField("title").String(), b.GetFile("cover").Get("url"))
 		}
