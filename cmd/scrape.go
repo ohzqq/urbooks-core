@@ -42,7 +42,7 @@ func apicall() {
 	}
 
 	for _, b := range books {
-		fmt.Printf("%+V\n", b.StringMap())
+		fmt.Printf("%+V\n", b.StringMap(false))
 		//b.ConvertTo("opf").Write()
 		//b.ConvertTo("ffmeta").Write()
 		if !noCovers {

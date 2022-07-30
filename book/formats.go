@@ -10,9 +10,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/gosimple/slug"
 	"github.com/ohzqq/avtools/avtools"
+	"golang.org/x/exp/slices"
 	"gopkg.in/ini.v1"
 )
 
@@ -24,24 +26,23 @@ func ListFormats() []string {
 	return fmts
 }
 
-func (b *Book) StringMap() map[string]string {
-	return StringMap(b, false)
+func (b *Book) StringMap(hash bool) map[string]string {
+	return StringMap(b, hash)
 }
 
 func DataMap(b *Book, hash bool) map[string]interface{} {
 	m := make(map[string]interface{})
-	for _, field := range b.EachField() {
+	for label, field := range b.EachField() {
 		key := field.Label()
-		if hash {
-			key = strings.TrimPrefix(key, "#")
-		}
-
 		if key != "customColumns" && !field.IsNull() {
-			m[key] = field.String()
-		}
-
-		if key == "titleAndSeries" && field.IsNull() {
-			m["titleAndSeries"] = b.GetTitleAndSeries()
+			if slices.Contains(EditableFields, label) || strings.HasPrefix(label, "#") {
+				switch field.IsMultiple {
+				case true:
+					m[key] = field.Collection().StringSlice()
+				default:
+					m[key] = field.String()
+				}
+			}
 		}
 	}
 	return m
@@ -51,17 +52,20 @@ func StringMap(b *Book, hash bool) map[string]string {
 	m := make(map[string]string)
 	for _, field := range b.EachField() {
 		key := field.Label()
-		if hash {
-			key = strings.TrimPrefix(key, "#")
+		if key == "titleAndSeries" {
+			m["titleAndSeries"] = b.GetTitleAndSeries()
+			println(m["titleAndSeries"])
 		}
 
 		if key != "customColumns" && !field.IsNull() {
-			m[key] = field.String()
+			if slices.Contains(EditableFields, key) || strings.HasPrefix(key, "#") {
+				if hash {
+					key = strings.TrimPrefix(key, "#")
+				}
+				m[key] = field.String()
+			}
 		}
 
-		if key == "titleAndSeries" && field.IsNull() {
-			m["titleAndSeries"] = b.GetTitleAndSeries()
-		}
 	}
 	return m
 }
@@ -97,6 +101,11 @@ var MetaFmt = []metaFmt{
 		tmpl: template.Must(template.New("md").Funcs(funcMap).Parse(mdTmpl)),
 	},
 	metaFmt{
+		name: "md",
+		ext:  ".md",
+		tmpl: template.Must(template.New("md").Funcs(funcMap).Parse(mdTmpl)),
+	},
+	metaFmt{
 		name: "plain",
 		ext:  ".txt",
 		tmpl: template.Must(template.New("plain").Funcs(funcMap).Parse(plainTmpl)),
@@ -112,6 +121,10 @@ var MetaFmt = []metaFmt{
 	metaFmt{
 		name: "toml",
 		ext:  ".toml",
+	},
+	metaFmt{
+		name: "rss",
+		ext:  ".xml",
 	},
 }
 
@@ -164,10 +177,14 @@ func (m metaFmt) Render(b *Book) []byte {
 	switch m.name {
 	case "opf":
 		return ToOpf(b).Marshal()
+	case "rss":
+		return b.ToRss()
 	case "ini":
 		return b.ToIni()
+	case "toml":
+		return b.ToToml()
 	default:
-		err := m.tmpl.Execute(&buf, StringMap(b, true))
+		err := m.tmpl.Execute(&buf, b)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -175,12 +192,23 @@ func (m metaFmt) Render(b *Book) []byte {
 	return buf.Bytes()
 }
 
-//func (b *Book) toToml() []byte {
-//}
+func (b *Book) ToToml() []byte {
+	var buf bytes.Buffer
+	err := toml.NewEncoder(&buf).Encode(StringMap(b, true))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return buf.Bytes()
+}
 
-func ToIni(b map[string]string) string {
-	ini.PrettyFormat = false
+func (b *Book) ToRss() []byte {
+	return BookToRssChannel(b).Marshal()
+}
+
+func ToIni(b map[string]string) []byte {
+	//ini.PrettyFormat = false
 	file := ini.Empty(ini.LoadOptions{
+		IgnoreInlineComment:    true,
 		AllowNonUniqueSections: true,
 	})
 	sec, err := file.GetSection("")
@@ -200,11 +228,11 @@ func ToIni(b map[string]string) string {
 		log.Fatal(err)
 	}
 
-	return buf.String()
+	return buf.Bytes()
 }
 
 func (b *Book) ToIni() []byte {
-	return []byte(ToIni(b.StringMap()))
+	return ToIni(StringMap(b, true))
 }
 
 func MediaMetaToBook(lib string, m *avtools.Media) *Book {
@@ -234,28 +262,27 @@ func toMarkdown(str string) string {
 }
 
 const ffmetaTmpl = `;FFMETADATA
-title={{stringToHTML .titleAndSeries}}
-album={{stringToHTML .titleAndSeries}}
-artist={{stringToHTML .authors}}
-composer={{stringToHTML .narrators}}
-genre={{stringToHTML .tags}}
-comment={{stringToHTML .description}}
-`
+title={{with .GetMeta "titleAndSeries"}}{{stringToHTML .}}{{end}}
+album={{with .GetMeta "titleAndSeries"}}{{stringToHTML .}}{{end}}
+artist={{with .GetMeta "authors"}}{{stringToHTML .}}{{end}}
+composer={{with .GetMeta "narrators"}}{{stringToHTML .}}{{end}}
+genre={{with .GetMeta "tags"}}{{stringToHTML .}}{{end}}
+comment={{with .GetMeta "description"}}{{stringToHTML .}}{{end}}`
 
 const mdTmpl = `
-{{- with .title}}# {{.}}{{end}}
-**Series:** {{with .series}}{{.}}{{end}}
-**Authors:** {{with .authors}}{{.}}{{end}}
-**Narrators:** {{with .narrators}}{{.}}{{end}}
-**Tags:** {{with .tags}}{{.}}{{end}}
-**Rating:** {{with .rating}}{{.}}{{end}}
-**Description:** {{with .description}}{{toMarkdown .}}{{end}}`
+{{- with .GetMeta "title"}}# {{stringToHTML .}}{{end}}
+**Series:** {{with .GetSeriesString}}{{stringToHTML .}}{{end}}
+**Authors:** {{with .GetMeta "authors"}}{{stringToHTML .}}{{end}}
+**Narrators:** {{with .GetMeta "narrators"}}{{stringToHTML .}}{{end}}
+**Tags:** {{with .GetMeta "tags"}}{{stringToHTML .}}{{end}}
+**Rating:** {{with .GetMeta "rating"}}{{stringToHTML .}}{{end}}
+**Description:** {{with .GetMeta "description"}}{{toMarkdown .}}{{end}}`
 
 const plainTmpl = `
-{{- with .title}}{{.}}{{end}}
-Series: {{with .series}}{{.}}{{end}}
-Authors: {{with .authors}}{{.}}{{end}}
-Narrators: {{with .narrators}}{{.}}{{end}}
-Tags: {{with .tags}}{{.}}{{end}}
-Rating: {{with .rating}}{{.}}{{end}}
-Description: {{with .description}}{{toMarkdown .}}{{end}}`
+{{- with .GetMeta "title"}}{{stringToHTML .}}{{end}}
+Series: {{with .GetSeriesString}}{{stringToHTML .}}{{end}}
+Authors: {{with .GetMeta "authors"}}{{stringToHTML .}}{{end}}
+Narrators: {{with .GetMeta "narrators"}}{{stringToHTML .}}{{end}}
+Tags: {{with .GetMeta "tags"}}{{stringToHTML .}}{{end}}
+Rating: {{with .GetMeta "rating"}}{{stringToHTML .}}{{end}}
+Description: {{with .GetMeta "description"}}{{toMarkdown .}}{{end}}`

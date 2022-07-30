@@ -309,8 +309,7 @@ func GetTableColumns(f, lib string) map[string]string {
 			"path":      `"` + lib + `" || "/" || books.path || "/" || name || '.' || lower(format)`,
 		},
 		"identifiers": map[string]string{
-			"value": "val",
-			"type":  "type",
+			"value": `type || ":" || val`,
 		},
 		"languages": map[string]string{
 			"value": "lang_code",

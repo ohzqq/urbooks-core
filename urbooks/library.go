@@ -100,9 +100,8 @@ func (l *Library) GetDBCustomColumns() {
 	l.CustomColumns = cols
 }
 
-func (l *Library) GetBooks() *Library {
-	l.request = l.NewRequest().From("books")
-	return l
+func (l *Library) GetBooks() *request {
+	return l.NewRequest().From("books")
 }
 
 //func (p dbPreferences) parseHiddenCategories() []string {

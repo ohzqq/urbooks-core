@@ -180,6 +180,10 @@ func (f *Field) String() string {
 	return f.Meta.String(f)
 }
 
+func (f *Field) RawData() interface{} {
+	return f.Meta.RawData()
+}
+
 func (f *Field) URL() string {
 	return f.Meta.URL(f)
 }

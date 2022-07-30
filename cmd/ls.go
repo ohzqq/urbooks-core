@@ -50,16 +50,14 @@ var lsCmd = &cobra.Command{
 //}
 
 func somebooks() {
-	cmdLib.From("books").Find("333").GetResponse()
-	for _, b := range cmdLib.Books {
-		//b.ConvertTo("ini").Write()
-		//println(string(b.ToIni()))
-		//fmt.Printf("%+v\n", book.BookToRssChannel(b))
-		//println(string(cmdLib.ToOPF(b)))
-		fmt.Printf("%+v\n", b.GetMeta("narrators"))
+	req := cmdLib.GetBooks().Limit("1").GetResponse()
+	books := req.ParseBooks()
+	for _, b := range books.Books {
+		println(b.GetMeta("title"))
+		b.ConvertTo("ini").Print()
 		//for label, f := range b.EachField() {
-		//fmt.Printf("field: %v\n", label)
-		//fmt.Printf("data %+V\n", f.String())
+		//  fmt.Printf("field: %v\n", label)
+		//  fmt.Printf("data %+V\n", f.String())
 		//}
 	}
 }

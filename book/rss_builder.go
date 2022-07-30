@@ -55,40 +55,32 @@ type Channel struct {
 
 func BookToRssChannel(b *Book) *RSS {
 	rss := NewFeed()
-	shared := sharedRss(b)
 
 	channel := rss.SetChannel()
-	channel.SetShared(shared)
+	channel.SetShared(sharedRss(b))
 	channel.SetLanguage(b.GetField("languages").String())
 
-	item := channel.AddItem()
-	item.SetShared(shared)
-	item.SetGuid(b.GetField("uri").URL())
-	item.SetDuration(b.GetField("duration").String())
-	item.SetAuthor(b.GetField("authors").String())
-	item.SetEnclosure(b.GetFile("audio"))
-
+	channel.AddItem(BookToRssItem(b))
 	return rss
 }
 
 func BookToRssItem(b *Book) *RssItem {
-	shared := sharedRss(b)
 	item := NewRssItem()
-	item.SetShared(shared)
-	item.SetGuid(b.GetField("uri").String())
-	item.SetDuration(b.GetField("duration").String())
-	item.SetAuthor(b.GetField("authors").String())
+	item.SetShared(sharedRss(b))
+	item.SetGuid(b.GetMeta("uri"))
+	item.SetDuration(b.GetMeta("duration"))
+	item.SetAuthor(b.GetMeta("authors"))
 	item.SetEnclosure(b.GetFile("audio"))
 	return item
 }
 
 func sharedRss(b *Book) *SharedRss {
 	rss := NewRssObject()
-	rss.SetTitle(b.GetField("title").String())
-	rss.SetLink(b.GetField("uri").String())
-	rss.SetPubdate(b.GetField("published").String())
-	rss.SetImage(b.GetFile("cover").Get("uri"))
-	rss.SetDescription(b.GetField("description").String())
+	rss.SetTitle(b.GetMeta("title"))
+	rss.SetLink(b.GetMeta("uri"))
+	rss.SetPubdate(b.GetMeta("published"))
+	rss.SetImage(b.GetFile("cover").Get("url"))
+	rss.SetDescription(b.GetMeta("description"))
 
 	for _, item := range b.GetField("tags").Collection().EachItem() {
 		rss.AddCategory(item.Get("value"))
@@ -107,12 +99,12 @@ type RssItem struct {
 }
 
 type Description struct {
-	XMLName xml.Name `xml:"description"`
+	XMLName xml.Name `xml:"description,omitempty"`
 	Body    string   `xml:",cdata"`
 }
 
 func NewChannel() *Channel {
-	return &Channel{}
+	return &Channel{SharedRss: NewRssObject()}
 }
 
 func NewRssItem() *RssItem {
@@ -172,10 +164,9 @@ func (c *Channel) SetLanguage(lang string) *Channel {
 	return c
 }
 
-func (c *Channel) AddItem() *RssItem {
-	item := NewRssItem()
+func (c *Channel) AddItem(item *RssItem) *Channel {
 	c.Item = append(c.Item, item)
-	return item
+	return c
 }
 
 type Image struct {

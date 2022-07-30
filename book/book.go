@@ -128,8 +128,8 @@ type Meta interface {
 	String(f *Field) string
 	URL(f *Field) string
 	IsNull() bool
-	//ParseData(f *Field)
 	ParseMeta(f *Field) Meta
+	RawData() interface{}
 }
 
 func NewBook() *Book {
@@ -166,28 +166,30 @@ func (b *Book) GetTitleAndSeries() string {
 
 func (b Book) GetFile(f string) *Item {
 	formats := b.GetField("formats")
+	item := NewMetaItem()
+	q := url.Values{}
+	q.Set("library", b.GetField("library").String())
 	switch f {
 	case "cover":
-		return b.GetField("cover").Item()
+		item = b.GetField("cover").Item()
 	case "audio":
-		for _, item := range formats.Collection().EachItem() {
-			if slices.Contains(AudioFormats(), item.Get("extension")) {
-				q := url.Values{}
-				q.Set("library", b.GetField("library").String())
-				q.Set("format", item.Get("extension"))
-				u := url.URL{Path: item.Get("uri"), RawQuery: q.Encode()}
-				item.Set("url", u.String())
-				return item
+		for _, i := range formats.Collection().EachItem() {
+			if slices.Contains(AudioFormats(), i.Get("extension")) {
+				q.Set("format", i.Get("extension"))
+				item = i
+				break
 			}
 		}
 	default:
-		for _, item := range formats.Collection().EachItem() {
-			if item.Get("extension") == f {
-				return item
+		for _, i := range formats.Collection().EachItem() {
+			if i.Get("extension") == f {
+				item = i
 			}
 		}
 	}
-	return &Item{}
+	u := url.URL{Path: item.Get("uri"), RawQuery: q.Encode()}
+	item.Set("url", u.String())
+	return item
 }
 
 func (b Book) FilterValue() string {
@@ -240,7 +242,23 @@ func (c *Collection) Join(isNames bool) string {
 	}
 }
 
-func (c *Collection) SplitString(value string, isNames bool) *Collection {
+func (c *Collection) StringSlice() []string {
+	var items []string
+	for _, i := range c.EachItem() {
+		items = append(items, i.Get("value"))
+	}
+	return items
+}
+
+func (c *Collection) RawData() interface{} {
+	var items []interface{}
+	for _, i := range c.EachItem() {
+		items = append(items, i.RawData())
+	}
+	return items
+}
+
+func (c *Collection) splitString(value string, isNames bool) *Collection {
 	sep := itemSep
 	if isNames {
 		sep = nameSep
@@ -263,7 +281,7 @@ func (c *Collection) IsNull() bool {
 func (c *Collection) ParseMeta(f *Field) Meta {
 	switch d := f.data.(type) {
 	case string:
-		c.SplitString(d, f.IsNames)
+		c.splitString(d, f.IsNames)
 	case []string:
 		for _, val := range d {
 			c.AddItem().Set("value", val)
@@ -311,6 +329,10 @@ func (i *Item) IsNull() bool {
 	return len(i.data) == 0
 }
 
+func (i *Item) RawData() interface{} {
+	return i.data
+}
+
 func (i Item) TotalBooks() int {
 	if t := i.Get("books"); t != "" {
 		b, err := strconv.Atoi(t)
@@ -345,19 +367,23 @@ func (i *Item) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type Column string
+type Column struct {
+	data string
+}
 
 func NewMetaColumn() *Column {
-	ms := Column("")
-	return &ms
+	//ms := Column("")
+	//return &ms
+	return &Column{}
 }
 
 func (c *Column) String(f *Field) string {
 	if f.Label() == "uri" {
-		u := url.URL{Path: string(*c), RawQuery: f.rawQuery()}
+		u := url.URL{Path: c.data, RawQuery: f.rawQuery()}
 		return u.String()
 	}
-	return string(*c)
+	return c.data
+	//return string(*c)
 }
 
 func (c *Column) URL(f *Field) string {
@@ -365,17 +391,24 @@ func (c *Column) URL(f *Field) string {
 }
 
 func (c *Column) IsNull() bool {
-	return string(*c) == ""
+	return c.data == ""
+	//return string(*c) == ""
+}
+
+func (c *Column) RawData() interface{} {
+	return c.data
+	//return string(*c)
 }
 
 func (c *Column) ParseMeta(f *Field) Meta {
 	switch d := f.data.(type) {
 	case string:
-		s := Column(d)
-		return &s
+		c.data = d
+		//s := Column(d)
+		//return &s
 	case json.RawMessage:
 		if len(d) > 0 {
-			if err := json.Unmarshal(d, &c); err != nil {
+			if err := json.Unmarshal(d, &c.data); err != nil {
 				fmt.Printf("%v failed: %v\n", d, err)
 			}
 		}
@@ -384,6 +417,25 @@ func (c *Column) ParseMeta(f *Field) Meta {
 }
 
 func (c *Column) Set(v string) *Column {
-	s := Column(v)
-	return &s
+	c.data = v
+	//s := Column(v)
+	return c
+}
+
+var EditableFields = []string{
+	"id",
+	"authorSort",
+	"authors",
+	"description",
+	"identifiers",
+	"languages",
+	"published",
+	"publisher",
+	"rating",
+	"series",
+	"position",
+	"sortAs",
+	"tags",
+	"added",
+	"title",
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ()
+var ffcomment = []byte(";FFMETADATA1\n")
 
 // testCmd represents the test command
 var testCmd = &cobra.Command{
@@ -15,9 +15,9 @@ var testCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		query.SetKeywords(args)
+		//query.SetKeywords(args)
 		cmdLib = urbooks.GetLib(lib)
-		apicall()
+		//apicall()
 		somebooks()
 		//getPreferences(cmdLib)
 		//resp := lib.GetResponse()

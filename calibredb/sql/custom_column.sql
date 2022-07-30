@@ -28,7 +28,7 @@ JSON_OBJECT(
 		'value', value, 
 		'id', lower({{$col.table}}.id), 
 		'uri', ltrim("{{$col.label}}/", '#') || {{$col.table}}.id))
-	FROM {{$col.table}}, custom_columns 
+	FROM {{$col.table}}
 	WHERE {{$col.table}}.id 
 	IN (SELECT value
 		FROM {{$col.join_table}}
