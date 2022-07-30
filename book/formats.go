@@ -12,6 +12,7 @@ import (
 	md "github.com/JohannesKaufmann/html-to-markdown"
 	"github.com/gosimple/slug"
 	"github.com/ohzqq/avtools/avtools"
+	"gopkg.in/ini.v1"
 )
 
 func ListFormats() []string {
@@ -135,6 +136,24 @@ func (b *Book) StringMap() map[string]string {
 		}
 	}
 	return m
+}
+
+func (b *Book) ToIni() {
+	ini.PrettyFormat = false
+	file := ini.Empty(ini.LoadOptions{
+		AllowNonUniqueSections: true,
+	})
+	sec, err := file.GetSection("")
+	if err != nil {
+		log.Fatal(err)
+	}
+	for k, v := range b.StringMap() {
+		_, err := sec.NewKey(k, v)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	file.WriteTo(os.Stdout)
 }
 
 func MediaMetaToBook(lib string, m *avtools.Media) *Book {

@@ -68,12 +68,8 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 				return fmt.Errorf("json: %v\n field meta: %v\n", key, field.JsonLabel)
 			}
 
-			if key != "customColumns" {
-				field.SetData(value)
-				field.ParseData()
-			}
-
-			if key == "customColumns" {
+			switch key {
+			case "customColumns":
 				var custom = make(map[string]map[string]json.RawMessage)
 				err = json.Unmarshal(value, &custom)
 				if err != nil {
@@ -81,7 +77,7 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 				}
 
 				for name, cdata := range custom {
-					col := book.AddField(NewField(name).SetIsCustom())
+					field.Collection().AddItem().Set("value", name)
 					book.customColumns = append(book.customColumns, name)
 
 					meta := make(map[string]string)
@@ -90,24 +86,24 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 						return fmt.Errorf("custom column parsing error: %v\n", err)
 					}
 
+					var col *Field
 					switch meta["is_multiple"] {
 					case "true":
-						col.SetIsMultiple()
-						col.SetMeta(NewMetaCollection())
+						col = book.AddField(NewCollection(name).SetIsCustom())
 					case "false":
-						col.SetMeta(NewMetaColumn())
+						col = book.AddField(NewColumn(name).SetIsCustom())
 					}
-					col.SetData(cdata["data"])
+
+					col.SetMeta(cdata["data"])
 					col.ParseData()
-					//if err != nil {
-					//  return err
-					//}
 
 					if meta["is_names"] == "true" {
 						col.SetIsNames()
 					}
-
 				}
+			default:
+				field.SetData(value)
+				field.ParseData()
 			}
 		}
 		books.AddBook(book)
@@ -271,7 +267,6 @@ func (c *Collection) ParseData(f *Field) {
 	case string:
 		c.Split(d, f.IsNames)
 	case []string:
-
 		for _, val := range d {
 			c.AddItem().Set("value", val)
 		}
@@ -288,6 +283,10 @@ func (c *Collection) ParseMeta(f *Field) Meta {
 	switch d := f.data.(type) {
 	case string:
 		c.Split(d, f.IsNames)
+	case []string:
+		for _, val := range d {
+			c.AddItem().Set("value", val)
+		}
 	case json.RawMessage:
 		if len(d) > 0 {
 			if err := json.Unmarshal(d, &c.data); err != nil {

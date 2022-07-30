@@ -16,9 +16,9 @@ var testCmd = &cobra.Command{
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
 		query.SetKeywords(args)
+		cmdLib = urbooks.GetLib(lib)
 		apicall()
-		//cmdLib = urbooks.GetLib(lib)
-		//somebooks()
+		somebooks()
 		//getPreferences(cmdLib)
 		//resp := lib.GetResponse()
 		//req = urbooks.NewRequest(lib.Name).From("authors").Limit("1")

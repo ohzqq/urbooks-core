@@ -55,7 +55,11 @@ func somebooks() {
 		//println(string(book.BookToRssChannel(b).Marshal()))
 		//fmt.Printf("%+v\n", book.BookToRssChannel(b))
 		//println(string(cmdLib.ToOPF(b)))
-		fmt.Printf("uri %+V\n", b.GetField("narrators").String())
+		fmt.Printf("%+v\n", b.GetMeta("narrators"))
+		//for label, f := range b.EachField() {
+		//fmt.Printf("field: %v\n", label)
+		//fmt.Printf("data %+V\n", f.String())
+		//}
 	}
 }
 

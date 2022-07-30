@@ -56,6 +56,13 @@ func (f *Fields) GetField(name string) *Field {
 	return f.data[name]
 }
 
+//func (f *Fields) GetMeta(name string) string {
+//  if !strings.HasPrefix(name, "#") && slices.Contains(f.customColumns, "#"+name) {
+//    name = "#" + name
+//  }
+//  return f.data[name]
+//}
+
 func (f *Fields) AddField(field *Field) *Field {
 	f.data[field.Label()] = field
 	return field
@@ -69,6 +76,10 @@ func (f *Fields) SetField(name string, field *Field) *Fields {
 func (f *Fields) SetMeta(name string, meta Meta) *Fields {
 	f.GetField(name).Meta = meta
 	return f
+}
+
+func (f *Fields) GetMeta(name string) string {
+	return f.GetField(name).String()
 }
 
 func (f *Fields) EachField() fields {
@@ -92,7 +103,7 @@ func NewField(label string) *Field {
 }
 
 func NewCollection(label string) *Field {
-	field := NewField(label)
+	field := NewField(label).SetIsMultiple()
 	field.Meta = NewMetaCollection()
 	return field
 }
@@ -131,11 +142,17 @@ func (f *Field) setJsonData(data []byte) *Field {
 
 func (f *Field) SetData(data any) *Field {
 	f.data = data
-	switch d := data.(type) {
-	case string:
-		f.SetStringMeta(d)
-		//case json.RawMessage:
-	}
+	//switch d := data.(type) {
+	//case string:
+	//  f.SetStringMeta(d)
+	//  //case json.RawMessage:
+	//}
+	f.ParseData()
+	//f.Meta = f.Meta.ParseMeta(f)
+	return f
+}
+
+func (f *Field) ParseData() *Field {
 	f.Meta.ParseData(f)
 	return f
 }
@@ -173,11 +190,6 @@ func (f *Field) SetIndex(idx int) *Field {
 func (f *Field) SetMeta(data any) *Field {
 	f.data = data
 	f.Meta = f.Meta.ParseMeta(f)
-	return f
-}
-
-func (f *Field) ParseData() *Field {
-	f.Meta.ParseData(f)
 	return f
 }
 
@@ -317,7 +329,7 @@ func defaultCalibreFields() fields {
 		"titleAndSeries": NewColumn("titleAndSeries"),
 		"uri":            NewColumn("uri"),
 		"uuid":           NewColumn("uuid"),
-		"customColumns": NewField("customColumns").
+		"customColumns": NewCollection("customColumns").
 			SetCalibreLabel("custom_columns"),
 	}
 }
