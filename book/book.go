@@ -95,7 +95,6 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 					}
 
 					col.SetMeta(cdata["data"])
-					col.ParseData()
 
 					if meta["is_names"] == "true" {
 						col.SetIsNames()
@@ -103,7 +102,6 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 				}
 			default:
 				field.SetMeta(value)
-				field.ParseData()
 			}
 		}
 		books.AddBook(book)
@@ -130,7 +128,7 @@ type Meta interface {
 	String(f *Field) string
 	URL(f *Field) string
 	IsNull() bool
-	ParseData(f *Field)
+	//ParseData(f *Field)
 	ParseMeta(f *Field) Meta
 }
 
@@ -242,7 +240,7 @@ func (c *Collection) Join(isNames bool) string {
 	}
 }
 
-func (c *Collection) Split(value string, isNames bool) *Collection {
+func (c *Collection) SplitString(value string, isNames bool) *Collection {
 	sep := itemSep
 	if isNames {
 		sep = nameSep
@@ -262,27 +260,10 @@ func (c *Collection) IsNull() bool {
 	return len(c.data) == 0
 }
 
-func (c *Collection) ParseData(f *Field) {
-	switch d := f.data.(type) {
-	case string:
-		c.Split(d, f.IsNames)
-	case []string:
-		for _, val := range d {
-			c.AddItem().Set("value", val)
-		}
-	case json.RawMessage:
-		if len(d) > 0 {
-			if err := json.Unmarshal(d, &c.data); err != nil {
-				log.Fatalf("poot failed: %v\n", err)
-			}
-		}
-	}
-}
-
 func (c *Collection) ParseMeta(f *Field) Meta {
 	switch d := f.data.(type) {
 	case string:
-		c.Split(d, f.IsNames)
+		c.SplitString(d, f.IsNames)
 	case []string:
 		for _, val := range d {
 			c.AddItem().Set("value", val)
@@ -341,18 +322,6 @@ func (i Item) TotalBooks() int {
 	return 0
 }
 
-func (i *Item) ParseData(f *Field) {
-	switch d := f.data.(type) {
-	case string:
-		i = i.Set("value", d)
-	case json.RawMessage:
-		err := i.UnmarshalJSON(d)
-		if err != nil {
-			fmt.Printf("item failed: %v\n", err)
-		}
-	}
-}
-
 func (i *Item) ParseMeta(f *Field) Meta {
 	switch d := f.data.(type) {
 	case string:
@@ -397,19 +366,6 @@ func (c *Column) URL(f *Field) string {
 
 func (c *Column) IsNull() bool {
 	return string(*c) == ""
-}
-
-func (c *Column) ParseData(f *Field) {
-	switch d := f.data.(type) {
-	case string:
-		c.Set(d)
-	case json.RawMessage:
-		if len(d) > 0 {
-			if err := json.Unmarshal(d, &c); err != nil {
-				fmt.Printf("%v failed: %v\n", d, err)
-			}
-		}
-	}
 }
 
 func (c *Column) ParseMeta(f *Field) Meta {

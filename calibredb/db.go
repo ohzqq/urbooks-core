@@ -64,7 +64,7 @@ var (
 func (lib *Lib) Get(u string) []byte {
 	lib.mtx.Lock()
 	defer lib.mtx.Unlock()
-	fmt.Printf("%+v\n", u)
+	//fmt.Printf("%+v\n", u)
 	lib.response = newResponse()
 
 	var err error

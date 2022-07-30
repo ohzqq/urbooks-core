@@ -140,11 +140,6 @@ func (f *Field) setJsonData(data []byte) *Field {
 	return f
 }
 
-func (f *Field) ParseData() *Field {
-	f.Meta.ParseData(f)
-	return f
-}
-
 func (f *Field) setStringData(data string) *Field {
 	f.stringData = data
 	return f

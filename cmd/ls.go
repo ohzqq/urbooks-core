@@ -52,7 +52,8 @@ var lsCmd = &cobra.Command{
 func somebooks() {
 	cmdLib.From("books").Find("333").GetResponse()
 	for _, b := range cmdLib.Books {
-		//println(string(book.BookToRssChannel(b).Marshal()))
+		//b.ConvertTo("ini").Write()
+		//println(string(b.ToIni()))
 		//fmt.Printf("%+v\n", book.BookToRssChannel(b))
 		//println(string(cmdLib.ToOPF(b)))
 		fmt.Printf("%+v\n", b.GetMeta("narrators"))
