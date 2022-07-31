@@ -60,7 +60,7 @@ func UnmarshalAudibleApiProduct(d []byte) *Book {
 			var contributors *Field
 			switch f {
 			case "narrators":
-				contributors = book.AddField(NewCollection("#narrators")).SetIsNames()
+				contributors = book.AddField(NewCollection("#narrators")).SetIsNames().SetIsEditable().SetIsCustom()
 			case "authors":
 				contributors = book.GetField(f)
 			}

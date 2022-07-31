@@ -15,7 +15,7 @@ type Books []*Book
 
 type Book struct {
 	lib string
-	fmt metaFmt
+	fmt Fmt
 	*Fields
 }
 
@@ -89,10 +89,11 @@ func (books *Books) UnmarshalJSON(r []byte) error {
 					var col *Field
 					switch meta["is_multiple"] {
 					case "true":
-						col = book.AddField(NewCollection(name).SetIsCustom())
+						col = book.AddField(NewCollection(name))
 					case "false":
-						col = book.AddField(NewColumn(name).SetIsCustom())
+						col = book.AddField(NewColumn(name))
 					}
+					col.SetIsCustom().SetIsEditable()
 
 					col.SetMeta(cdata["data"])
 
@@ -187,8 +188,10 @@ func (b Book) GetFile(f string) *Item {
 			}
 		}
 	}
-	u := url.URL{Path: item.Get("uri"), RawQuery: q.Encode()}
-	item.Set("url", u.String())
+	if uri := item.Get("uri"); uri != "" {
+		u := url.URL{Path: uri, RawQuery: q.Encode()}
+		item.Set("url", u.String())
+	}
 	return item
 }
 

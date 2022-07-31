@@ -35,6 +35,7 @@ type Field struct {
 	CalibreLabel string `json:"label"`
 	IsCategory   bool   `json:"is_category"`
 	IsCustom     bool   `json:"is_custom"`
+	IsEditable   bool   `json:"is_editable"`
 }
 
 func NewFields() *Fields {
@@ -165,6 +166,11 @@ func (f *Field) SetIsCategory() *Field {
 	return f
 }
 
+func (f *Field) SetIsEditable() *Field {
+	f.IsEditable = true
+	return f
+}
+
 func (f *Field) SetIndex(idx int) *Field {
 	f.idx = idx
 	return f
@@ -260,22 +266,28 @@ func ListDefaultFields() []string {
 func defaultCalibreFields() fields {
 	return fields{
 		"authors": NewCollection("authors").
+			SetIsEditable().
 			SetIsCategory().
 			SetIsMultiple().
 			SetIsNames(),
 		"authorSort": NewColumn("authorSort").
+			SetIsEditable().
 			SetCalibreLabel("author_sort"),
 		"description": NewColumn("description").
+			SetIsEditable().
 			SetCalibreLabel("comments"),
 		"cover": NewItem("cover"),
 		"formats": NewCollection("formats").
 			SetIsCategory().
 			SetIsMultiple(),
-		"id": NewColumn("id"),
+		"id": NewColumn("id").
+			SetIsEditable(),
 		"identifiers": NewCollection("identifiers").
+			SetIsEditable().
 			SetIsCategory().
 			SetIsMultiple(),
 		"languages": NewCollection("languages").
+			SetIsEditable().
 			SetIsCategory().
 			SetIsMultiple(),
 		"library": NewColumn("library"),
@@ -283,22 +295,31 @@ func defaultCalibreFields() fields {
 			SetCalibreLabel("last_modified"),
 		"path": NewColumn("path"),
 		"published": NewColumn("published").
+			SetIsEditable().
 			SetCalibreLabel("pubdate"),
-		"publisher": NewItem("publisher"),
+		"publisher": NewItem("publisher").
+			SetIsEditable(),
 		"rating": NewColumn("rating").
+			SetIsEditable().
 			SetIsCategory(),
 		"series": NewItem("series").
+			SetIsEditable().
 			SetIsCategory(),
 		"position": NewColumn("position").
+			SetIsEditable().
 			SetCalibreLabel("series_index"),
 		"sortAs": NewColumn("sortAs").
+			SetIsEditable().
 			SetCalibreLabel("sort"),
 		"tags": NewCollection("tags").
+			SetIsEditable().
 			SetIsCategory().
 			SetIsMultiple(),
 		"added": NewColumn("added").
+			SetIsEditable().
 			SetCalibreLabel("timestamp"),
-		"title":          NewColumn("title"),
+		"title": NewColumn("title").
+			SetIsEditable(),
 		"titleAndSeries": NewColumn("titleAndSeries"),
 		"uri":            NewColumn("uri"),
 		"uuid":           NewColumn("uuid"),

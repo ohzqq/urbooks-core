@@ -161,16 +161,30 @@ func (c *cdbCmd) List(arg string) *cdbCmd {
 	return c
 }
 
-func (c *cdbCmd) Import(input, cover string) *cdbCmd {
+//func IniToBook(l, i string) *book.Book {
+//  file, err := ini.LoadSources(iniOpts, i)
+//  if err != nil {
+//    log.Fatal(err)
+//  }
+//}
+
+func (c *cdbCmd) Import(input, cover, meta string) *cdbCmd {
 	id, err := c.addBook(input, cover)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var b *book.Book
+	if meta != "" {
+	} else {
+		b = book.MediaMetaToBook(c.lib.Name, c.media)
+	}
+
 	metaCmd := &cdbCmd{
 		media:   c.media,
 		lib:     c.lib,
 		verbose: c.verbose,
-		book:    book.MediaMetaToBook(c.lib.Name, c.media),
+		book:    b,
 	}
 	_, err = metaCmd.setMetadataCmd(id).Run()
 	switch {

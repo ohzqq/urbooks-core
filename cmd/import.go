@@ -6,6 +6,7 @@ import (
 )
 
 var cover string
+var iniFile string
 
 // importCmd represents the import command
 var importCmd = &cobra.Command{
@@ -23,11 +24,12 @@ var importCmd = &cobra.Command{
 		urbooks.NewCalibredbCmd().
 			WithLib(lib).
 			Verbose(verbose).
-			Import(args[0], cover)
+			Import(args[0], cover, iniFile)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(importCmd)
 	importCmd.Flags().StringVarP(&cover, "cover", "c", "", "specify cover")
+	importCmd.Flags().StringVarP(&iniFile, "ini", "i", "", "use a metadata file instead of embedded")
 }

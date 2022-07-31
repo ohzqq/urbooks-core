@@ -8,7 +8,7 @@ import (
 	"github.com/ohzqq/urbooks-core/book"
 )
 
-func (l *Library) ConvertBook(b *book.Book, fmt string) *book.Book {
+func (l *Library) ConvertBook(b *book.Book, fmt string) book.Fmt {
 	return b.ConvertTo(fmt)
 }
 
