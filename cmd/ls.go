@@ -54,7 +54,7 @@ func somebooks() {
 	books := req.ParseBooks()
 	for _, b := range books.Books {
 		println(b.GetMeta("title"))
-		b.ConvertTo("toml").Print()
+		b.ConvertTo("opf").Print()
 		//for label, f := range b.EachField() {
 		//  fmt.Printf("field: %v\n", label)
 		//  fmt.Printf("data %+V\n", f.String())

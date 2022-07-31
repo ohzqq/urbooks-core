@@ -3,6 +3,7 @@ package book
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"net/url"
 	"strconv"
@@ -14,8 +15,9 @@ import (
 type Books []*Book
 
 type Book struct {
-	lib string
-	fmt Fmt
+	lib  string
+	tmpl *template.Template
+	fmt  Fmt
 	*Fields
 }
 

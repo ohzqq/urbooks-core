@@ -74,10 +74,10 @@ func opfFields(b *Book) []*Field {
 }
 
 func (b *Book) ConvertToOPF() *OPFmetadata {
-	return ToOpf(b)
+	return buildOPF(b)
 }
 
-func ToOpf(b *Book) *OPFmetadata {
+func buildOPF(b *Book) *OPFmetadata {
 	opf := NewOpfMetadata()
 	for _, field := range opfFields(b) {
 		if !field.IsNull() {

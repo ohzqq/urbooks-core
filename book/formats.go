@@ -45,9 +45,9 @@ func MediaMetaToBook(lib string, m *avtools.Media) *Book {
 func (b *Book) ConvertTo(f string) Fmt {
 	for _, fmt := range MetaFmt {
 		if fmt.name == f {
+			b.tmpl = fmt.tmpl
 			fmt.book = b
 			return fmt
-			//b.fmt = fmt
 		}
 	}
 	return Fmt{}
@@ -95,31 +95,11 @@ type Fmt struct {
 	name   string
 	hash   bool
 	data   []byte
-	buffer bytes.Buffer
+	render func(b *Book, hash bool) []byte
 }
 
 func (f Fmt) Render() Fmt {
-	switch f.name {
-	case "opf":
-		f.data = ToOpf(f.book).Marshal()
-	case "rss":
-		f.data = f.ToRss()
-	case "ini":
-		f.data = f.ToIni()
-	case "toml":
-		//f.ToToml()
-		err := toml.NewEncoder(&f.buffer).Encode(f.book.StringMap(f.hash))
-		if err != nil {
-			log.Fatal(err)
-		}
-		f.data = f.buffer.Bytes()
-	default:
-		err := f.tmpl.Execute(&f.buffer, f.book)
-		if err != nil {
-			log.Fatal(err)
-		}
-		f.data = f.buffer.Bytes()
-	}
+	f.data = f.render(f.book, f.hash)
 	return f
 }
 
@@ -131,12 +111,21 @@ func (f Fmt) Bytes() []byte {
 	return f.data
 }
 
-func getFmt(n string) (Fmt, error) {
-	return Fmt{}, fmt.Errorf("Not a format")
-}
-
 func (f Fmt) Print() {
 	fmt.Println(f.Render().String())
+}
+
+func (f Fmt) Write() {
+	file, err := os.Create(slug.Make(f.book.GetMeta("title")) + f.ext)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	_, err = file.Write(f.Render().Bytes())
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (f Fmt) Tmp() *os.File {
@@ -153,29 +142,22 @@ func (f Fmt) Tmp() *os.File {
 	return file
 }
 
-func (f Fmt) Write() {
-	file, err := os.Create(slug.Make(f.book.GetMeta("title")) + f.ext)
+func renderTmpl(b *Book, hash bool) []byte {
+	var buf bytes.Buffer
+	err := b.tmpl.Execute(&buf, b)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
-
-	_, err = file.Write(f.Render().Bytes())
-	if err != nil {
-		log.Fatal(err)
-	}
+	return buf.Bytes()
 }
 
-func (f Fmt) ToToml() []byte {
-	err := toml.NewEncoder(&f.buffer).Encode(f.book.StringMap(f.hash))
+func ToToml(b *Book, hash bool) []byte {
+	var buf bytes.Buffer
+	err := toml.NewEncoder(&buf).Encode(b.StringMap(hash))
 	if err != nil {
 		log.Fatal(err)
 	}
-	return f.buffer.Bytes()
-}
-
-func (f Fmt) ToRss() []byte {
-	return BookToRssChannel(f.book).Marshal()
+	return buf.Bytes()
 }
 
 var iniOpts = ini.LoadOptions{
@@ -183,14 +165,15 @@ var iniOpts = ini.LoadOptions{
 	AllowNonUniqueSections: true,
 }
 
-func ToIni(b map[string]string) []byte {
+func ToIni(b *Book, hash bool) []byte {
+	book := b.StringMap(hash)
 	//ini.PrettyFormat = false
 	file := ini.Empty(iniOpts)
 	sec, err := file.GetSection("")
 	if err != nil {
 		log.Fatal(err)
 	}
-	for k, v := range b {
+	for k, v := range book {
 		_, err := sec.NewKey(k, v)
 		if err != nil {
 			log.Fatal(err)
@@ -206,16 +189,6 @@ func ToIni(b map[string]string) []byte {
 	return buf.Bytes()
 }
 
-func (f Fmt) ToIni() []byte {
-	return ToIni(f.book.StringMap(f.hash))
-}
-
-var funcMap = template.FuncMap{
-	"toMarkdown":   toMarkdown,
-	"stringToHTML": stringToHTML,
-	"ToIni":        ToIni,
-}
-
 func stringToHTML(s string) template.HTML {
 	return template.HTML(html.UnescapeString(s))
 }
@@ -229,46 +202,63 @@ func toMarkdown(str string) string {
 	return markdown
 }
 
-var MetaFmt = []Fmt{
-	Fmt{
-		name: "ffmeta",
-		ext:  ".ini",
-		tmpl: template.Must(template.New("ffmeta").Funcs(funcMap).Parse(ffmetaTmpl)),
-	},
-	Fmt{
-		name: "markdown",
-		ext:  ".md",
-		hash: true,
-		tmpl: template.Must(template.New("md").Funcs(funcMap).Parse(mdTmpl)),
-	},
-	Fmt{
-		name: "md",
-		ext:  ".md",
-		hash: true,
-		tmpl: template.Must(template.New("md").Funcs(funcMap).Parse(mdTmpl)),
-	},
-	Fmt{
-		name: "plain",
-		ext:  ".txt",
-		tmpl: template.Must(template.New("plain").Funcs(funcMap).Parse(plainTmpl)),
-	},
-	Fmt{
-		name: "opf",
-		ext:  ".opf",
-	},
-	Fmt{
-		name: "ini",
-		ext:  ".ini",
-	},
-	Fmt{
-		name: "toml",
-		ext:  ".toml",
-		hash: true,
-	},
-	Fmt{
-		name: "rss",
-	},
-}
+var (
+	funcMap = template.FuncMap{
+		"toMarkdown":   toMarkdown,
+		"stringToHTML": stringToHTML,
+		"ToIni":        ToIni,
+	}
+
+	MetaFmt = []Fmt{
+		Fmt{
+			name:   "ffmeta",
+			ext:    ".ini",
+			tmpl:   template.Must(template.New("ffmeta").Funcs(funcMap).Parse(ffmetaTmpl)),
+			render: renderTmpl,
+		},
+		Fmt{
+			name:   "markdown",
+			ext:    ".md",
+			hash:   true,
+			tmpl:   template.Must(template.New("md").Funcs(funcMap).Parse(mdTmpl)),
+			render: renderTmpl,
+		},
+		Fmt{
+			name:   "md",
+			ext:    ".md",
+			hash:   true,
+			tmpl:   template.Must(template.New("md").Funcs(funcMap).Parse(mdTmpl)),
+			render: renderTmpl,
+		},
+		Fmt{
+			name:   "plain",
+			ext:    ".txt",
+			tmpl:   template.Must(template.New("plain").Funcs(funcMap).Parse(plainTmpl)),
+			render: renderTmpl,
+		},
+		Fmt{
+			name:   "opf",
+			ext:    ".opf",
+			render: func(b *Book, hash bool) []byte { return buildOPF(b).Marshal() },
+		},
+		Fmt{
+			name:   "ini",
+			ext:    ".ini",
+			render: ToIni,
+		},
+		Fmt{
+			name:   "toml",
+			ext:    ".toml",
+			hash:   true,
+			render: ToToml,
+		},
+		Fmt{
+			name:   "rss",
+			ext:    ".xml",
+			render: func(b *Book, hash bool) []byte { return BookToRssChannel(b).Marshal() },
+		},
+	}
+)
 
 const ffmetaTmpl = `;FFMETADATA
 title={{with .GetTitleAndSeries}}{{stringToHTML .}}{{end}}
