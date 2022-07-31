@@ -280,8 +280,7 @@ func defaultCalibreFields() fields {
 		"formats": NewCollection("formats").
 			SetIsCategory().
 			SetIsMultiple(),
-		"id": NewColumn("id").
-			SetIsEditable(),
+		"id": NewColumn("id"),
 		"identifiers": NewCollection("identifiers").
 			SetIsEditable().
 			SetIsCategory().

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/ohzqq/avtools/avtools"
 	"github.com/ohzqq/urbooks-core/book"
 	"github.com/ohzqq/urbooks-core/calibredb"
@@ -42,6 +43,11 @@ type cdbCmd struct {
 	tmp      *os.File
 	args     []string
 	cmd      *exec.Cmd
+}
+
+type importCmd struct {
+	*cdbCmd
+	meta map[string]string
 }
 
 func NewCalibredbCmd() *cdbCmd {
@@ -161,32 +167,34 @@ func (c *cdbCmd) List(arg string) *cdbCmd {
 	return c
 }
 
-//func IniToBook(l, i string) *book.Book {
-//  file, err := ini.LoadSources(iniOpts, i)
-//  if err != nil {
-//    log.Fatal(err)
-//  }
-//}
-
-func (c *cdbCmd) Import(input, cover, meta string) *cdbCmd {
+func (c *cdbCmd) Import(input, cover, metaFile string) *cdbCmd {
 	id, err := c.addBook(input, cover)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var b *book.Book
-	if meta != "" {
+	meta := make(map[string]string)
+	if metaFile != "" {
+		file, err := os.Open(metaFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = toml.NewDecoder(file).Decode(&meta)
+		if err != nil {
+			log.Fatal(err)
+		}
 	} else {
-		b = book.MediaMetaToBook(c.lib.Name, c.media)
+		b := book.MediaMetaToBook(c.lib.Name, c.media)
+		meta = b.StringMap(false)
 	}
+	delete(meta, "id")
 
 	metaCmd := &cdbCmd{
 		media:   c.media,
 		lib:     c.lib,
 		verbose: c.verbose,
-		book:    b,
 	}
-	_, err = metaCmd.setMetadataCmd(id).Run()
+	_, err = metaCmd.setMetadataCmd(id, meta).Run()
 	switch {
 	case err != nil:
 		log.Fatal(err)
@@ -260,13 +268,11 @@ func (c *cdbCmd) addBook(input, cover string) (string, error) {
 	return "", fmt.Errorf("import unsucessful")
 }
 
-func (c *cdbCmd) setMetadataCmd(id string) *cdbCmd {
+func (c *cdbCmd) setMetadataCmd(id string, meta map[string]string) *cdbCmd {
 	c.setCdbCmd("set_metadata")
 	c.appendArgs(id)
 
-	b := c.book.StringMap(false)
-
-	for field, val := range b {
+	for field, val := range meta {
 		f := calibredb.GetCalibreField(field) + ":"
 		if strings.HasPrefix(field, "#") || slices.Contains(book.EditableFields, field) {
 			c.appendArgs("-f", f+val)
