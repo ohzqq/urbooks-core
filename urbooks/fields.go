@@ -3,7 +3,6 @@ package urbooks
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/ohzqq/urbooks-core/book"
@@ -15,7 +14,6 @@ func (l *Library) ConvertBook(b *book.Book, fmt string) book.Fmt {
 
 func (l *Library) ToOPF(b *book.Book) *bytes.Buffer {
 	opf := b.ConvertToOPF()
-	fmt.Printf("%+v\n", l.CustomColumns)
 	for name, field := range l.CustomColumns {
 		println(name)
 		field.Value = b.GetField(name).String()

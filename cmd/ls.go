@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 
-	"github.com/BurntSushi/toml"
 	"github.com/ohzqq/urbooks-core/urbooks"
 	"github.com/spf13/cobra"
 )
@@ -56,13 +54,6 @@ func somebooks() {
 	books := req.ParseBooks()
 	for _, b := range books.Books {
 		println(b.GetMeta("title"))
-		t := b.ConvertTo("toml").Bytes()
-		bb := make(map[string]string)
-		err := toml.Unmarshal(t, &bb)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("%+v\n", bb)
 		//for label, f := range b.EachField() {
 		//  fmt.Printf("field: %v\n", label)
 		//  fmt.Printf("data %+V\n", f.String())

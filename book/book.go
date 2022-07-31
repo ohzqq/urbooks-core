@@ -377,8 +377,6 @@ type Column struct {
 }
 
 func NewMetaColumn() *Column {
-	//ms := Column("")
-	//return &ms
 	return &Column{}
 }
 
@@ -388,7 +386,6 @@ func (c *Column) String(f *Field) string {
 		return u.String()
 	}
 	return c.data
-	//return string(*c)
 }
 
 func (c *Column) URL(f *Field) string {
@@ -397,20 +394,16 @@ func (c *Column) URL(f *Field) string {
 
 func (c *Column) IsNull() bool {
 	return c.data == ""
-	//return string(*c) == ""
 }
 
 func (c *Column) RawData() interface{} {
 	return c.data
-	//return string(*c)
 }
 
 func (c *Column) ParseMeta(f *Field) Meta {
 	switch d := f.data.(type) {
 	case string:
 		c.data = d
-		//s := Column(d)
-		//return &s
 	case json.RawMessage:
 		if len(d) > 0 {
 			if err := json.Unmarshal(d, &c.data); err != nil {
@@ -423,7 +416,6 @@ func (c *Column) ParseMeta(f *Field) Meta {
 
 func (c *Column) Set(v string) *Column {
 	c.data = v
-	//s := Column(v)
 	return c
 }
 
