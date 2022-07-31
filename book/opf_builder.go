@@ -116,7 +116,7 @@ func buildOPF(b *Book) *OPFmetadata {
 	return opf
 }
 
-func (opf *OPFmetadata) Marshal() []byte {
+func (opf *OPFmetadata) Marshal() *bytes.Buffer {
 	pkg := bytes.NewBufferString(xml.Header)
 	enc := xml.NewEncoder(pkg)
 	enc.Indent("", "  ")
@@ -124,7 +124,7 @@ func (opf *OPFmetadata) Marshal() []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return pkg.Bytes()
+	return pkg
 }
 
 func (m *OPFmetadata) SetTitle(title string) *OPFmetadata {

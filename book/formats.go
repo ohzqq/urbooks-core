@@ -95,24 +95,19 @@ type Fmt struct {
 	name   string
 	hash   bool
 	data   []byte
-	render func(b *Book, hash bool) []byte
-}
-
-func (f Fmt) Render() Fmt {
-	f.data = f.render(f.book, f.hash)
-	return f
+	render func(b *Book, hash bool) *bytes.Buffer
 }
 
 func (f Fmt) String() string {
-	return string(f.data)
+	return f.render(f.book, f.hash).String()
 }
 
 func (f Fmt) Bytes() []byte {
-	return f.data
+	return f.render(f.book, f.hash).Bytes()
 }
 
 func (f Fmt) Print() {
-	fmt.Println(f.Render().String())
+	fmt.Println(f.String())
 }
 
 func (f Fmt) Write() {
@@ -122,7 +117,7 @@ func (f Fmt) Write() {
 	}
 	defer file.Close()
 
-	_, err = file.Write(f.Render().Bytes())
+	_, err = file.Write(f.Bytes())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -134,7 +129,7 @@ func (f Fmt) Tmp() *os.File {
 		log.Fatal(err)
 	}
 
-	_, err = file.Write(f.Render().Bytes())
+	_, err = file.Write(f.Bytes())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -142,22 +137,22 @@ func (f Fmt) Tmp() *os.File {
 	return file
 }
 
-func renderTmpl(b *Book, hash bool) []byte {
+func renderTmpl(b *Book, hash bool) *bytes.Buffer {
 	var buf bytes.Buffer
 	err := b.tmpl.Execute(&buf, b)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return buf.Bytes()
+	return &buf
 }
 
-func ToToml(b *Book, hash bool) []byte {
+func ToToml(b *Book, hash bool) *bytes.Buffer {
 	var buf bytes.Buffer
 	err := toml.NewEncoder(&buf).Encode(b.StringMap(hash))
 	if err != nil {
 		log.Fatal(err)
 	}
-	return buf.Bytes()
+	return &buf
 }
 
 var iniOpts = ini.LoadOptions{
@@ -165,7 +160,7 @@ var iniOpts = ini.LoadOptions{
 	AllowNonUniqueSections: true,
 }
 
-func ToIni(b *Book, hash bool) []byte {
+func ToIni(b *Book, hash bool) *bytes.Buffer {
 	book := b.StringMap(hash)
 	//ini.PrettyFormat = false
 	file := ini.Empty(iniOpts)
@@ -186,7 +181,7 @@ func ToIni(b *Book, hash bool) []byte {
 		log.Fatal(err)
 	}
 
-	return buf.Bytes()
+	return &buf
 }
 
 func stringToHTML(s string) template.HTML {
@@ -239,7 +234,7 @@ var (
 		Fmt{
 			name:   "opf",
 			ext:    ".opf",
-			render: func(b *Book, hash bool) []byte { return buildOPF(b).Marshal() },
+			render: func(b *Book, hash bool) *bytes.Buffer { return buildOPF(b).Marshal() },
 		},
 		Fmt{
 			name:   "ini",
@@ -255,7 +250,7 @@ var (
 		Fmt{
 			name:   "rss",
 			ext:    ".xml",
-			render: func(b *Book, hash bool) []byte { return BookToRssChannel(b).Marshal() },
+			render: func(b *Book, hash bool) *bytes.Buffer { return BookToRssChannel(b).Marshal() },
 		},
 	}
 )

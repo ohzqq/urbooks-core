@@ -22,7 +22,7 @@ func NewFeed() *RSS {
 	}
 }
 
-func (rss *RSS) Marshal() []byte {
+func (rss *RSS) Marshal() *bytes.Buffer {
 	pkg := bytes.NewBufferString(xml.Header)
 	enc := xml.NewEncoder(pkg)
 	enc.Indent("", "  ")
@@ -30,7 +30,7 @@ func (rss *RSS) Marshal() []byte {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return pkg.Bytes()
+	return pkg
 }
 
 func (r *RSS) SetChannel() *Channel {

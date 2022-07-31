@@ -40,7 +40,7 @@ func apicall() {
 	}
 
 	for _, b := range books {
-		b.ConvertTo("toml").Print()
+		b.ConvertTo("toml").Write()
 		if !noCovers {
 			u := b.GetFile("cover").Get("url")
 			audible.DownloadCover(b.GetField("title").String(), u)
